@@ -10,12 +10,18 @@ const io = new Server(server);
 
 const PORT = process.env.PORT || 3000;
 
-app.use(express.static(__dirname));
 app.use('/public', express.static(path.join(__dirname, 'public')));
+
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
+});
 
 io.on('connection', (socket) => {
   socket.on('host', () => {
-    const room = randomUUID().slice(0, 5);
+    let room;
+    do {
+      room = randomUUID().slice(0, 6);
+    } while (io.sockets.adapter.rooms.has(room));
     socket.join(room);
     socket.data.room = room;
     socket.emit('hosted', room);
@@ -43,18 +49,20 @@ io.on('connection', (socket) => {
 
   socket.on('startReady', () => {
     const room = socket.data.room;
-    if (room) {
-      socket.data.startReady = true;
-      const clients = io.sockets.adapter.rooms.get(room);
-      if (clients) {
-        const allReady = [...clients].every(id => {
-          const s = io.sockets.sockets.get(id);
-          return s && s.data.startReady;
-        });
-        if (allReady) {
-          io.to(room).emit('startGame');
-        }
-      }
+    if (!room) return;
+
+    socket.data.startReady = true;
+
+    const clients = io.sockets.adapter.rooms.get(room);
+    if (!clients || clients.size !== 2) return;
+
+    const allReady = [...clients].every(id => {
+      const s = io.sockets.sockets.get(id);
+      return s && s.data.startReady;
+    });
+
+    if (allReady) {
+      io.to(room).emit('startGame');
     }
   });
 

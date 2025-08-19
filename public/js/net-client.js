@@ -1,4 +1,4 @@
-(function(global){
+(function (global) {
   const socket = io({
     autoConnect: false,
     reconnection: true,
@@ -8,69 +8,73 @@
   let role = null; // 'host' or 'guest'
   let roomCode = null;
 
-  function connectIfNeeded(){
-    if(!socket.connected){
+  function connectIfNeeded() {
+    if (!socket.connected) {
       socket.connect();
     }
   }
 
   const NET = {
-    host(){
+    host() {
       role = 'host';
       connectIfNeeded();
       socket.emit('host');
     },
-    join(code){
+    join(code) {
       role = 'guest';
       roomCode = code;
       connectIfNeeded();
       socket.emit('join', code);
     },
-    isHost(){
+    isHost() {
       return role === 'host';
     },
-    deckChoice(deckId){
+    deckChoice(deckId) {
       socket.emit('deckChoice', deckId);
     },
-    startReady(){
+    startReady() {
       socket.emit('startReady');
     },
-    sendMove(move){
+    sendMove(move) {
       socket.emit('move', move);
     },
-    sendTurn(turn){
+    sendTurn(turn) {
       socket.emit('turn', turn);
     },
-    onOpponentDeckConfirmed(handler){
+    onOpponentDeckConfirmed(handler) {
       socket.on('opponentDeckConfirmed', handler);
     },
-    onStartGame(handler){
+    onStartGame(handler) {
       socket.on('startGame', handler);
     },
-    onMove(handler){
+    onMove(handler) {
       socket.on('move', handler);
     },
-    onTurn(handler){
+    onTurn(handler) {
       socket.on('turn', handler);
     },
-    onHosted(handler){
+    onHosted(handler) {
       socket.on('hosted', handler);
     },
-    onJoined(handler){
+    onJoined(handler) {
       socket.on('joined', handler);
     },
-    onGuestJoined(handler){
+    onGuestJoined(handler) {
       socket.on('guestJoined', handler);
     },
-    onJoinError(handler){
+    onJoinError(handler) {
       socket.on('joinError', handler);
     },
-    onOpponentLeft(handler){
+    onOpponentLeft(handler) {
       socket.on('opponentLeft', handler);
     },
-    disconnect(){
+    onConnectionError(handler) {
+      socket.on('connect_error', handler);
+      socket.io.on('reconnect_failed', handler);
+    },
+    disconnect() {
       socket.disconnect();
-    }
+    },
   };
 
   // reconnect and error handling
@@ -88,7 +92,7 @@
 
   socket.on('disconnect', (reason) => {
     console.warn('Disconnected:', reason);
-    if(reason === 'io server disconnect') {
+    if (reason === 'io server disconnect') {
       socket.connect();
     }
   });
