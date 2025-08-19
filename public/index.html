@@ -23,6 +23,10 @@
     .enemy-hp .fill{background:linear-gradient(90deg,var(--bad),var(--accent2))}
     .btn{cursor:pointer;border:none;border-radius:12px;padding:10px 14px;background:linear-gradient(180deg,#2a3c7e,#1b2a5b);color:#fff;font-weight:800;letter-spacing:.2px}
     .btn-ghost{cursor:pointer;border:1px solid #2b3a86;background:#0c1230;color:#cfe3ff;border-radius:10px;padding:8px 10px}
+    .muted{color:var(--muted)}
+    .input{border:1px solid #2b3a86;background:#0c1230;color:#cfe3ff;border-radius:10px;padding:8px 10px}
+    .mpbar{position:fixed;top:0;left:0;right:0;background:linear-gradient(180deg,#121a44,#0c1230);border-bottom:1px solid #2b3a86;padding:8px 10px;display:flex;flex-direction:column;gap:6px;z-index:20}
+    .mprow{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 
     .zone-title{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin:6px 0 4px}
     .board{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,0));border-radius:16px;padding:18px 12px;min-height:200px;border:1px dashed #31408b;position:relative}
@@ -70,6 +74,21 @@
   <script src="/ffon-net-client.js"></script>
 </head>
 <body>
+  <!-- Barra Multiplayer -->
+  <div class="mpbar">
+    <div class="mprow">
+      <span class="muted">Multiplayer (beta):</span>
+      <span id="mpStatus" class="muted">Modo: Solo</span>
+    </div>
+    <div class="mprow">
+      <input id="mpWs" class="input" placeholder="WS (vazio = mesmo domínio)" value="">
+      <input id="mpRoom" class="input" placeholder="Sala" value="duo">
+      <input id="mpName" class="input" placeholder="Seu nome" value="Player">
+      <button id="mpHost" class="btn">Hospedar</button>
+      <button id="mpJoin" class="btn">Entrar</button>
+      <button id="mpLeave" class="btn-ghost">Sair</button>
+    </div>
+  </div>
   <div class="start" id="start">
     <div class="panel">
       <h1>Farm Fight Formula <small style="color:var(--muted);font-size:16px">— Online</small></h1>
@@ -81,19 +100,7 @@
         <button class="btn deckbtn" data-deck="floresta">🌲 Feras da Floresta <small style="color:var(--muted)">Pressão constante</small></button>
       </div>
       <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
-        <button class="btn-ghost" id="openMp">🎮 Multiplayer</button>
         <button class="btn" id="startGame">Jogar</button>
-      </div>
-      <div id="mpBar" style="margin-top:10px;display:none">
-        <div class="sub"><b>Multiplayer (beta):</b> <span id="mpStatus">Modo: Solo</span></div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <input id="mpWs" class="btn-ghost" placeholder="WS (vazio = mesmo domínio)" style="min-width:220px">
-          <input id="mpRoom" class="btn-ghost" placeholder="Sala" value="duo" style="width:120px">
-          <input id="mpName" class="btn-ghost" placeholder="Nome" value="Player" style="width:160px">
-          <button class="btn" id="mpHost">Hospedar</button>
-          <button class="btn" id="mpJoin">Entrar</button>
-          <button class="btn-ghost" id="mpLeave">Sair</button>
-        </div>
       </div>
     </div>
   </div>
@@ -210,7 +217,6 @@
   // UI bindings
   $('#endTurnBtn').addEventListener('click',endTurn);
   $('#startGame').addEventListener('click',()=>{$('#start').style.display='none';initAudio();ensureRunning();startGame()});
-  $('#openMp').addEventListener('click',()=>{$('#mpBar').style.display='block'});
   $('#muteBtn').addEventListener('click',()=>{initAudio();ensureRunning();muted=!muted;master&&(master.gain.value=muted?0:.18);$('#muteBtn').textContent=muted?'🔇 Mudo':'🔊 Som'});
   $$('.deckbtn').forEach(btn=>btn.addEventListener('click',()=>{const pick=btn.dataset.deck;S.playerDeckChoice=pick; if(HUMAN_DECKS.includes(pick)){S.aiDeckChoice=ANIMAL_DECKS[Math.floor(Math.random()*ANIMAL_DECKS.length)]}else{S.aiDeckChoice=HUMAN_DECKS[Math.floor(Math.random()*HUMAN_DECKS.length)]} $$('.deckbtn').forEach(b=>b.style.outline='none');btn.style.outline='2px solid var(--accent)'}));
   window.addEventListener('keydown',e=>{if(e.key==='Escape'){S.chosenAttacker=null;updateFaceAttackZone();renderBoard()}});
@@ -241,6 +247,10 @@
   window.addEventListener('pointerdown',()=>{initAudio();ensureRunning()},{once:true});
 })();
 </script>
+  <!-- Inclua o cliente do Socket.IO (servido pelo seu server Node / Express) -->
+  <script src="/socket.io/socket.io.js"></script>
+  <!-- Cliente de rede -->
+  <script src="fffonline-net-client.js"></script>
   <script defer src="fff-effects.js"></script>
 </body>
 </html>
