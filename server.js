@@ -33,10 +33,28 @@ io.on('connection', (socket) => {
     }
   });
 
-  socket.on('guestDeckChoice', (deckId) => {
+  socket.on('deckChoice', (deckId) => {
     const room = socket.data.room;
     if (room) {
-      socket.to(room).emit('guestDeckChoice', deckId);
+      socket.data.deckChosen = deckId;
+      socket.to(room).emit('opponentDeckConfirmed', deckId);
+    }
+  });
+
+  socket.on('startReady', () => {
+    const room = socket.data.room;
+    if (room) {
+      socket.data.startReady = true;
+      const clients = io.sockets.adapter.rooms.get(room);
+      if (clients) {
+        const allReady = [...clients].every(id => {
+          const s = io.sockets.sockets.get(id);
+          return s && s.data.startReady;
+        });
+        if (allReady) {
+          io.to(room).emit('startGame');
+        }
+      }
     }
   });
 
