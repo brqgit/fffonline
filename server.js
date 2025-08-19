@@ -10,6 +10,9 @@ const io = new Server(server);
 
 const PORT = process.env.PORT || 3000;
 
+// Decks permitidos no modo multiplayer
+const VALID_DECKS = new Set(['vikings', 'animais', 'pescadores', 'floresta', 'custom']);
+
 app.use(express.static(path.join(__dirname, 'public')));
 
 io.on('connection', (socket) => {
@@ -37,10 +40,15 @@ io.on('connection', (socket) => {
 
   socket.on('deckChoice', (deckId) => {
     const room = socket.data.room;
-    if (room) {
-      socket.data.deckChosen = deckId;
-      socket.to(room).emit('opponentDeckConfirmed', deckId);
+    if (!room) return;
+
+    if (!VALID_DECKS.has(deckId)) {
+      socket.emit('deckError', 'Deck inválido');
+      return;
     }
+
+    socket.data.deckChosen = deckId;
+    socket.to(room).emit('opponentDeckConfirmed', deckId);
   });
 
   socket.on('startReady', () => {
