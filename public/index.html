@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Farm Fight Formula — Online</title>
+  <title>FFF Farm Fight Formula — Online</title>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
   <style>
@@ -64,6 +64,7 @@
 
     @media (max-width:720px){.board{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}.card{width:150px}.name{font-size:13px}}
   </style>
+  <link rel="stylesheet" href="fff-effects.css">
   <!-- Online: Socket.IO + cliente -->
   <script src="/socket.io/socket.io.js"></script>
   <script src="/ffon-net-client.js"></script>
@@ -240,5 +241,6 @@
   window.addEventListener('pointerdown',()=>{initAudio();ensureRunning()},{once:true});
 })();
 </script>
+  <script defer src="fff-effects.js"></script>
 </body>
 </html>
