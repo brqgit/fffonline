@@ -3,29 +3,13 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>FFF Online — Farm Fight Formula</title>
-  <meta name="color-scheme" content="dark" />
-  <style>
-    :root{
-      --bg:#0b1020;--panel:#0f1736;--line:#25306a;--text:#e6ebff;--muted:#a7b0d9;--brand:#7cc4ff;--brand-2:#ffd166
-    }
-    html,body{height:100%}
-    body{margin:0;background:radial-gradient(1100px 600px at 20% -10%,#111b55 0%,var(--bg) 60%);color:var(--text);font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Ubuntu,Helvetica,Arial}
-    .wrap{max-width:1200px;margin:0 auto;padding:16px}
-    header{display:flex;gap:14px;align-items:center;margin:4px 0 10px}
-    .logo{font-weight:900;font-size:22px;letter-spacing:.3px}
-    .badge{display:inline-flex;gap:8px;align-items:center;border:1px solid #27326a;background:linear-gradient(180deg,#121a44,#0d1435);border-radius:12px;padding:8px 10px}
-    .grid{display:grid;grid-template-columns:1fr;gap:12px}
-    /* Multiplayer toolbar */
-    .mp{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
-    .mp input{height:36px;border-radius:10px;border:1px solid var(--line);background:#0b1332;color:var(--text);padding:0 10px;min-width:140px}
-    .btn{cursor:pointer;border:none;border-radius:10px;padding:9px 12px;font-weight:800;color:#fff;background:linear-gradient(180deg,#2a3c7e,#1c2b5f);box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
-    .btn.ghost{background:#0b1332;border:1px solid var(--line);color:#cfe3ff}
-    .status{color:var(--muted);font-size:13px;margin-left:6px}
-    /* Game mount point (seu código do jogo assume existir o #app) */
-    #app{margin-top:14px}
-    /* Painel flutuante da enciclopédia/menu do seu jogo continua sendo criado pelo seu script do jogo */
-  </style>
+  <title>FFF Farm Fight Formula — Online</title>
+
+  <!-- seus estilos existentes -->
+  <link rel="stylesheet" href="styles.css">
+
+  <!-- ✅ efeitos/hover/tilt/brilho restaurados -->
+  <link rel="stylesheet" href="fff-effects.css">
 </head>
 <body>
   <div class="wrap">
@@ -49,24 +33,16 @@
     <div id="app"></div>
   </div>
 
-  <!-- Socket.IO client (servido pelo server.js). Se não existir, NET lida com ausência. -->
+  <!-- Inclua o cliente do Socket.IO (servido pelo seu servidor Node/Express) -->
   <script src="/socket.io/socket.io.js"></script>
 
-    <!-- Cliente de rede (este arquivo é o que você já tem na lousa ‘Fffonline-net-client’) -->
-    <script src="./fffon-net-client.js"></script>
+  <!-- Cliente de rede -->
+  <script src="fffonline-net-client.js"></script>
 
-    <!-- Seu jogo (versão solo+online). Mantenha o nome que você usa hoje, por exemplo apps.js / index.js -->
-    <!-- Substitua o caminho abaixo pelo arquivo principal do seu jogo. -->
-    <script src="./apps.js"></script>
+  <!-- Seu jogo (versão solo+online) -->
+  <script src="app.js"></script>
 
-  <script>
-    // Integrações mínimas: quando a rede disser “match:ready”, você pode iniciar a partida
-    // passando as escolhas de deck / seed para o seu motor já existente.
-    window.addEventListener('net:ready', (ev)=>{
-      // exemplo:
-      // GAME.startOnline(ev.detail); // ajuste ao seu motor
-      console.log('NET ready', ev.detail);
-    });
-  </script>
+  <!-- ✅ auto-wire de animações/tilt (MutationObserver) -->
+  <script defer src="fff-effects.js"></script>
 </body>
 </html>
