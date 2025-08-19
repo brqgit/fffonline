@@ -9,6 +9,10 @@ const crypto = require('crypto');
 const PORT = process.env.PORT || 8080;
 const ORIGIN = process.env.CORS_ORIGIN || '*'; // e.g. "https://seu-dominio.com"
 
+const MAX_LEN = 32;
+const ROOM_RE = new RegExp(`^[A-Za-z0-9_-]{1,${MAX_LEN}}$`);
+const NAME_RE = new RegExp(`^[A-Za-z0-9 _-]{1,${MAX_LEN}}$`);
+
 const app = express();
 app.disable('x-powered-by');
 app.get('/health', (_, res) => res.json({ ok: true, ts: Date.now() }));
@@ -95,6 +99,10 @@ io.on('connection', (socket) => {
   socket.on('host', ({ room, name, deck } = {}) => {
     room = String(room || 'duo').trim();
     name = String(name || 'Host').trim();
+    if (!ROOM_RE.test(room) || !NAME_RE.test(name)) {
+      socket.emit('error:room', { message: 'Nome ou sala inválidos.' });
+      return;
+    }
 
     const r = ensureRoom(room);
     if (r.hostId && r.hostId !== socket.id) {
@@ -120,6 +128,10 @@ io.on('connection', (socket) => {
   socket.on('join', ({ room, name, deck } = {}) => {
     room = String(room || 'duo').trim();
     name = String(name || 'Guest').trim();
+    if (!ROOM_RE.test(room) || !NAME_RE.test(name)) {
+      socket.emit('error:room', { message: 'Nome ou sala inválidos.' });
+      return;
+    }
 
     const r = ensureRoom(room);
     if (r.guestId && r.guestId !== socket.id) {
