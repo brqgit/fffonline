@@ -1,4 +1,92 @@
-// fffon-net-client.js
+/* FFFON - Socket.IO client */
 (function(){
-  console.log('FFFON client loaded');
+  const $ = (id)=>document.getElementById(id);
+
+  const NET = {
+    online:false,
+    isHost:false,
+    socket:null,
+    room:null,
+    name:null,
+    seed:null,
+    hostDeckChoice:null,
+    guestDeckChoice:null,
+    onEvent:null,
+
+    connect(url){
+      if(typeof io === 'undefined'){ this._setStatus('Offline: Socket.IO não encontrado'); return; }
+      try{ if(this.socket){ this.socket.disconnect(); } }catch(_){ }
+      const target = (url && url.trim()) || undefined;
+      this.socket = io(target, { transports:['websocket'], autoConnect:true });
+      this._wireSocket();
+      this._setStatus('Conectando...');
+    },
+
+    host(room,name,deck){
+      const emitHost = ()=>{ this.isHost = true; this.room = room; this.name = name; this.socket.emit('host', { room, name, deck }); };
+      if(!this.socket || !this.socket.connected){ this.connect($('#mpWs')?.value); this.socket?.once('connect', emitHost); } else emitHost();
+    },
+
+    join(room,name,deck){
+      const emitJoin = ()=>{ this.isHost = false; this.room = room; this.name = name; this.socket.emit('join', { room, name, deck }); };
+      if(!this.socket || !this.socket.connected){ this.connect($('#mpWs')?.value); this.socket?.once('connect', emitJoin); } else emitJoin();
+    },
+
+    deckSelect(deck){ if(this.socket && this.room){ this.socket.emit('deck:select', { room:this.room, deck }); } },
+    send(type,payload){ if(this.socket && this.room){ this.socket.emit('game:event',{ room:this.room, type, payload }); } },
+    requestState(){ if(this.socket && this.room){ this.socket.emit('state:request',{ room:this.room }); } },
+    sendFullState(state){ if(this.socket && this.room){ this.socket.emit('state:full',{ room:this.room, state }); } },
+    leave(){ try{ this.socket?.disconnect(); }catch(_){ } finally{ this.online=false; this._setStatus('Modo: Solo'); } },
+
+    _wireSocket(){
+      const s = this.socket; if(!s) return;
+      s.on('connect', ()=>{ this._setStatus('Conectado'); });
+      s.on('disconnect', ()=>{ this.online=false; this._setStatus('Desconectado'); });
+      s.on('error:room', (e)=>{ this._setStatus('Sala: '+(e?.message||'erro')); });
+
+      s.on('host:ack', ({room})=>{ this._setStatus(`Hospedando sala ${room}`); });
+      s.on('join:ack', ({room})=>{ this._setStatus(`Conectado à sala ${room}`); });
+
+      s.on('lobby:update', (st)=>{
+        this.hostDeckChoice = st.hostDeck||null;
+        this.guestDeckChoice = st.guestDeck||null;
+        const a = st.hasHost ? (st.hostName||'Host') : '—';
+        const b = st.hasGuest ? (st.guestName||'Guest') : '—';
+        this._setStatus(`Lobby • Host: ${a} • Guest: ${b}`);
+      });
+
+      s.on('match:ready', (st)=>{
+        this.online = true; this.seed = st.seed||null;
+        this.hostDeckChoice = st.hostDeck||this.hostDeckChoice;
+        this.guestDeckChoice = st.guestDeck||this.guestDeckChoice;
+        this._setStatus('Partida pronta');
+        window.dispatchEvent(new CustomEvent('net:ready', { detail: st }));
+      });
+
+      s.on('seed:set', ({seed})=>{ this.seed = seed; window.dispatchEvent(new CustomEvent('net:seed',{ detail:{ seed } })); });
+
+      s.on('game:event', ({type,payload})=>{
+        if(typeof this.onEvent === 'function') this.onEvent(type,payload);
+        window.dispatchEvent(new CustomEvent('net:event',{ detail:{ type, payload } }));
+      });
+
+      s.on('state:request', ()=>{ window.dispatchEvent(new Event('net:state-request')); });
+      s.on('state:full', ({state})=>{ window.dispatchEvent(new CustomEvent('net:state-full',{ detail:{ state } })); });
+    },
+
+    _wireUi(){
+      const hostBtn=$('#mpHost'), joinBtn=$('#mpJoin'), name=$('#mpName'), room=$('#mpRoom');
+      hostBtn?.addEventListener('click', ()=>{
+        const nm=(name?.value||'Host').trim(); const rm=(room?.value||'duo').trim(); this.host(rm,nm,null);
+      });
+      joinBtn?.addEventListener('click', ()=>{
+        const nm=(name?.value||'Guest').trim(); const rm=(room?.value||'duo').trim(); this.join(rm,nm,null);
+      });
+    },
+
+    _setStatus(msg){ const el=$('#mpStatus'); if(el) el.textContent = msg; }
+  };
+
+  window.NET = NET;
+  document.addEventListener('DOMContentLoaded', ()=>NET._wireUi());
 })();
