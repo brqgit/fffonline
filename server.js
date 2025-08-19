@@ -50,13 +50,17 @@ io.on('connection', (socket) => {
   socket.on('startReady', () => {
     const room = socket.data.room;
     if (!room) return;
+
     socket.data.startReady = true;
+
     const clients = io.sockets.adapter.rooms.get(room);
     if (!clients || clients.size !== 2) return;
+
     const allReady = [...clients].every(id => {
       const s = io.sockets.sockets.get(id);
       return s && s.data.startReady;
     });
+
     if (allReady) {
       io.to(room).emit('startGame');
     }

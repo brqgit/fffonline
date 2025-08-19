@@ -11,11 +11,11 @@ document.addEventListener('DOMContentLoaded', () => {
   window.isMultiplayer = false;
   window.mpState = null;
 
-  function showDeckSelect(){
+  function showDeckSelect() {
     mpMenu.style.display = 'none';
     startScreen.style.display = 'block';
     const btn = document.getElementById('startGame');
-    if(!btn) return;
+    if (!btn) return;
     btn.textContent = 'Confirmar deck';
     btn.disabled = false;
     window.isMultiplayer = true;
@@ -53,7 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (joinBtn) {
     joinBtn.addEventListener('click', () => {
       const code = joinCodeInput.value.trim();
-      if(code){
+      if (code) {
         if (window.NET) {
           NET.join(code);
         }
