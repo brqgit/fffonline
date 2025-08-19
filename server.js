@@ -1,214 +1,106 @@
-// server.js — FFF Online (Socket.IO server)
-'use strict';
-
-const http = require('http');
-const express = require('express');
-const { Server } = require('socket.io');
-const crypto = require('crypto');
-
-const PORT = process.env.PORT || 8080;
-const ORIGIN = process.env.CORS_ORIGIN || '*'; // e.g. "https://seu-dominio.com"
-
-const MAX_LEN = 32;
-const ROOM_RE = new RegExp(`^[A-Za-z0-9_-]{1,${MAX_LEN}}$`);
-const NAME_RE = new RegExp(`^[A-Za-z0-9 _-]{1,${MAX_LEN}}$`);
+import express from "express";
+import http from "http";
+import { Server } from "socket.io";
+import cors from "cors";
+import crypto from "crypto";
 
 const app = express();
-app.disable('x-powered-by');
-app.get('/health', (_, res) => res.json({ ok: true, ts: Date.now() }));
+app.use(cors());
+app.use(express.static("public"));
 
-// (opcional) sirva arquivos estáticos quando colocar seu index.html em /public
-app.use(express.static('public'));
+const server = http.createServer(app);
+const io = new Server(server, { cors: { origin: "*" } });
 
-  const server = http.createServer(app);
-  const io = new Server(server, {
-    cors: { origin: ORIGIN, methods: ['GET', 'POST'] },
-    transports: ['websocket', 'polling'],
-  });
+const rooms = new Map(); // roomId -> { phase, seed, players: { [socketId]: {name, deckKey, ready} }, order: [idA,idB] }
 
-const rooms = new Map(); // roomId -> {hostId, guestId, hostName, guestName, seed, hostDeck, guestDeck, t}
-
-/* helpers */
-const now = () => Date.now();
-const rndSeed = () => crypto.randomInt(1, 2 ** 31 - 1);
-const getRoom = (id) => rooms.get(id);
-const ensureRoom = (id) => (rooms.get(id) || (rooms.set(id, { t: now() }), rooms.get(id)));
-const inRoom = (sock) => sock.data?.room;
-const roleOf = (sock) => sock.data?.role;
-
-function touchRoom(id) {
-  const r = rooms.get(id);
-  if (r) r.t = now();
-}
-
-function lobbyUpdate(id) {
-  const r = rooms.get(id);
-  if (!r) return;
-  io.to(id).emit('lobby:update', {
-    hasHost: !!r.hostId,
-    hasGuest: !!r.guestId,
-    hostName: r.hostName || null,
-    guestName: r.guestName || null,
-    hostDeck: r.hostDeck || null,
-    guestDeck: r.guestDeck || null,
-  });
-}
-
-function maybeReady(id) {
-  const r = rooms.get(id);
-  if (!r || !r.hostId || !r.guestId) return;
-  if (!r.seed) r.seed = rndSeed();
-  io.to(id).emit('match:ready', {
-    room: id,
-    seed: r.seed,
-    hostDeck: r.hostDeck || null,
-    guestDeck: r.guestDeck || null,
-  });
-  io.to(id).emit('seed:set', { seed: r.seed });
-}
-
-function leaveRoom(sock) {
-  const id = inRoom(sock);
-  if (!id) return;
-  const r = rooms.get(id);
-  if (!r) return;
-
-  if (sock.id === r.hostId) {
-    r.hostId = null;
-    r.hostName = null;
-    r.hostDeck = null;
+function getOrCreateRoom(id){
+  if(!rooms.has(id)){
+    rooms.set(id,{ phase: "lobby", seed: null, players:{}, order:[] });
   }
-  if (sock.id === r.guestId) {
-    r.guestId = null;
-    r.guestName = null;
-    r.guestDeck = null;
-  }
+  return rooms.get(id);
+}
+function roomSnapshot(r){
+  const a=r.order[0], b=r.order[1];
+  return {
+    phase:r.phase,
+    seed:r.seed,
+    players:[
+      a?{ id:a, ...r.players[a]}:null,
+      b?{ id:b, ...r.players[b]}:null
+    ]
+  };
+}
+function tryStart(roomId){
+  const r=rooms.get(roomId); if(!r) return;
+  if(r.phase!=="lobby") return;
+  if(r.order.length!==2) return;
+  const [A,B]=r.order;
+  const pa=r.players[A], pb=r.players[B];
+  if(!pa?.deckKey || !pb?.deckKey) return;
+  if(!pa?.ready || !pb?.ready) return;
 
-  sock.leave(id);
-  touchRoom(id);
-  lobbyUpdate(id);
-
-  // apaga sala vazia
-  if (!r.hostId && !r.guestId) rooms.delete(id);
+  r.phase="playing";
+  r.seed=crypto.randomBytes(4).readUInt32BE(0);
+  io.to(roomId).emit("match:start",{
+    seed:r.seed,
+    roles:{ [A]:"A", [B]:"B" },
+    decks:{ A: pa.deckKey, B: pb.deckKey }
+  });
 }
 
-/* socket wiring */
-io.on('connection', (socket) => {
-  socket.emit('hello', { id: socket.id });
+io.on("connection", (socket)=>{
+  let currentRoom=null;
 
-  socket.on('host', ({ room, name, deck } = {}) => {
-    room = String(room || 'duo').trim();
-    name = String(name || 'Host').trim();
-    if (!ROOM_RE.test(room) || !NAME_RE.test(name)) {
-      socket.emit('error:room', { message: 'Nome ou sala inválidos.' });
-      return;
-    }
-
-    const r = ensureRoom(room);
-    if (r.hostId && r.hostId !== socket.id) {
-      socket.emit('error:room', { message: 'Sala já possui host.' });
-      return;
-    }
-    // sair de outra sala, caso exista
-    if (inRoom(socket)) leaveRoom(socket);
-
-    r.hostId = socket.id;
-    r.hostName = name;
-    if (deck) r.hostDeck = deck;
-    socket.data.room = room;
-    socket.data.role = 'host';
-    socket.join(room);
-
-    touchRoom(room);
-    socket.emit('host:ack', { room });
-    lobbyUpdate(room);
-    maybeReady(room);
+  socket.on("room:host", ({room, name})=>{
+    const r=getOrCreateRoom(room);
+    if(r.order.length>=2){ socket.emit("room:error","Sala cheia"); return; }
+    currentRoom=room; socket.join(room);
+    r.players[socket.id]={ name:name||"Player", deckKey:null, ready:false };
+    if(!r.order.includes(socket.id)) r.order.push(socket.id);
+    io.to(room).emit("room:update", roomSnapshot(r));
+    socket.emit("room:hosted", roomSnapshot(r));
   });
 
-  socket.on('join', ({ room, name, deck } = {}) => {
-    room = String(room || 'duo').trim();
-    name = String(name || 'Guest').trim();
-    if (!ROOM_RE.test(room) || !NAME_RE.test(name)) {
-      socket.emit('error:room', { message: 'Nome ou sala inválidos.' });
-      return;
-    }
-
-    const r = ensureRoom(room);
-    if (r.guestId && r.guestId !== socket.id) {
-      socket.emit('error:room', { message: 'Sala já possui convidado.' });
-      return;
-    }
-    if (inRoom(socket)) leaveRoom(socket);
-
-    r.guestId = socket.id;
-    r.guestName = name;
-    if (deck) r.guestDeck = deck;
-    socket.data.room = room;
-    socket.data.role = 'guest';
-    socket.join(room);
-
-    touchRoom(room);
-    socket.emit('join:ack', { room });
-    lobbyUpdate(room);
-    maybeReady(room);
+  socket.on("room:join", ({room, name})=>{
+    const r=getOrCreateRoom(room);
+    if(r.order.length>=2){ socket.emit("room:error","Sala cheia"); return; }
+    currentRoom=room; socket.join(room);
+    r.players[socket.id]={ name:name||"Player", deckKey:null, ready:false };
+    if(!r.order.includes(socket.id)) r.order.push(socket.id);
+    io.to(room).emit("room:update", roomSnapshot(r));
+    socket.emit("room:joined", roomSnapshot(r));
   });
 
-  socket.on('deck:select', ({ room, deck } = {}) => {
-    const r = getRoom(room || inRoom(socket));
-    if (!r) return;
-    if (roleOf(socket) === 'host') r.hostDeck = deck;
-    if (roleOf(socket) === 'guest') r.guestDeck = deck;
-    touchRoom(room);
-    lobbyUpdate(room);
-    maybeReady(room);
+  socket.on("deck:select", ({room, deckKey})=>{
+    const r=rooms.get(room); if(!r) return;
+    if(!r.players[socket.id]) return;
+    r.players[socket.id].deckKey=deckKey;
+    r.players[socket.id].ready=false;
+    io.to(room).emit("lobby:update", roomSnapshot(r));
   });
 
-  // eventos de jogo — repassa somente para o oponente
-  socket.on('game:event', ({ room, type, payload } = {}) => {
-    room = room || inRoom(socket);
-    if (!room) return;
-    socket.to(room).emit('game:event', { type, payload, from: roleOf(socket) });
-    touchRoom(room);
+  socket.on("lobby:ready", ({room})=>{
+    const r=rooms.get(room); if(!r) return;
+    if(!r.players[socket.id]) return;
+    r.players[socket.id].ready=true;
+    io.to(room).emit("lobby:update", roomSnapshot(r));
+    tryStart(room);
   });
 
-  // sincronização de estado
-  socket.on('state:request', ({ room } = {}) => {
-    room = room || inRoom(socket);
-    if (!room) return;
-    socket.to(room).emit('state:request', {});
+  socket.on("game:act", ({room, act})=>{
+    // servidor só retransmite; cliente aplica
+    socket.to(room).emit("game:act", { act });
   });
 
-  socket.on('state:full', ({ room, state } = {}) => {
-    room = room || inRoom(socket);
-    if (!room) return;
-    socket.to(room).emit('state:full', { state });
-  });
-
-  // permitir redefinir seed (ex.: novo jogo)
-  socket.on('seed:new', ({ room } = {}) => {
-    room = room || inRoom(socket);
-    const r = getRoom(room);
-    if (!r) return;
-    r.seed = rndSeed();
-    io.to(room).emit('seed:set', { seed: r.seed });
-    touchRoom(room);
-  });
-
-  socket.on('disconnect', () => {
-    leaveRoom(socket);
+  socket.on("disconnect", ()=>{
+    if(!currentRoom) return;
+    const r=rooms.get(currentRoom); if(!r) return;
+    delete r.players[socket.id];
+    r.order=r.order.filter(id=>id!==socket.id);
+    r.phase="lobby"; r.seed=null;
+    io.to(currentRoom).emit("room:update", roomSnapshot(r));
   });
 });
 
-/* limpeza de salas antigas */
-setInterval(() => {
-  const TTL = 1000 * 60 * 60; // 1h
-  const t = now();
-  for (const [id, r] of rooms.entries()) {
-    if (!r.hostId && !r.guestId) { rooms.delete(id); continue; }
-    if (t - (r.t || 0) > TTL) rooms.delete(id);
-  }
-}, 60_000);
-
-server.listen(PORT, () => {
-  console.log(`FFF Online server listening on :${PORT}`);
-});
+const PORT=process.env.PORT||3000;
+server.listen(PORT,()=>console.log("FFFO server on",PORT));
