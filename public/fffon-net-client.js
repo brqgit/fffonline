@@ -52,7 +52,7 @@
     _wireSocket(){
       const s = this.socket; if(!s) return;
       s.on('connect', ()=>{ this._setStatus('Conectado'); });
-      s.on('disconnect', ()=>{ this.online=false; this._setStatus('Desconectado'); });
+      s.on('disconnect', ()=>{ this.online=false; this.hostDeckChoice=null; this.guestDeckChoice=null; this._setStatus('Desconectado'); });
       s.on('error:room', (e)=>{ this._setStatus('Sala: '+(e?.message||'erro')); });
 
       s.on('host:ack', ({room})=>{ this._setStatus(`Hospedando sala ${room}`); });
@@ -63,7 +63,17 @@
         this.guestDeckChoice = st.guestDeck||null;
         const a = st.hasHost ? (st.hostName||'Host') : '—';
         const b = st.hasGuest ? (st.guestName||'Guest') : '—';
-        this._setStatus(`Lobby • Host: ${a} • Guest: ${b}`);
+        let msg = `Lobby • Host: ${a} • Guest: ${b}`;
+        const hostDeck = !!this.hostDeckChoice;
+        const guestDeck = !!this.guestDeckChoice;
+        if(this.isHost){
+          if(!hostDeck) msg += ' • Escolha seu deck';
+          else if(!guestDeck) msg += ' • Aguardando convidado escolher deck';
+        }else{
+          if(!guestDeck) msg += ' • Escolha seu deck';
+          else if(!hostDeck) msg += ' • Aguardando host escolher deck';
+        }
+        this._setStatus(msg);
       });
 
       s.on('match:ready', (st)=>{
