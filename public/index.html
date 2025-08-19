@@ -3,242 +3,46 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Farm Fight Formula — Online</title>
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
-  <style>
-    :root{--bg:#0b1020;--panel:#101833;--panel2:#0f1430;--accent:#7cc4ff;--accent2:#ffd166;--good:#4ade80;--bad:#fb7185;--muted:#a7b0d9;--card:#141d3f;--card2:#1a2454;--text:#e6e9ff}
-    *{box-sizing:border-box}
-    html,body{height:100%}
-    body{margin:0;background:radial-gradient(1200px 700px at 20% 0%,#0e1340 0%,var(--bg) 60%);color:var(--text);font-family:Inter,system-ui,Segoe UI,Roboto,Helvetica,Arial}
-    .wrap{max-width:1200px;margin:0 auto;padding:16px}
-    h1{margin:4px 0 6px;font-size:clamp(20px,4vw,36px)}
-    .sub{color:var(--muted);margin-bottom:16px}
-    .hud{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:center;margin:10px 0 14px}
-    .meter{display:flex;gap:8px;align-items:center;background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid #243069;border-radius:14px;padding:8px 10px}
-    .meter b{font-size:14px;color:var(--muted)}
-    .meter .value{font-size:18px}
-    .bar{flex:1;max-width:160px;height:6px;background:#243069;border-radius:3px;overflow:hidden;margin-left:6px}
-    .fill{height:100%;width:0%;background:linear-gradient(90deg,var(--good),var(--accent))}
-    .enemy-hp .fill{background:linear-gradient(90deg,var(--bad),var(--accent2))}
-    .btn{cursor:pointer;border:none;border-radius:12px;padding:10px 14px;background:linear-gradient(180deg,#2a3c7e,#1b2a5b);color:#fff;font-weight:800;letter-spacing:.2px}
-    .btn-ghost{cursor:pointer;border:1px solid #2b3a86;background:#0c1230;color:#cfe3ff;border-radius:10px;padding:8px 10px}
+  <title>FFF Farm Fight Formula — Online</title>
 
-    .zone-title{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin:6px 0 4px}
-    .board{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,0));border-radius:16px;padding:18px 12px;min-height:200px;border:1px dashed #31408b;position:relative}
-
-    .hand{display:flex;flex-wrap:wrap;gap:18px;margin:22px 0 8px}
-    .card{width:188px;aspect-ratio:10/14;background:linear-gradient(180deg,var(--card2),var(--card));border-radius:18px;border:1px solid #28336b;box-shadow:0 10px 20px rgba(0,0,0,.35),inset 0 0 0 1px rgba(255,255,255,.06);padding:6px;display:grid;grid-template-rows:auto 1fr auto;position:relative;overflow:hidden;transition:transform .18s ease,box-shadow .18s ease}
-    #playerBoard .card:hover{transform:translateY(-6px) scale(1.03);box-shadow:0 16px 30px rgba(0,0,0,.45),0 0 0 2px rgba(124,196,255,.15) inset}
-    .card .art{display:grid;place-items:center;font-size:58px;transform:translate3d(0,0,0)}
-    .cost{display:grid;place-items:center;width:22px;height:22px;border-radius:50%;font-weight:900;color:#02122e;background:radial-gradient(circle at 30% 30%,#aee5ff,#4aa3ff);box-shadow:0 8px 14px rgba(74,163,255,.35),inset 0 0 18px rgba(255,255,255,.35)}
-    .head{display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center}
-    .name{font-weight:800;font-size:15px;line-height:1.12}
-    .tribe{font-size:12px;color:var(--muted)}
-    .text{font-size:12px;color:#d9e3ff;background:#0e1435;border:1px solid #25306a;border-radius:10px;padding:8px;margin-top:6px}
-    .stats{display:flex;justify-content:space-between;align-items:center;margin-top:6px}
-    .gem{padding:6px 10px;border-radius:999px;font-size:12px;font-weight:900;display:inline-flex;align-items:center;gap:6px;border:1px solid rgba(255,255,255,.08)}
-    .atk{background:linear-gradient(180deg,#233b7a,#1a2f66)}
-    .hp{background:linear-gradient(180deg,#2a5f3a,#1e462b)}
-    .hp.low{background:linear-gradient(180deg,#7a2e36,#5a1f25)}
-    .badge{font-size:10px;padding:3px 6px;border-radius:999px;border:1px solid rgba(255,255,255,.14)}
-    .def{background:linear-gradient(180deg,#2a5f3a,#1e462b)}
-    .atkBadge{background:linear-gradient(180deg,#1f2a64,#15204a)}
-    .keyword{display:inline-block;background:linear-gradient(180deg,#6342b6,#3b1f7e);padding:2px 6px;border-radius:999px;font-size:11px;margin-right:6px;border:1px solid rgba(255,255,255,.12)}
-    .selectable{outline:2px solid rgba(124,196,255,.8);box-shadow:0 0 0 6px rgba(124,196,255,.2)}
-
-    .start{position:fixed;inset:0;background:radial-gradient(1200px 700px at 80% 20%,#10236a 0%,#0b1020 60%);display:grid;place-items:center;z-index:10}
-    .start .panel{background:linear-gradient(180deg,#121a44,#0c1230);border:1px solid #2b3a86;border-radius:16px;box-shadow:0 20px 50px rgba(0,0,0,.5);padding:24px;max-width:900px;width:min(94vw,900px)}
-    .deckpick{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-    .deckbtn{display:flex;flex-direction:column;align-items:flex-start;gap:6px}
-
-    .face-attack-btn{position:absolute;top:8px;right:8px;z-index:5;padding:8px 12px;border-radius:10px;border:1px solid rgba(124,196,255,.35);background:linear-gradient(180deg,#2a3c7e,#1b2a5b);box-shadow:inset 0 0 0 1px rgba(255,255,255,.08),0 10px 24px rgba(0,0,0,.35);color:#e6e9ff;font-weight:800;display:none}
-    .face-can-attack{outline:2px dashed rgba(124,196,255,.35)}
-
-    .winpanel{position:fixed;inset:0;display:none;place-items:center;background:rgba(0,0,0,.35);z-index:20}
-    .winpanel.show{display:grid}
-    .winbox{background:linear-gradient(180deg,#121a44,#0c1230);border:1px solid #2b3a86;border-radius:16px;box-shadow:0 20px 50px rgba(0,0,0,.5);padding:24px;min-width:320px;text-align:center}
-    .titleWin{font-size:46px;font-weight:900;margin:0 0 6px;color:#BFFFCF;}
-    .titleLose{color:#FFBFBF}
-    .winBtns{display:flex;gap:8px;justify-content:center;margin-top:10px}
-
-    @media (max-width:720px){.board{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}.card{width:150px}.name{font-size:13px}}
-  </style>
-  <!-- Online: Socket.IO + cliente -->
-  <script src="/socket.io/socket.io.js"></script>
-  <script src="/ffon-net-client.js"></script>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="fff-effects.css">
 </head>
 <body>
-  <div class="start" id="start">
-    <div class="panel">
-      <h1>Farm Fight Formula <small style="color:var(--muted);font-size:16px">— Online</small></h1>
-      <p class="sub">Escolha um deck e parta para a arena.</p>
-      <div class="deckpick">
-        <button class="btn deckbtn" data-deck="vikings">👩‍🌾 Fazendeiros Vikings <small style="color:var(--muted)">Cura e proteção</small></button>
-        <button class="btn deckbtn" data-deck="animais">🐺 Bestas do Norte <small style="color:var(--muted)">Ataque bruto</small></button>
-        <button class="btn deckbtn" data-deck="pescadores">🎣 Pescadores do Fiorde <small style="color:var(--muted)">Suporte e bônus</small></button>
-        <button class="btn deckbtn" data-deck="floresta">🌲 Feras da Floresta <small style="color:var(--muted)">Pressão constante</small></button>
-      </div>
-      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
-        <button class="btn-ghost" id="openMp">🎮 Multiplayer</button>
-        <button class="btn" id="startGame">Jogar</button>
-      </div>
-      <div id="mpBar" style="margin-top:10px;display:none">
-        <div class="sub"><b>Multiplayer (beta):</b> <span id="mpStatus">Modo: Solo</span></div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <input id="mpWs" class="btn-ghost" placeholder="WS (vazio = mesmo domínio)" style="min-width:220px">
-          <input id="mpRoom" class="btn-ghost" placeholder="Sala" value="duo" style="width:120px">
-          <input id="mpName" class="btn-ghost" placeholder="Nome" value="Player" style="width:160px">
-          <button class="btn" id="mpHost">Hospedar</button>
-          <button class="btn" id="mpJoin">Entrar</button>
-          <button class="btn-ghost" id="mpLeave">Sair</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
   <div class="wrap">
-    <h1>Farm Fight Formula</h1>
-    <div class="hud">
-      <div class="meter hp-meter"><b>Seu HP</b> <span class="value" id="playerHP">30</span><div class="bar"><div class="fill" id="barPlayerHP"></div></div></div>
-      <div style="display:flex;gap:8px;align-items:center">
-        <div class="meter mana-meter"><b>Mana</b> <span class="value" id="mana">0/0</span><div class="bar"><div class="fill" id="barMana"></div></div></div>
-        <button class="btn" id="endTurnBtn">Encerrar turno</button>
-        <button class="btn-ghost" id="muteBtn">🔊 Som</button>
+    <header>
+      <div class="logo">Farm Fight Formula — <span style="color:var(--brand)">Online</span></div>
+      <span class="badge">🎮 <b>Multiplayer (beta)</b></span>
+    </header>
+
+    <!-- Barra Multiplayer -->
+    <div class="mpbar" id="ffonBar">
+      <div class="mprow">
+        <span class="muted">Multiplayer (beta):</span>
+        <span id="mpStatus" class="muted">Modo: Solo</span>
       </div>
-      <div class="meter enemy-hp" style="justify-self:end"><b>HP Inimigo</b> <span class="value" id="aiHP">30</span><div class="bar"><div class="fill" id="barAiHP"></div></div></div>
+      <div class="mprow">
+        <input id="wsUrl" class="input" placeholder="WS (vazio = mesmo domínio)" value="">
+        <input id="roomInput" class="input" placeholder="Sala" value="duo">
+        <input id="nickInput" class="input" placeholder="Apelido" value="Player">
+        <button id="mpHost" class="btn" data-ffon="host">Hospedar</button>
+        <button id="mpJoin" class="btn" data-ffon="join">Entrar</button>
+        <button id="mpReady" class="btn" data-ffon="ready">Confirmar</button>
+        <button id="mpLeave" class="btn-ghost" data-ffon="leave">Sair</button>
+      </div>
     </div>
 
-    <div class="zone-title">Tabuleiro do Inimigo</div>
-    <div class="board" id="aiBoard"></div>
-
-    <div class="zone-title">Seu Tabuleiro</div>
-    <div class="board" id="playerBoard"></div>
-
-    <div class="zone-title">Sua Mão</div>
-    <div class="hand" id="playerHand"></div>
-
-    <div class="zone-title">Registro</div>
-    <div id="log" style="max-height:160px;overflow:auto;background:linear-gradient(180deg,#0e1331,#0a0f27);border:1px solid #243069;border-radius:12px;padding:8px;color:#c9d2ff"></div>
+    <!-- Ponto de montagem do jogo existente -->
+    <div id="app"></div>
   </div>
 
-  <div id="win" class="winpanel"><div class="winbox"><h2 id="winTitle" class="titleWin">You WIN!</h2><div class="sub">Parabéns! Quer continuar jogando?</div><div class="winBtns"><button class="btn" id="btnReplay">Jogar de novo</button><button class="btn" id="btnRematch">Revanche</button><button class="btn-ghost" id="btnMenu">Menu inicial</button></div></div></div>
-
-<script>
-(function(){
-  const $ = s=>document.querySelector(s), $$ = s=>Array.from(document.querySelectorAll(s));
-  const logBox = $('#log');
-  function log(t){const d=document.createElement('div');d.textContent=t;logBox&&logBox.prepend(d)}
-  function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
-  function uid(){return Math.random().toString(36).slice(2)}
-
-  // Audio
-  const AudioCtx=window.AudioContext||window.webkitAudioContext; let actx=null,master=null,muted=false;
-  function initAudio(){ try{ if(!AudioCtx) return; if(!actx){ actx=new AudioCtx(); master=actx.createGain(); master.gain.value=.18; master.connect(actx.destination);} }catch(e){} }
-  function ensureRunning(){ if(actx && actx.state==='suspended') actx.resume(); }
-  function tone(f=440,d=.1,t='sine',v=1,w=0){
-    if(!actx||!master){ initAudio(); if(!actx||!master) return; }
-    if(muted) return; ensureRunning();
-    const o=actx.createOscillator(), g=actx.createGain();
-    o.type=t; o.frequency.setValueAtTime(f,actx.currentTime+w);
-    g.gain.setValueAtTime(.0001,actx.currentTime+w);
-    g.gain.exponentialRampToValueAtTime(Math.max(.0002,v),actx.currentTime+w+.01);
-    g.gain.exponentialRampToValueAtTime(.0001,actx.currentTime+w+d);
-    o.connect(g); g.connect(master); o.start(actx.currentTime+w); o.stop(actx.currentTime+w+d+.02);
-  }
-  function sfx(n){switch(n){case'start':tone(520,.08,'triangle',.7,0);tone(780,.09,'triangle',.6,.08);break;case'play':tone(420,.07,'sine',.7,0);tone(560,.08,'sine',.6,.06);break;case'defense':tone(280,.09,'square',.6,0);tone(200,.12,'sine',.5,.08);break;case'attack':tone(300,.06,'sawtooth',.7,0);tone(220,.06,'sawtooth',.6,.05);break;case'hit':tone(160,.07,'square',.6,0);break;case'overflow':tone(600,.1,'triangle',.6,0);break;case'death':tone(420,.08,'sawtooth',.6,0);tone(260,.12,'sawtooth',.55,.06);break;case'end':tone(600,.06,'triangle',.6,0);tone(400,.06,'triangle',.5,.05);break;case'crit':tone(120,.08,'square',.75,0);tone(90,.12,'square',.7,.06);break}}
-
-  // Cards
-  const K={P:'Protetor',F:'Furioso'}; const B={D1:'draw1',H2:'heal2',P1:'ping1',BR1:'buffRandom1',BA1:'buffAlliesAtk1'};
-  function C(a){const[n,e,t,atk,hp,cost,tx,k=0,b=0]=a;return{name:n,emoji:e,tribe:t,atk,hp,cost,text:tx,kw:k?k.split('|').map(x=>K[x]):[],battlecry:b?B[b]:undefined,id:uid()}}
-  const TEMPLATES={
-    vikings:[['Lavrador de Lança','🧔‍🌾','Viking',2,2,2,'Disciplinado'],['Camponesa Curandeira','👩‍🌾✨','Viking',2,3,3,'Entra: cura 2','', 'H2'],['Ceifeiro Berserker','👨‍🌾⚔️','Viking',5,2,4,'Furioso','F'],['Escudeiro Rural','🛡️','Viking',0,3,1,'Protetor','P'],['Guardião da Aldeia','🛡️🌾','Viking',3,5,4,'Protetor','P'],['Caçador de Lobos','🏹','Viking',3,2,2,'Entra: dano 1 aleatório','', 'P1'],['Ferreiro Rural','🔨','Viking',4,6,5,'Entra: +1/+1 aleatório','', 'BR1'],['Chefe da Colheita','👑🌾','Viking',5,6,6,'Aliados +1 ATK','', 'BA1']],
-    animais:[['Urso Pardo','🐻','Animal',6,6,5,'Protetor','P'],['Lobo Cinzento','🐺','Animal',4,2,3,'Furioso','F'],['Javali Selvagem','🐗','Animal',3,2,2,'Impulsivo'],['Cervo Nobre','🦌','Animal',4,5,4,'Resistente'],['Coruja Sábia','🦉','Animal',1,2,1,'Entra: compre 1','', 'D1'],['Cavalo de Guerra','🐴','Animal',3,3,3,'Confiável'],['Cabra da Montanha','🐐','Animal',2,3,2,'Protetor','P'],['Águia do Norte','🦅','Animal',5,3,4,'Veloz'],['Urso Polar','🐻‍❄️','Animal',7,7,6,'Gigante'],['Serpente do Mar','🐍','Animal',8,7,7,'Colosso']],
-    pescadores:[['Grumete do Fiorde','👦🎣','Viking',1,1,1,'Aprendiz'],['Pescador do Fiorde','🧔‍♂️🎣','Viking',2,3,2,'Veterano'],['Arpoador Nórdico','🪝','Viking',3,2,2,'Entra: dano 1 aleatório','', 'P1'],['Curandeira do Sal','🧂✨','Viking',2,3,3,'Entra: cura 2','', 'H2'],['Vigia do Farol','🗼🛡️','Viking',2,5,4,'Protetor','P'],['Ferreiro Naval','⚓️🔨','Viking',4,5,5,'Entra: +1/+1 aleatório','', 'BR1'],['Capitão da Pesca','👑🎣','Viking',5,6,6,'Aliados +1 ATK','', 'BA1'],['Remador Ágil','🚣','Viking',4,2,3,'Furioso','F']],
-    floresta:[['Urso Negro','🐻','Animal',5,5,5,'Protetor','P'],['Lobo da Mata','🐺','Animal',4,2,3,'Furioso','F'],['Javali da Floresta','🐗','Animal',3,2,2,'Impulsivo'],['Cervo Vermelho','🦌','Animal',4,5,4,'Resistente'],['Coruja Sábia','🦉','Animal',1,2,1,'Entra: compre 1','', 'D1'],['Raposa Ágil','🦊','Animal',3,3,3,'Veloz'],['Bisonte das Colinas','🐂','Animal',6,6,6,'Imponente'],['Serpente do Bosque','🐍','Animal',5,4,4,'Silenciosa']]
-  };
-
-  const HUMAN_DECKS=['vikings','pescadores'];const ANIMAL_DECKS=['animais','floresta'];
-  function makeDeck(k){const base=TEMPLATES[k];const deck=[];const pool=[...base];while(deck.length<20){deck.push(C(pool[Math.floor(Math.random()*pool.length)]))}return shuffle(deck)}
-  function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
-
-  const S={playerHP:30,aiHP:30,turn:1,playerMana:0,playerManaCap:0,aiMana:0,aiManaCap:0,current:'player',playerDeck:[],aiDeck:[],playerHand:[],aiHand:[],playerBoard:[],aiBoard:[],chosenAttacker:null,playerDeckChoice:'vikings',aiDeckChoice:'animais'};
-  const el={playerHP:$('#playerHP'),aiHP:$('#aiHP'),mana:$('#mana'),playerHand:$('#playerHand'),playerBoard:$('#playerBoard'),aiBoard:$('#aiBoard'),endTurnBtn:$('#endTurnBtn')};
-
-  function updateMeters(){const pct=(v,max)=>(max>0?Math.max(0,Math.min(100,(v/max)*100)):0);$('#barPlayerHP').style.width=pct(S.playerHP,30)+'%';$('#barAiHP').style.width=pct(S.aiHP,30)+'%';$('#barMana').style.width=pct(S.playerMana,S.playerManaCap)+'%'}
-  function renderAll(){el.playerHP.textContent=S.playerHP;el.aiHP.textContent=S.aiHP;$('#mana').textContent=`${S.playerMana}/${S.playerManaCap}`;updateMeters();renderHand();renderBoard();el.endTurnBtn.disabled=S.current!=='player'}
-
-  function cardEl(card,owner){const d=document.createElement('div');d.className=`card ${owner==='player'?'me':'enemy'} ${card.stance==='defense'?'defense':''}`;d.dataset.id=card.id;d.innerHTML=`
-    <div class="head"><span class="cost">${card.cost}</span><div class="name">${card.name}</div>${card.stance?`<span class="badge ${card.stance==='defense'?'def':'atkBadge'}">${card.stance==='defense'?'DEFESA':'ATAQUE'}</span>`:''}</div>
-    <div class="tribe">${card.tribe}</div>
-    <div class="art">${card.emoji}</div>
-    <div class="text">${card.kw.map(k=>`<span class='keyword'>${k}</span>`).join('')} ${card.text||''}</div>
-    <div class="stats"><span class="gem atk">⚔️ ${card.atk}</span><span class="gem hp ${card.hp<=2?'low':''}">❤️ ${card.hp}</span></div>`;return d}
-
-  function renderHand(){el.playerHand.innerHTML='';S.playerHand.forEach(c=>{const d=cardEl(c,'player');d.classList.add('handcard');d.addEventListener('click',(e)=>{const blocked=(c.cost>S.playerMana)||S.current!=='player'||S.playerBoard.length>=5;if(blocked){d.style.transform='translateY(-2px) rotate(-1deg)';setTimeout(()=>d.style.transform='',150);sfx('error');return}openStanceChooser(d,(stance)=>playFromHand(c.id,stance))});if(c.cost>S.playerMana){d.querySelector('.cost').style.background='radial-gradient(circle at 30% 30%,#ffc2c2,#ff4d6d)';d.style.opacity=.95}else d.style.opacity=1;el.playerHand.appendChild(d)})}
-
-  function renderBoard(){el.playerBoard.innerHTML='';for(const c of S.playerBoard){const d=cardEl(c,'player');if(S.current==='player'&&c.canAttack&&c.stance!=='defense'){d.classList.add('selectable');d.addEventListener('click',()=>selectAttacker(c))}el.playerBoard.appendChild(d)}
-    el.aiBoard.innerHTML='';for(const c of S.aiBoard){const d=cardEl(c,'ai');if(S.chosenAttacker){if(legalTarget('ai',c)){d.classList.add('selectable');d.addEventListener('click',()=>attackCard(S.chosenAttacker,c))}}el.aiBoard.appendChild(d)}
-    let btn=document.querySelector('#aiBoard .face-attack-btn'); if(!btn){btn=document.createElement('button');btn.type='button';btn.className='face-attack-btn';btn.textContent='🗡️ Atacar diretamente';btn.addEventListener('click',()=>{if(S.chosenAttacker)attackFace(S.chosenAttacker,'ai')});el.aiBoard.appendChild(btn)} updateFaceAttackZone()}
-
-  function openStanceChooser(anchor,cb){closeStanceChooser();const r=anchor.getBoundingClientRect();const box=document.createElement('div');box.className='stance-chooser';box.style.position='fixed';box.style.left=Math.max(8,r.left+r.width/2-140)+'px';box.style.top=Math.max(8,r.top-48)+'px';box.style.zIndex=1000;const bA=document.createElement('button');bA.className='btn';bA.textContent='⚔️ Ataque';const bD=document.createElement('button');bD.className='btn';bD.textContent='🛡️ Defesa';bA.onclick=()=>{closeStanceChooser();cb('attack')};bD.onclick=()=>{closeStanceChooser();cb('defense')};box.appendChild(bA);box.appendChild(bD);document.body.appendChild(box);setTimeout(()=>{const handler=(ev)=>{if(ev.target.closest('.stance-chooser')) return;window.removeEventListener('click',handler,true);closeStanceChooser()};window.addEventListener('click',handler,true);bA.focus()},0)}
-  function closeStanceChooser(){const old=document.querySelector('.stance-chooser');if(old)old.remove()}
-
-  // Game flow
-  function startGame(){S.playerDeck=makeDeck(S.playerDeckChoice);S.aiDeck=makeDeck(S.aiDeckChoice);S.playerHand=[];S.aiHand=[];S.playerBoard=[];S.aiBoard=[];S.playerHP=30;S.aiHP=30;S.current='player';S.playerMana=0;S.playerManaCap=0;S.aiMana=0;S.aiManaCap=0;draw('player',3);draw('ai',3);newTurn();renderAll();log('A batalha começou!');sfx('start')}
-  function draw(who,n=1){const deck=who==='player'?S.playerDeck:S.aiDeck;const hand=who==='player'?S.playerHand:S.aiHand;for(let i=0;i<n;i++){if(deck.length){hand.push(deck.shift())}}}
-  function newTurn(){if(S.current==='player'){S.playerManaCap=clamp(S.playerManaCap+1,0,10);S.playerMana=S.playerManaCap;draw('player',1);S.playerBoard.forEach(c=>{c.canAttack=true})}else{S.aiManaCap=clamp(S.aiManaCap+1,0,10);S.aiMana=S.aiManaCap;draw('ai',1);S.aiBoard.forEach(c=>{c.canAttack=true})}renderAll()}
-  function endTurn(){if(S.current!=='player')return;S.current='ai';S.chosenAttacker=null;updateFaceAttackZone();newTurn();sfx('end');setTimeout(aiTurn,500)}
-  function playFromHand(id,stance){if(S.current!=='player')return;const idx=S.playerHand.findIndex(c=>c.id===id);if(idx<0)return;const c=S.playerHand[idx];if(c.cost>S.playerMana)return;if(S.playerBoard.length>=5)return;S.playerHand.splice(idx,1);summon('player',c,stance);S.playerMana-=c.cost;renderAll();sfx(stance==='defense'?'defense':'play')}
-  function summon(side,c,stance='attack'){const board=side==='player'?S.playerBoard:S.aiBoard;c.stance=stance;c.canAttack=(c.stance==='attack')&&c.kw.includes('Furioso');board.push(c);log(`${side==='player'?'Você':'Inimigo'} jogou ${c.name} em modo ${c.stance==='defense'?'defesa':'ataque'}.`);triggerBattlecry(side,c)}
-  function triggerBattlecry(side,c){const enemy=side==='player'?'ai':'player';switch(c.battlecry){case'draw1':draw(side,1);log(`${c.name}: comprou 1 carta.`);break;case'heal2':{const allies=(side==='player'?S.playerBoard:S.aiBoard);if(allies.length){const t=allies[Math.floor(Math.random()*allies.length)];t.hp=Math.min(t.hp+2,20);log(`${c.name}: curou 2 em ${t.name}.`)}}break;case'ping1':{const foes=(enemy==='ai'?S.aiBoard:S.playerBoard);if(foes.length){const t=foes[Math.floor(Math.random()*foes.length)];damageMinion(t,1);log(`${c.name}: 1 de dano em ${t.name}.`);checkDeaths();renderAll();sfx('hit')}}break;case'buffRandom1':{const allies=(side==='player'?S.playerBoard:S.aiBoard).filter(x=>x.id!==c.id);if(allies.length){const t=allies[Math.floor(Math.random()*allies.length)];t.atk+=1;t.hp+=1;log(`${c.name}: deu +1/+1 em ${t.name}.`)}}break;case'buffAlliesAtk1':{const allies=(side==='player'?S.playerBoard:S.aiBoard).filter(x=>x.id!==c.id);allies.forEach(x=>x.atk+=1);if(allies.length)log(`${c.name}: aliados ganharam +1 de ataque.`)}break}}
-  function hasGuard(board){return board.some(x=>x.kw.includes('Protetor')||x.stance==='defense')}
-  function selectAttacker(c){if(S.current!=='player')return;if(!c.canAttack||c.stance==='defense')return;S.chosenAttacker=c;renderBoard();updateFaceAttackZone();S.aiBoard.filter(x=>x.stance==='defense').forEach(x=>setTimeout(()=>{},20))}
-  function updateFaceAttackZone(){const isMyTurn=S.current==='player';const canFace=isMyTurn && !!S.chosenAttacker && !hasGuard(S.aiBoard);if(canFace) el.aiBoard.classList.add('face-can-attack'); else el.aiBoard.classList.remove('face-can-attack');const btn=document.querySelector('#aiBoard .face-attack-btn'); if(btn) btn.style.display=canFace?'block':'none'}
-  function legalTarget(side,target){const b=side==='ai'?S.aiBoard:S.playerBoard;const must=hasGuard(b);if(must)return target.kw.includes('Protetor')||target.stance==='defense';return true}
-
-  function attackCard(attacker,target){if(!attacker||!attacker.canAttack||attacker.stance==='defense')return;sfx('attack');if(target.stance==='defense'){}const pre=target.hp;const overflow=Math.max(0,attacker.atk-pre);damageMinion(target,attacker.atk);damageMinion(attacker,target.atk);sfx('hit');if(overflow>0&&target.hp<=0){const isPlayer=S.playerBoard.includes(attacker);if(isPlayer){S.aiHP=clamp(S.aiHP-overflow,0,99);log(`${attacker.name} excedeu em ${overflow} e causou dano direto ao Inimigo!`)}else{S.playerHP=clamp(S.playerHP-overflow,0,99);log(`${attacker.name} excedeu em ${overflow} e causou dano direto a Você!`)}checkWin()}attacker.canAttack=false;log(`${attacker.name} atacou ${target.name}.`);const beforeA=S.aiBoard.length,beforeP=S.playerBoard.length;checkDeaths();if(S.aiBoard.length<beforeA||S.playerBoard.length<beforeP){sfx('death')}S.chosenAttacker=null;updateFaceAttackZone();renderAll()}
-  function attackFace(attacker,face){if(!attacker||!attacker.canAttack||attacker.stance==='defense')return;sfx('attack');const dmg=attacker.atk;attacker.canAttack=false;if(face==='ai'){S.aiHP=clamp(S.aiHP-dmg,0,99);log(`${attacker.name} causou ${dmg} ao Inimigo!`)}else{S.playerHP=clamp(S.playerHP-dmg,0,99);log(`${attacker.name} causou ${dmg} a Você!`)}checkWin();S.chosenAttacker=null;updateFaceAttackZone();renderAll()}
-
-  function damageMinion(m,amt){if(!m||typeof amt!=='number')return;m.hp=clamp(m.hp-amt,0,99)}
-  function checkDeaths(){S.aiBoard=S.aiBoard.filter(c=>c.hp>0);S.playerBoard=S.playerBoard.filter(c=>c.hp>0)}
-  function checkWin(){if(S.aiHP<=0){showWin(true)}if(S.playerHP<=0){showWin(false)}}
-
-  function aiTurn(){const playable=S.aiHand.filter(c=>c.cost<=S.aiMana).sort((a,b)=>b.cost-a.cost);while(playable.length&&S.aiBoard.length<5&&S.aiMana>0){const c=playable.shift();const idx=S.aiHand.findIndex(x=>x.id===c.id);if(idx>-1&&c.cost<=S.aiMana){S.aiHand.splice(idx,1);const stance=(c.hp>=c.atk+1)?(Math.random()<.7?'defense':'attack'):(Math.random()<.3?'defense':'attack');summon('ai',c,stance);S.aiMana-=c.cost}}renderAll();const attackers=S.aiBoard.filter(c=>c.canAttack&&c.stance!=='defense');function next(){if(!attackers.length){S.current='player';newTurn();return}const a=attackers.shift();const legal=S.playerBoard.filter(x=>legalTarget('player',x));if(legal.length){attackCard(a,legal[Math.floor(Math.random()*legal.length)])}else{attackFace(a,'player')}setTimeout(next,500)}setTimeout(next,500)}
-
-  // UI bindings
-  $('#endTurnBtn').addEventListener('click',endTurn);
-  $('#startGame').addEventListener('click',()=>{$('#start').style.display='none';initAudio();ensureRunning();startGame()});
-  $('#openMp').addEventListener('click',()=>{$('#mpBar').style.display='block'});
-  $('#muteBtn').addEventListener('click',()=>{initAudio();ensureRunning();muted=!muted;master&&(master.gain.value=muted?0:.18);$('#muteBtn').textContent=muted?'🔇 Mudo':'🔊 Som'});
-  $$('.deckbtn').forEach(btn=>btn.addEventListener('click',()=>{const pick=btn.dataset.deck;S.playerDeckChoice=pick; if(HUMAN_DECKS.includes(pick)){S.aiDeckChoice=ANIMAL_DECKS[Math.floor(Math.random()*ANIMAL_DECKS.length)]}else{S.aiDeckChoice=HUMAN_DECKS[Math.floor(Math.random()*HUMAN_DECKS.length)]} $$('.deckbtn').forEach(b=>b.style.outline='none');btn.style.outline='2px solid var(--accent)'}));
-  window.addEventListener('keydown',e=>{if(e.key==='Escape'){S.chosenAttacker=null;updateFaceAttackZone();renderBoard()}});
-
-  // Win/Lose panel actions
-  function showWin(win){const panel=$('#win');const title=$('#winTitle');panel.classList.add('show');title.textContent=win?'You WIN!':'You Lose...';title.classList.toggle('titleLose',!win)}
-  $('#btnReplay').addEventListener('click',()=>{$('#win').classList.remove('show');startGame()});
-  $('#btnRematch').addEventListener('click',()=>{try{if(window.NET&&NET.online){NET.send('rematch',{});$('#win').classList.remove('show');startGame()}else{$('#win').classList.remove('show');startGame()}}catch(_){$('#win').classList.remove('show');startGame()}});
-  $('#btnMenu').addEventListener('click',()=>{location.reload()});
-
-  // Multiplayer glue (seed + mirrored actions)
-  let NET_MODE=false; function __rngFactory(seed){let a=seed>>>0;return function(){a+=0x6D2B79F5;let t=Math.imul(a^a>>>15,1|a);t^=t>>>7;t=Math.imul(t,61|t);t^=t>>>14;return (t>>>0)/4294967296}}
-  let __rng=null; function __setNetSeed(seed){__rng=__rngFactory((seed>>>0)||1)}
-  const __randOrig=(arr)=>arr[Math.floor(Math.random()*arr.length)]; const __shuffleOrig=shuffle;
-  function randNet(arr){return __rng?arr[Math.floor(__rng()*arr.length)]:__randOrig(arr)}
-  rand = randNet; // override local rand used pelo jogo
-  shuffle = (a)=>{if(!__rng) return __shuffleOrig(a); for(let i=a.length-1;i>0;i--){const j=Math.floor(__rng()*(i+1));[a[i],a[j]]=[a[j],a[i]]} return a};
-  function __netSend(type,payload){try{if(window.NET&&NET.online)NET.send(type,payload)}catch(e){}}
-  const __endTurn=endTurn; endTurn=function(){if(S.current!=='player')return;__endTurn(); if(NET_MODE)__netSend('endTurn',{})}
-  const __playFromHand=playFromHand; playFromHand=function(id,stance){const before=S.playerHand.slice();__playFromHand(id,stance); if(NET_MODE){const idx=before.findIndex(c=>c.id===id); if(idx>-1)__netSend('playCard',{handIndex:idx,stance})}}
-  const __attackCard=attackCard; attackCard=function(a,t){__attackCard(a,t); if(NET_MODE){const aiIdx=S.aiBoard.findIndex(x=>x.id===t.id); const meIdx=S.playerBoard.findIndex(x=>x.id===a.id); __netSend('attackCard',{attackerIndex:meIdx,targetIndex:aiIdx})}}
-  const __attackFace=attackFace; attackFace=function(a,face){__attackFace(a,face); if(NET_MODE && face==='ai'){const meIdx=S.playerBoard.findIndex(x=>x.id===a.id); __netSend('attackFace',{attackerIndex:meIdx})}}
-  function __applyRemote(ev){const d=ev.detail||ev;const {type,payload}=d;switch(type){case'endTurn':S.current='player';newTurn();renderAll();break;case'playCard':{const c=S.aiHand[payload.handIndex];if(c){summon('ai',c,payload.stance||'attack');S.aiMana-=c.cost;renderAll()}}break;case'attackCard':{const a=S.aiBoard[payload.attackerIndex];const t=S.playerBoard[payload.targetIndex];if(a&&t)__attackCard(a,t)}break;case'attackFace':{const a=S.aiBoard[payload.attackerIndex];if(a)__attackFace(a,'player')}break;}}
-  window.addEventListener('net:event',__applyRemote);
-  window.addEventListener('net:ready',(e)=>{const st=e.detail||{};NET_MODE=true;__setNetSeed((st.seed||Date.now()) & 0xffffffff); if(window.NET&&NET.isHost){S.playerDeckChoice=st.hostDeck||S.playerDeckChoice;S.aiDeckChoice=st.guestDeck||S.aiDeckChoice}else{S.playerDeckChoice=st.guestDeck||S.playerDeckChoice;S.aiDeckChoice=st.hostDeck||S.aiDeckChoice} startGame(); if(window.NET && !NET.isHost){S.current='ai';newTurn();}});
-
-  // Kick audio
-  window.addEventListener('pointerdown',()=>{initAudio();ensureRunning()},{once:true});
-})();
-</script>
+  <!-- Inclua o cliente do Socket.IO -->
+  <script src="/socket.io/socket.io.js" onerror=""></script>
+  <!-- Cliente de rede -->
+  <script src="fffonline-net-client.js"></script>
+  <!-- Seu jogo -->
+  <script src="app.js"></script>
+  <!-- auto-wire de animações/tilt -->
+  <script defer src="fff-effects.js"></script>
 </body>
 </html>
