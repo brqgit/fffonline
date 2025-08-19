@@ -1,7 +1,7 @@
-(function(){
+(function () {
   const startScreen = document.getElementById('start');
   const mpMenu = document.getElementById('multiplayerMenu');
-  const openBtn = document.getElementById('openMultiplayer');
+  the openBtn = document.getElementById('openMultiplayer');
   const backBtn = document.getElementById('mpBack');
   const hostBtn = document.getElementById('hostBtn');
   const joinBtn = document.getElementById('joinBtn');
@@ -11,7 +11,7 @@
   window.isMultiplayer = false;
   window.mpState = null;
 
-  function showDeckSelect(){
+  function showDeckSelect() {
     mpMenu.style.display = 'none';
     startScreen.style.display = 'block';
     const btn = document.getElementById('startGame');
@@ -43,7 +43,7 @@
 
   joinBtn.addEventListener('click', () => {
     const code = joinCodeInput.value.trim();
-    if(code){
+    if (code) {
       NET.join(code);
       statusEl.textContent = 'Conectando...';
     }
