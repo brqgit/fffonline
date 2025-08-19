@@ -85,10 +85,18 @@ io.on('connection', (socket) => {
   });
 
   socket.on('disconnecting', () => {
-    const room = socket.data.room;
+    const { room } = socket.data;
     if (room) {
       socket.to(room).emit('opponentLeft');
     }
+
+    delete socket.data.room;
+    delete socket.data.deckChosen;
+    delete socket.data.startReady;
+  });
+
+  socket.on('disconnect', async () => {
+    // Additional asynchronous operations can be performed here
   });
 });
 
