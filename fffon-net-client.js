@@ -1,6 +1,9 @@
 /* FFFON - Socket.IO client */
 (function(){
   const $ = (id)=>document.getElementById(id);
+  const MAX_LEN = 32;
+  const ROOM_RE = new RegExp(`^[A-Za-z0-9_-]{1,${MAX_LEN}}$`);
+  const NAME_RE = new RegExp(`^[A-Za-z0-9 _-]{1,${MAX_LEN}}$`);
 
   const NET = {
     online:false,
@@ -23,11 +26,19 @@
     },
 
     host(room,name,deck){
+      if(!ROOM_RE.test(room) || !NAME_RE.test(name)){
+        this._setStatus('Erro: Nome ou sala inválidos.');
+        return;
+      }
       const emitHost = ()=>{ this.isHost = true; this.room = room; this.name = name; this.socket.emit('host', { room, name, deck }); };
       if(!this.socket || !this.socket.connected){ this.connect($('#mpWs')?.value); this.socket?.once('connect', emitHost); } else emitHost();
     },
 
     join(room,name,deck){
+      if(!ROOM_RE.test(room) || !NAME_RE.test(name)){
+        this._setStatus('Erro: Nome ou sala inválidos.');
+        return;
+      }
       const emitJoin = ()=>{ this.isHost = false; this.room = room; this.name = name; this.socket.emit('join', { room, name, deck }); };
       if(!this.socket || !this.socket.connected){ this.connect($('#mpWs')?.value); this.socket?.once('connect', emitJoin); } else emitJoin();
     },
@@ -42,7 +53,7 @@
       const s = this.socket; if(!s) return;
       s.on('connect', ()=>{ this._setStatus('Conectado'); });
       s.on('disconnect', ()=>{ this.online=false; this._setStatus('Desconectado'); });
-      s.on('error:room', (e)=>{ this._setStatus('Sala: '+(e?.message||'erro')); });
+      s.on('error:room', (e)=>{ this._setStatus('Erro: '+(e?.message||'erro')); });
 
       s.on('host:ack', ({room})=>{ this._setStatus(`Hospedando sala ${room}`); });
       s.on('join:ack', ({room})=>{ this._setStatus(`Conectado à sala ${room}`); });
