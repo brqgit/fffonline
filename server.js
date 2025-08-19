@@ -20,11 +20,11 @@ app.get('/health', (_, res) => res.json({ ok: true, ts: Date.now() }));
 // (opcional) sirva arquivos estáticos quando colocar seu index.html em /public
 app.use(express.static('public'));
 
-const server = http.createServer(app);
-const io = new Server(server, {
-  cors: { origin: ORIGIN, methods: ['GET', 'POST'] },
-  transports: ['websocket'],
-});
+  const server = http.createServer(app);
+  const io = new Server(server, {
+    cors: { origin: ORIGIN, methods: ['GET', 'POST'] },
+    transports: ['websocket', 'polling'],
+  });
 
 const rooms = new Map(); // roomId -> {hostId, guestId, hostName, guestName, seed, hostDeck, guestDeck, t}
 
