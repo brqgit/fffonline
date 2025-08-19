@@ -47,6 +47,21 @@
     onTurn(handler){
       socket.on('turn', handler);
     },
+    onHosted(handler){
+      socket.on('hosted', handler);
+    },
+    onJoined(handler){
+      socket.on('joined', handler);
+    },
+    onGuestJoined(handler){
+      socket.on('guestJoined', handler);
+    },
+    onJoinError(handler){
+      socket.on('joinError', handler);
+    },
+    onOpponentLeft(handler){
+      socket.on('opponentLeft', handler);
+    },
     disconnect(){
       socket.disconnect();
     }
