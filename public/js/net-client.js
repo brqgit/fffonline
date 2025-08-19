@@ -29,8 +29,11 @@
     isHost(){
       return role === 'host';
     },
-    guestDeckChoice(deckId){
-      socket.emit('guestDeckChoice', deckId);
+    deckChoice(deckId){
+      socket.emit('deckChoice', deckId);
+    },
+    startReady(){
+      socket.emit('startReady');
     },
     sendMove(move){
       socket.emit('move', move);
@@ -38,14 +41,32 @@
     sendTurn(turn){
       socket.emit('turn', turn);
     },
-    onGuestDeckChoice(handler){
-      socket.on('guestDeckChoice', handler);
+    onOpponentDeckConfirmed(handler){
+      socket.on('opponentDeckConfirmed', handler);
+    },
+    onStartGame(handler){
+      socket.on('startGame', handler);
     },
     onMove(handler){
       socket.on('move', handler);
     },
     onTurn(handler){
       socket.on('turn', handler);
+    },
+    onHosted(handler){
+      socket.on('hosted', handler);
+    },
+    onJoined(handler){
+      socket.on('joined', handler);
+    },
+    onGuestJoined(handler){
+      socket.on('guestJoined', handler);
+    },
+    onJoinError(handler){
+      socket.on('joinError', handler);
+    },
+    onOpponentLeft(handler){
+      socket.on('opponentLeft', handler);
     },
     disconnect(){
       socket.disconnect();
