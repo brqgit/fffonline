@@ -20,7 +20,7 @@
       if(typeof io === 'undefined'){ this._setStatus('Offline: Socket.IO não encontrado'); return; }
       try{ if(this.socket){ this.socket.disconnect(); } }catch(_){ }
       const target = (url && url.trim()) || undefined;
-      this.socket = io(target, { transports:['websocket'], autoConnect:true });
+        this.socket = io(target, { transports:['websocket','polling'], autoConnect:true });
       this._wireSocket();
       this._setStatus('Conectando...');
     },
