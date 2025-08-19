@@ -4,8 +4,10 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>FFF Farm Fight Formula — Online</title>
-
+  <!-- seus estilos existentes -->
   <link rel="stylesheet" href="styles.css">
+
+  <!-- ✅ efeitos/hover/tilt/brilho restaurados -->
   <link rel="stylesheet" href="fff-effects.css">
 </head>
 <body>
@@ -14,7 +16,6 @@
       <div class="logo">Farm Fight Formula — <span style="color:var(--brand)">Online</span></div>
       <span class="badge">🎮 <b>Multiplayer (beta)</b></span>
     </header>
-
     <!-- Barra Multiplayer -->
     <div class="mpbar" id="ffonBar">
       <div class="mprow">
@@ -30,6 +31,16 @@
         <button id="mpReady" class="btn" data-ffon="ready">Confirmar</button>
         <button id="mpLeave" class="btn-ghost" data-ffon="leave">Sair</button>
       </div>
+
+    <!-- Barra de lobby multiplayer -->
+    <div class="mp" id="mpBar">
+      <input id="mpWs" placeholder="WS (vazio = mesmo domínio)" />
+      <input id="mpRoom" placeholder="Sala (ex.: duo)" value="duo" />
+      <input id="mpName" placeholder="Seu nome" value="Player" />
+      <button id="mpHost" class="btn">Hospedar</button>
+      <button id="mpJoin" class="btn">Entrar</button>
+      <button id="mpLeave" class="btn ghost" onclick="window.NET?.leave()">Sair</button>
+      <span id="mpStatus" class="status">Modo: Solo</span>
     </div>
 
     <!-- Ponto de montagem do jogo existente -->
@@ -43,6 +54,16 @@
   <!-- Seu jogo -->
   <script src="app.js"></script>
   <!-- auto-wire de animações/tilt -->
+  <!-- Inclua o cliente do Socket.IO (servido pelo seu servidor Node/Express) -->
+  <script src="/socket.io/socket.io.js"></script>
+
+  <!-- Cliente de rede -->
+  <script src="fffonline-net-client.js"></script>
+
+  <!-- Seu jogo (versão solo+online) -->
+  <script src="app.js"></script>
+
+  <!-- ✅ auto-wire de animações/tilt (MutationObserver) -->
   <script defer src="fff-effects.js"></script>
 </body>
 </html>
