@@ -62,4 +62,3 @@ jobs:
           app-name: 'fffonline'
           slot-name: 'Production'
           package: .
-          
