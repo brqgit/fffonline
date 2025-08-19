@@ -1,6 +1,6 @@
-/* FFFON - Socket.IO client */
+/* FFF Online - Socket.IO client */
 (function(){
-  const $ = (id)=>document.getElementById(id);
+  const q = (id)=>document.getElementById(id);
   const MAX_LEN = 32;
   const ROOM_RE = new RegExp(`^[A-Za-z0-9_-]{1,${MAX_LEN}}$`);
   const NAME_RE = new RegExp(`^[A-Za-z0-9 _-]{1,${MAX_LEN}}$`);
@@ -31,7 +31,7 @@
         return;
       }
       const emitHost = ()=>{ this.isHost = true; this.room = room; this.name = name; this.socket.emit('host', { room, name, deck }); };
-      if(!this.socket || !this.socket.connected){ this.connect($('#mpWs')?.value); this.socket?.once('connect', emitHost); } else emitHost();
+      if(!this.socket || !this.socket.connected){ this.connect(q('mpWs')?.value); this.socket?.once('connect', emitHost); } else emitHost();
     },
 
     join(room,name,deck){
@@ -40,11 +40,11 @@
         return;
       }
       const emitJoin = ()=>{ this.isHost = false; this.room = room; this.name = name; this.socket.emit('join', { room, name, deck }); };
-      if(!this.socket || !this.socket.connected){ this.connect($('#mpWs')?.value); this.socket?.once('connect', emitJoin); } else emitJoin();
+      if(!this.socket || !this.socket.connected){ this.connect(q('mpWs')?.value); this.socket?.once('connect', emitJoin); } else emitJoin();
     },
 
     deckSelect(deck){ if(this.socket && this.room){ this.socket.emit('deck:select', { room:this.room, deck }); } },
-    send(type,payload){ if(this.socket && this.room){ this.socket.emit('game:event',{ room:this.room, type, payload }); } },
+    send(type,payload){ if(!this.socket||!this.room) return; this.socket.emit('game:event',{ room:this.room, type, payload }); },
     requestState(){ if(this.socket && this.room){ this.socket.emit('state:request',{ room:this.room }); } },
     sendFullState(state){ if(this.socket && this.room){ this.socket.emit('state:full',{ room:this.room, state }); } },
     leave(){ try{ this.socket?.disconnect(); }catch(_){ } finally{ this.online=false; this._setStatus('Modo: Solo'); } },
@@ -53,7 +53,7 @@
       const s = this.socket; if(!s) return;
       s.on('connect', ()=>{ this._setStatus('Conectado'); });
       s.on('disconnect', ()=>{ this.online=false; this._setStatus('Desconectado'); });
-      s.on('error:room', (e)=>{ this._setStatus('Erro: '+(e?.message||'erro')); });
+      s.on('error:room', (e)=>{ this._setStatus('Sala: '+(e?.message||'erro')); });
 
       s.on('host:ack', ({room})=>{ this._setStatus(`Hospedando sala ${room}`); });
       s.on('join:ack', ({room})=>{ this._setStatus(`Conectado à sala ${room}`); });
@@ -86,16 +86,20 @@
     },
 
     _wireUi(){
-      const hostBtn=$('#mpHost'), joinBtn=$('#mpJoin'), name=$('#mpName'), room=$('#mpRoom');
+      const hostBtn=q('mpHost'), joinBtn=q('mpJoin'), name=q('mpName'), room=q('mpRoom'), ws=q('mpWs');
       hostBtn?.addEventListener('click', ()=>{
-        const nm=(name?.value||'Host').trim(); const rm=(room?.value||'duo').trim(); this.host(rm,nm,null);
+        const nm=(name?.value||'Host').trim();
+        const rm=(room?.value||'duo').trim();
+        this.host(rm,nm, null);
       });
       joinBtn?.addEventListener('click', ()=>{
-        const nm=(name?.value||'Guest').trim(); const rm=(room?.value||'duo').trim(); this.join(rm,nm,null);
+        const nm=(name?.value||'Guest').trim();
+        const rm=(room?.value||'duo').trim();
+        this.join(rm,nm, null);
       });
     },
 
-    _setStatus(msg){ const el=$('#mpStatus'); if(el) el.textContent = msg; }
+    _setStatus(msg){ const el=q('mpStatus'); if(el) el.textContent = msg; }
   };
 
   window.NET = NET;
