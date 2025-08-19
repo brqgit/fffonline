@@ -100,4 +100,3 @@
 /* melhora a sensação de click */
 .card:active { transform: translateY(-2px) scale(1.015); }
 .start .deckpick .btn:active { transform: translateY(-1px); }
-
