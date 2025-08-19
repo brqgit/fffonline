@@ -143,5 +143,3 @@ document.addEventListener('DOMContentLoaded',tryStartMenuMusicImmediate);
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')tryStartMenuMusicImmediate()});
 window.addEventListener('pointerdown',()=>{initAudio();ensureRunning();startMenuMusic('menu')},{once:true});
 })();</script>
-
-<script>const builder=document.getElementById('deckBuilder'),saveDeck=document.getElementById('saveDeck'),customBtn=document.querySelector('[data-deck="custom"]');if(builder&&saveDeck&&customBtn){customBtn.addEventListener('click',()=>{builder.style.display='block';renderPool();renderChosen();updateCurve()});saveDeck.addEventListener('click',()=>{builder.style.display='none'})}</script>
