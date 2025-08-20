@@ -26,6 +26,10 @@
       connectIfNeeded();
       socket.emit('join', code);
     },
+    listRooms() {
+      connectIfNeeded();
+      socket.emit('listRooms');
+    },
     isHost() {
       return role === 'host';
     },
@@ -41,6 +45,12 @@
     sendTurn(turn) {
       socket.emit('turn', turn);
     },
+    sendEmoji(emoji) {
+      socket.emit('emoji', emoji);
+    },
+    requestRematch() {
+      socket.emit('rematch');
+    },
     onOpponentDeckConfirmed(handler) {
       socket.on('opponentDeckConfirmed', handler);
     },
@@ -52,6 +62,9 @@
     },
     onTurn(handler) {
       socket.on('turn', handler);
+    },
+    onEmoji(handler) {
+      socket.on('emoji', handler);
     },
     onHosted(handler) {
       socket.on('hosted', handler);
@@ -65,8 +78,14 @@
     onJoinError(handler) {
       socket.on('joinError', handler);
     },
+    onRooms(handler) {
+      socket.on('rooms', handler);
+    },
     onOpponentLeft(handler) {
       socket.on('opponentLeft', handler);
+    },
+    onRematch(handler) {
+      socket.on('rematch', handler);
     },
     onConnectionError(handler) {
       socket.on('connect_error', handler);

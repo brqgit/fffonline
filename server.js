@@ -13,6 +13,9 @@ const PORT = process.env.PORT || 3000;
 // Decks permitidos no modo multiplayer
 const VALID_DECKS = new Set(['vikings', 'animais', 'pescadores', 'floresta', 'custom']);
 
+// Informações sobre salas em memória
+const rooms = new Map();
+
 app.use(express.static(path.join(__dirname, 'public')));
 
 io.on('connection', (socket) => {
@@ -20,22 +23,40 @@ io.on('connection', (socket) => {
     let room;
     do {
       room = randomUUID().slice(0, 6);
-    } while (io.sockets.adapter.rooms.has(room));
+    } while (rooms.has(room));
     socket.join(room);
     socket.data.room = room;
+    rooms.set(room, { host: socket.id, players: 1 });
     socket.emit('hosted', room);
   });
 
   socket.on('join', (room) => {
-    const clients = io.sockets.adapter.rooms.get(room);
-    if (clients && clients.size === 1) {
-      socket.join(room);
-      socket.data.room = room;
-      socket.emit('joined', room);
-      socket.to(room).emit('guestJoined');
-    } else {
+    const info = rooms.get(room);
+    if (!info) {
       socket.emit('joinError', 'Sala inexistente ou cheia');
+      return;
     }
+    if (info.host === socket.id) {
+      socket.emit('joinError', 'Você já é o host desta sala');
+      return;
+    }
+    if (info.players >= 2) {
+      socket.emit('joinError', 'Sala inexistente ou cheia');
+      return;
+    }
+    socket.join(room);
+    socket.data.room = room;
+    info.players++;
+    socket.emit('joined', room);
+    socket.to(room).emit('guestJoined');
+  });
+
+  socket.on('listRooms', () => {
+    const open = [...rooms.entries()].map(([code, info]) => ({
+      code,
+      players: info.players,
+    }));
+    socket.emit('rooms', open);
   });
 
   socket.on('deckChoice', (deckId) => {
@@ -84,15 +105,52 @@ io.on('connection', (socket) => {
     }
   });
 
+  socket.on('emoji', (emoji) => {
+    const room = socket.data.room;
+    if (room) {
+      socket.to(room).emit('emoji', emoji);
+    }
+  });
+
+  socket.on('rematch', () => {
+    const room = socket.data.room;
+    if (!room) return;
+    socket.data.rematch = true;
+    const clients = io.sockets.adapter.rooms.get(room);
+    if (!clients || clients.size !== 2) return;
+    const ready = [...clients].every((id) => {
+      const s = io.sockets.sockets.get(id);
+      return s && s.data.rematch;
+    });
+    if (ready) {
+      [...clients].forEach((id) => {
+        const s = io.sockets.sockets.get(id);
+        if (s) {
+          s.data.startReady = false;
+          s.data.rematch = false;
+          s.emit('rematch');
+        }
+      });
+    }
+  });
+
   socket.on('disconnecting', () => {
     const { room } = socket.data;
     if (room) {
       socket.to(room).emit('opponentLeft');
+      const info = rooms.get(room);
+      if (info) {
+        info.players--;
+        if (info.host === socket.id || info.players <= 0) {
+          rooms.delete(room);
+        }
+      }
     }
 
     delete socket.data.room;
     delete socket.data.deckChosen;
     delete socket.data.startReady;
+    delete socket.data.rematch;
   });
 
   socket.on('disconnect', async () => {
