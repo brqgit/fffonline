@@ -146,6 +146,9 @@ align-items:center;
 margin:0;
 min-height:26px;
 align-self:end}
+.mana-row{display:flex;align-items:center;gap:4px;margin-top:0}
+.mana-dot{width:12px;height:12px;border-radius:50%;background:radial-gradient(circle at 30% 30%,#aee5ff,#4aa3ff);box-shadow:0 4px 8px rgba(74,163,255,.35),inset 0 0 8px rgba(255,255,255,.35)}
+.mana-num{font-weight:900;margin-left:4px}
 .gem{padding:6px 10px;
 border-radius:999px;
 font-size:12px;
@@ -648,7 +651,6 @@ color:#24040a}
 
 /* Vikings deck sprite icons */
 .vikings-icon{width:96px;height:96px;background-size:contain;background-repeat:no-repeat;image-rendering:pixelated;background-color:transparent}
-
 /* 3D projection / hologram for Vikings deck */
 .card .projection{position:absolute;top:50%;left:50%;width:96px;height:96px;transform-style:preserve-3d;transform:translate(-50%,-50%) rotateX(35deg) rotateY(0deg);animation:holoSpin 6s linear infinite;pointer-events:none;filter:drop-shadow(0 0 6px rgba(0,255,255,.6))}
 .card .projection::after{content:"";position:absolute;inset:0;background:linear-gradient(transparent 60%,rgba(0,255,255,.3) 61%);background-size:100% 4px;mix-blend-mode:overlay;animation:holoScan 2s linear infinite}
