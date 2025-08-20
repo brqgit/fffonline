@@ -1,41 +1,163 @@
-<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>FFF Farm Fight Formula</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="css/style.css"></head><body><div class="start" id="start"><div class="panel"><div class="brand">
-  <svg class="logo-wordmark" viewBox="0 0 520 64" xmlns="http://www.w3.org/2000/svg" aria-label="Farm Fight Formula logo">
-    <defs>
-      <linearGradient id="mono" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0" stop-color="#7cc4ff"/>
-        <stop offset=".5" stop-color="#a5b4fc"/>
-        <stop offset="1" stop-color="#ffd166"/>
-      </linearGradient>
-    </defs>
-    <g transform="translate(8,6)" stroke="url(#mono)" stroke-width="9" stroke-linecap="round" fill="none">
-      <path d="M38 10H20v30"/>
-      <path d="M78 10H48v30"/>
-      <path d="M118 10H88v30"/>
-    </g>
-    <g transform="translate(140,14)" font-family="Inter, ui-sans-serif">
-      <text x="0" y="24" font-size="30" font-weight="800" fill="#e6e9ff">Farm Fight Formula</text>
-      <text x="0" y="44" font-size="14" fill="#a7b0d9">monstros vs fazendeiros vikings</text>
-    </g>
-  </svg>
-</div><p class="sub">Escolha um deck e parta para a arena.</p><div class="deckpick"><button class="btn deckbtn" data-deck="vikings">👩‍🌾 Fazendeiros Vikings<div class="ribbon">Cura e proteção</div><span class="view-cards" data-deck="vikings" data-tip="Ver cartas" aria-label="Ver cartas">📖</span></button><button class="btn deckbtn" data-deck="animais">🐺 Bestas do Norte<div class="ribbon">Ataque bruto</div><span class="view-cards" data-deck="animais" data-tip="Ver cartas" aria-label="Ver cartas">📖</span></button><button class="btn deckbtn" data-deck="pescadores">🎣 Pescadores do Fiorde<div class="ribbon">Suporte e bônus</div><span class="view-cards" data-deck="pescadores" data-tip="Ver cartas" aria-label="Ver cartas">📖</span></button><button class="btn deckbtn" data-deck="floresta">🌲 Feras da Floresta<div class="ribbon">Pressão constante</div><span class="view-cards" data-deck="floresta" data-tip="Ver cartas" aria-label="Ver cartas">📖</span></button><button class="btn deckbtn" data-deck="custom">🧩 Deck Personalizado<div class="ribbon">Monte seu baralho</div><span class="view-cards" data-deck="custom" data-tip="Ver cartas" aria-label="Ver cartas">📖</span></button></div>
-<div id="deckBuilder" style="display:none">
-  <p>Monte seu baralho: <span id="countDeck">0</span>/20</p>
-  <div id="curve"></div>
-  <div id="pool"></div>
-  <div id="chosen"></div>
-  <button class="btn" id="saveDeck">Salvar Deck</button>
-</div>
-<div class="footer"><span class="sub" style="margin:0">Dicas: Clique numa carta da mão para jogar e escolha <b>Ataque</b> ou <b>Defesa</b>. Em <b>Defesa</b>, o oponente deve focá-la.</span><div><button class="btn" id="openEncy">Enciclopédia</button><button class="btn" id="startGame">Jogar</button><button class="btn" id="openMultiplayer">Multiplayer</button></div></div></div></div><div class="multiplayer" id="multiplayerMenu" style="display:none"><div class="panel"><h2>Multiplayer</h2><button class="btn" id="hostBtn">Hostear partida</button><div><input id="joinCode" placeholder="Código da sala"/><button class="btn" id="joinBtn">Entrar</button></div><div class="sub" id="mpStatus"></div><button class="btn-ghost" id="mpBack">Voltar</button></div></div><div class="ency" id="ency"><div class="panel"><div class="ency-hd"><h2 style="margin:0">Enciclopédia de Cartas</h2><div class="filters" id="encyFilters"><button class="fbtn active" data-deck="all">Todos</button><button class="fbtn" data-deck="vikings">Vikings</button><button class="fbtn" data-deck="animais">Animais</button><button class="fbtn" data-deck="pescadores">Pescadores</button><button class="fbtn" data-deck="floresta">Floresta</button></div></div><div class="ency-grid" id="encyGrid"></div><div class="footer"><span class="sub" style="margin:0">Passe o mouse sobre uma palavra‑chave para ver o que ela faz.</span><button class="btn-ghost" id="closeEncy">Fechar</button></div></div></div><div class="wrap" id="gameWrap" style="display:none"><h1>FFF Farm Fight Formula</h1><div class="hud"><div class="meter"><b>Seu HP</b><span class="value" id="playerHP">30</span><div class="bar"><div class="fill" id="barPlayerHP"></div></div></div><div class="center-hud"><div class="meter mana"><b>Mana</b><span class="value" id="mana">0/0</span><div class="bar"><div class="fill" id="barMana"></div></div></div><button class="btn" id="endTurnBtn">Encerrar turno</button><button class="btn-ghost" id="muteBtn" title="Som">🔊 Som</button></div><div class="meter enemy" style="justify-self:end"><b>HP Inimigo</b><span class="value" id="aiHP">30</span><div class="enemy-img" id="aiAvatar">🧿</div><div class="bar"><div class="fill" id="barAiHP"></div></div></div></div><div class="zone-title">Tabuleiro do Inimigo</div><div class="board" id="aiBoard"></div><div class="zone-title">Seu Tabuleiro</div>
-<div class="row">
-  <div class="pile" id="drawPile"><span>🂠</span><div class="count" id="drawCount">0</div></div>
-  <div class="board" id="playerBoard"></div>
-  <div class="pile" id="discardPile"><span>🗂️</span><div class="count" id="discardCount">0</div></div>
-</div>
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>FFF Farm Fight Formula</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- Main menu -->
+  <div class="start" id="titleMenu">
+    <div class="panel">
+      <div class="brand">
+        <svg class="logo-wordmark" viewBox="0 0 520 64" xmlns="http://www.w3.org/2000/svg" aria-label="Farm Fight Formula logo">
+          <defs>
+            <linearGradient id="mono" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#7cc4ff"/>
+              <stop offset=".5" stop-color="#a5b4fc"/>
+              <stop offset="1" stop-color="#ffd166"/>
+            </linearGradient>
+          </defs>
+          <g transform="translate(8,6)" stroke="url(#mono)" stroke-width="9" stroke-linecap="round" fill="none">
+            <path d="M38 10H20v30"/>
+            <path d="M78 10H48v30"/>
+            <path d="M118 10H88v30"/>
+          </g>
+          <g transform="translate(140,14)" font-family="Inter, ui-sans-serif">
+            <text x="0" y="24" font-size="30" font-weight="800" fill="#e6e9ff">Farm Fight Formula</text>
+            <text x="0" y="44" font-size="14" fill="#a7b0d9">monstros vs fazendeiros vikings</text>
+          </g>
+        </svg>
+      </div>
+      <div class="main-actions">
+        <button class="btn" id="menuSolo">Jogar Solo</button>
+        <button class="btn" id="menuMulti">Jogar Multiplayer</button>
+        <button class="btn" id="menuOptions">Opções</button>
+      </div>
+    </div>
+  </div>
 
-<div class="zone-title">Sua Mão</div><div class="hand" id="playerHand"></div><div class="zone-title">Registro</div><div class="log" id="log"></div><div class="footer"><div class="face">👤 Você <span class="gem hp" id="playerHP2">30</span></div><div class="face">🧿 Inimigo <span class="gem hp" id="aiHP2">30</span></div></div></div><div class="end-overlay" id="endOverlay"><div class="end-box"><div class="end-msg" id="endMsg"></div><div class="end-sub" id="endSub"></div><div class="end-actions"><button class="btn" id="playAgainBtn">Jogar de novo</button><button class="btn" id="rematchBtn">Revanche</button><button class="btn-ghost" id="menuBtn">Menu inicial</button></div></div></div>
-<script src="/socket.io/socket.io.js"></script>
-<script src="js/net-client.js"></script>
-<script src="js/multiplayer.js"></script>
-<script src="js/game.js"></script>
+  <!-- Deck selection -->
+  <div class="start" id="start" style="display:none">
+    <div class="panel">
+      <div class="brand">
+        <svg class="logo-wordmark" viewBox="0 0 520 64" xmlns="http://www.w3.org/2000/svg" aria-label="Farm Fight Formula logo">
+          <defs>
+            <linearGradient id="mono2" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#7cc4ff"/>
+              <stop offset=".5" stop-color="#a5b4fc"/>
+              <stop offset="1" stop-color="#ffd166"/>
+            </linearGradient>
+          </defs>
+          <g transform="translate(8,6)" stroke="url(#mono2)" stroke-width="9" stroke-linecap="round" fill="none">
+            <path d="M38 10H20v30"/>
+            <path d="M78 10H48v30"/>
+            <path d="M118 10H88v30"/>
+          </g>
+          <g transform="translate(140,14)" font-family="Inter, ui-sans-serif">
+            <text x="0" y="24" font-size="30" font-weight="800" fill="#e6e9ff">Farm Fight Formula</text>
+            <text x="0" y="44" font-size="14" fill="#a7b0d9">monstros vs fazendeiros vikings</text>
+          </g>
+        </svg>
+      </div>
+      <p class="sub">Escolha um deck e parta para a arena.</p>
+      <div class="deckpick">
+        <button class="btn deckbtn" data-deck="vikings">👩‍🌾 Fazendeiros Vikings<div class="ribbon">Cura e proteção</div><span class="view-cards" data-deck="vikings" data-tip="Ver cartas" aria-label="Ver cartas">📖</span></button>
+        <button class="btn deckbtn" data-deck="animais">🐺 Bestas do Norte<div class="ribbon">Ataque bruto</div><span class="view-cards" data-deck="animais" data-tip="Ver cartas" aria-label="Ver cartas">📖</span></button>
+        <button class="btn deckbtn" data-deck="pescadores">🎣 Pescadores do Fiorde<div class="ribbon">Suporte e bônus</div><span class="view-cards" data-deck="pescadores" data-tip="Ver cartas" aria-label="Ver cartas">📖</span></button>
+        <button class="btn deckbtn" data-deck="floresta">🌲 Feras da Floresta<div class="ribbon">Pressão constante</div><span class="view-cards" data-deck="floresta" data-tip="Ver cartas" aria-label="Ver cartas">📖</span></button>
+        <button class="btn deckbtn" data-deck="custom">🧩 Deck Personalizado<div class="ribbon">Monte seu baralho</div><span class="view-cards" data-deck="custom" data-tip="Ver cartas" aria-label="Ver cartas">📖</span></button>
+      </div>
+      <div id="deckBuilder" style="display:none">
+        <p>Monte seu baralho: <span id="countDeck">0</span>/20</p>
+        <div id="curve"></div>
+        <div id="pool"></div>
+        <div id="chosen"></div>
+        <button class="btn" id="saveDeck">Salvar Deck</button>
+      </div>
+      <div class="footer">
+        <span class="sub" style="margin:0">Dicas: Clique numa carta da mão para jogar e escolha <b>Ataque</b> ou <b>Defesa</b>. Em <b>Defesa</b>, o oponente deve focá-la.</span>
+        <div><button class="btn" id="openEncy">Enciclopédia</button><button class="btn" id="startGame">Jogar</button><button class="btn" id="backToMenu">Menu</button></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Multiplayer lobby -->
+  <div class="multiplayer" id="multiplayerMenu" style="display:none">
+    <div class="panel">
+      <h2>Multiplayer</h2>
+      <button class="btn" id="hostBtn">Hostear partida</button>
+      <button class="btn" id="findBtn">Encontrar partida</button>
+      <div id="roomList" style="display:none"></div>
+      <div><input id="joinCode" placeholder="Código da sala"/><button class="btn" id="joinBtn">Entrar</button></div>
+      <div class="sub" id="mpStatus"></div>
+      <button class="btn-ghost" id="mpBack">Voltar</button>
+    </div>
+  </div>
+
+  <!-- Options -->
+  <div class="options-menu" id="optionsMenu" style="display:none">
+    <div class="panel">
+      <h2>Opções</h2>
+      <label>Música <input type="range" id="musicVol" min="0" max="1" step="0.01" value="1"></label>
+      <label>Efeitos <input type="range" id="sfxVol" min="0" max="1" step="0.01" value="1"></label>
+      <button class="btn-ghost" id="closeOptions">Fechar</button>
+    </div>
+  </div>
+
+  <!-- Encyclopedia -->
+  <div class="ency" id="ency">
+    <div class="panel">
+      <div class="ency-hd">
+        <h2 style="margin:0">Enciclopédia de Cartas</h2>
+        <div class="filters" id="encyFilters"><button class="fbtn active" data-deck="all">Todos</button><button class="fbtn" data-deck="vikings">Vikings</button><button class="fbtn" data-deck="animais">Animais</button><button class="fbtn" data-deck="pescadores">Pescadores</button><button class="fbtn" data-deck="floresta">Floresta</button></div>
+      </div>
+      <div class="ency-grid" id="encyGrid"></div>
+      <div class="footer"><span class="sub" style="margin:0">Passe o mouse sobre uma palavra‑chave para ver o que ela faz.</span><button class="btn-ghost" id="closeEncy">Fechar</button></div>
+    </div>
+  </div>
+
+  <!-- Game area -->
+  <div class="wrap" id="gameWrap" style="display:none">
+    <h1>FFF Farm Fight Formula</h1>
+    <div class="hud">
+      <div class="meter"><b>Seu HP</b><span class="value" id="playerHP">30</span><div class="bar"><div class="fill" id="barPlayerHP"></div></div></div>
+      <div class="center-hud"><div class="meter mana"><b>Mana</b><span class="value" id="mana">0/0</span><div class="bar"><div class="fill" id="barMana"></div></div></div><span class="turn-info" id="turnInfo"></span><button class="btn" id="endTurnBtn">Encerrar turno</button><button class="btn-ghost" id="muteBtn" title="Som">🔊 Som</button><button class="btn-ghost" id="openMenuBtn" title="Menu">☰ Menu</button></div>
+      <div class="meter enemy" style="justify-self:end"><b>HP Inimigo</b><span class="value" id="aiHP">30</span><div class="enemy-img" id="aiAvatar">🧿</div><div class="bar"><div class="fill" id="barAiHP"></div></div></div>
+    </div>
+    <div class="turn-banner" id="turnBanner"></div>
+    <div class="zone-title">Tabuleiro do Inimigo</div><div class="board" id="aiBoard"></div>
+    <div class="zone-title">Seu Tabuleiro</div>
+    <div class="row">
+      <div class="pile" id="drawPile"><span>🂠</span><div class="count" id="drawCount">0</div></div>
+      <div class="board" id="playerBoard"></div>
+      <div class="pile" id="discardPile"><span>🗂️</span><div class="count" id="discardCount">0</div></div>
+    </div>
+    <div class="zone-title">Sua Mão</div><div class="hand" id="playerHand"></div>
+    <div class="zone-title">Registro</div><div class="log" id="log"></div>
+    <div class="footer"><div class="face">👤 Você <span class="gem hp" id="playerHP2">30</span></div><div class="face">🧿 Inimigo <span class="gem hp" id="aiHP2">30</span></div></div>
+    <div class="emoji-bar" id="emojiBar"><button class="emoji-btn" data-emoji="😡">😡</button><button class="emoji-btn" data-emoji="🤔">🤔</button><button class="emoji-btn" data-emoji="❤️">❤️</button><button class="emoji-btn" data-emoji="🎉">🎉</button></div>
+    <div class="emoji-popup player" id="playerEmoji"></div>
+    <div class="emoji-popup opponent" id="opponentEmoji"></div>
+  </div>
+
+  <!-- In-game menu -->
+  <div class="game-menu" id="gameMenu">
+    <div class="panel"><button class="btn" id="resignBtn">Desistir</button><button class="btn" id="restartBtn">Recomeçar</button><button class="btn" id="mainMenuBtn">Menu principal</button><button class="btn-ghost" id="closeMenuBtn">Fechar</button></div>
+  </div>
+
+  <!-- End screen -->
+  <div class="end-overlay" id="endOverlay">
+    <div class="end-box"><div class="end-msg" id="endMsg"></div><div class="end-sub" id="endSub"></div><div class="end-actions"><button class="btn" id="playAgainBtn">Jogar de novo</button><button class="btn" id="rematchBtn">Revanche</button><button class="btn-ghost" id="menuBtn">Menu inicial</button></div></div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="js/net-client.js"></script>
+  <script src="js/multiplayer.js"></script>
+  <script src="js/menu.js"></script>
+  <script src="js/game.js"></script>
 </body>
 </html>
