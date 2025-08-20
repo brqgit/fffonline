@@ -65,7 +65,7 @@
     },
     onEmoji(handler) {
       socket.on('emoji', handler);
-    },
+   ,
     onHosted(handler) {
       socket.on('hosted', handler);
     },
