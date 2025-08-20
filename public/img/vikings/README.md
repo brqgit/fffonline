@@ -1,8 +1,8 @@
 # Viking Deck Images
 
-Place the deck's art assets in this directory structure:
+Icons for the Viking deck are currently loaded from an external sprite sheet.  
+If you prefer to use local PNGs instead, drop files using the following
+structure after cloning:
 
-- `public/img/vikings/characters/char0.png` through `char8.png` – individual character icons.
-- `public/img/vikings/tools/tool0.png` – weapon or tool icons.
-
-Add the PNG files manually after cloning the repository.
+- `public/img/vikings/characters/char0.png` through `char8.png` – individual character icons
+- `public/img/vikings/tools/tool0.png` – weapon or tool icons
