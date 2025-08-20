@@ -26,7 +26,7 @@ io.on('connection', (socket) => {
     } while (rooms.has(room));
     socket.join(room);
     socket.data.room = room;
-    rooms.set(room, { host: socket.id, players: 1 });
+    rooms.set(room, { host: socket.id, guest: null, players: 1, hostTimer: null, guestTimer: null });
     socket.emit('hosted', room);
   });
 
@@ -46,6 +46,7 @@ io.on('connection', (socket) => {
     }
     socket.join(room);
     socket.data.room = room;
+    info.guest = socket.id;
     info.players++;
     socket.emit('joined', room);
     socket.to(room).emit('guestJoined');
@@ -134,27 +135,53 @@ io.on('connection', (socket) => {
     }
   });
 
-  socket.on('disconnecting', () => {
-    const { room } = socket.data;
-    if (room) {
-      socket.to(room).emit('opponentLeft');
-      const info = rooms.get(room);
-      if (info) {
-        info.players--;
-        if (info.host === socket.id || info.players <= 0) {
-          rooms.delete(room);
-        }
-      }
+  socket.on('rejoin', ({ room, role }) => {
+    const info = rooms.get(room);
+    if (!info) return;
+    if (role === 'host' && info.hostTimer) {
+      clearTimeout(info.hostTimer);
+      info.hostTimer = null;
+      info.host = socket.id;
+    } else if (role === 'guest' && info.guestTimer) {
+      clearTimeout(info.guestTimer);
+      info.guestTimer = null;
+      info.guest = socket.id;
+    } else {
+      socket.emit('joinError', 'Sala inexistente ou cheia');
+      return;
     }
-
-    delete socket.data.room;
-    delete socket.data.deckChosen;
-    delete socket.data.startReady;
-    delete socket.data.rematch;
+    socket.join(room);
+    socket.data.room = room;
+    socket.to(room).emit('opponentReconnected');
   });
 
-  socket.on('disconnect', async () => {
-    // Additional asynchronous operations can be performed here
+  socket.on('disconnect', () => {
+    const { room } = socket.data;
+    if (!room) return;
+    const info = rooms.get(room);
+    if (!info) return;
+    let role = null;
+    if (info.host === socket.id) role = 'host';
+    else if (info.guest === socket.id) role = 'guest';
+    if (!role) return;
+
+    const timer = setTimeout(() => {
+      if (role === 'host') {
+        info.host = null;
+        info.hostTimer = null;
+      } else {
+        info.guest = null;
+        info.guestTimer = null;
+      }
+      info.players--;
+      io.to(room).emit('opponentLeft');
+      if (!info.host || info.players <= 0) {
+        rooms.delete(room);
+      }
+    }, 10000);
+
+    if (role === 'host') info.hostTimer = timer; else info.guestTimer = timer;
+    socket.to(room).emit('opponentDisconnected');
   });
 });
 

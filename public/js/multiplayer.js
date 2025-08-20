@@ -106,11 +106,32 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     NET.onOpponentLeft(() => {
+      clearInterval(reconTimer);
       statusEl.textContent = 'Oponente saiu.';
     });
 
     NET.onConnectionError(() => {
       statusEl.textContent = 'Falha na conexão.';
+    });
+
+    let reconTimer = null;
+    NET.onOpponentDisconnected(() => {
+      let t = 10;
+      statusEl.textContent = `Oponente desconectado. Reconnectando em ${t}s`;
+      clearInterval(reconTimer);
+      reconTimer = setInterval(() => {
+        t -= 1;
+        if (t > 0) {
+          statusEl.textContent = `Oponente desconectado. Reconnectando em ${t}s`;
+        } else {
+          clearInterval(reconTimer);
+        }
+      }, 1000);
+    });
+
+    NET.onOpponentReconnected(() => {
+      clearInterval(reconTimer);
+      statusEl.textContent = 'Oponente reconectado.';
     });
 
     NET.onRooms((rooms) => {
