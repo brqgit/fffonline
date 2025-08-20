@@ -26,7 +26,7 @@ io.on('connection', (socket) => {
     } while (rooms.has(room));
     socket.join(room);
     socket.data.room = room;
-    rooms.set(room, { host: socket.id, guest: null, players: 1, hostTimer: null, guestTimer: null });
+    rooms.set(room, { host: socket.id, guest: null, players: 1, hostTimer: null, guestTimer: null, hostName: socket.data.name || null, guestName: null });
     socket.emit('hosted', room);
   });
 
@@ -47,8 +47,11 @@ io.on('connection', (socket) => {
     socket.join(room);
     socket.data.room = room;
     info.guest = socket.id;
+    info.guestName = socket.data.name || null;
     info.players++;
     socket.emit('joined', room);
+    if (info.hostName) socket.emit('opponentName', info.hostName);
+    if (info.host) io.to(info.host).emit('opponentName', socket.data.name || '');
     socket.to(room).emit('guestJoined');
   });
 
@@ -182,6 +185,17 @@ io.on('connection', (socket) => {
 
     if (role === 'host') info.hostTimer = timer; else info.guestTimer = timer;
     socket.to(room).emit('opponentDisconnected');
+  });
+
+  socket.on('setName', (name) => {
+    socket.data.name = name;
+    const room = socket.data.room;
+    if (!room) return;
+    const info = rooms.get(room);
+    if (!info) return;
+    if (info.host === socket.id) info.hostName = name;
+    else if (info.guest === socket.id) info.guestName = name;
+    socket.to(room).emit('opponentName', name);
   });
 });
 

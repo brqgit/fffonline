@@ -53,6 +53,10 @@
     sendEmoji(emoji) {
       socket.emit('emoji', emoji);
     },
+    setName(name){
+      connectIfNeeded();
+      socket.emit('setName',name);
+    },
     requestRematch() {
       socket.emit('rematch');
     },
@@ -94,6 +98,9 @@
     },
     onOpponentReconnected(handler) {
       socket.on('opponentReconnected', handler);
+    },
+    onOpponentName(handler){
+      socket.on('opponentName',handler);
     },
     onRematch(handler) {
       socket.on('rematch', handler);

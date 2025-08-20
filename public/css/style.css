@@ -97,7 +97,7 @@ flex-wrap:wrap;
 gap:20px;
 align-items:flex-start;
 margin:24px 0 48px}
-.hand .card::before{opacity:.4}
+.hand .card::before{opacity:.8}
 .hand .card:hover::before{animation:foilHue 1.2s linear infinite}
 .hand .card:hover::after{opacity:.3}
 @keyframes foilHue{from{filter:hue-rotate(0deg);}to{filter:hue-rotate(360deg);}}
@@ -121,7 +121,7 @@ margin:24px 0 48px}
  --my:50%;
  --rX:0deg;
  --rY:0deg}
-.card .name-wrap{display:flex;justify-content:space-between;align-items:center;margin-bottom:2px}
+.card .name-wrap{display:flex;flex-direction:column;align-items:flex-start;margin-bottom:2px;position:relative}
 .card .name-wrap .name{min-width:0;padding:2px 4px;border-radius:4px;background:linear-gradient(180deg,rgba(0,0,0,.6),rgba(0,0,0,0));}
 .cost{display:grid;
 place-items:center;
@@ -147,8 +147,7 @@ border-radius:999px;
 border:1px solid rgba(255,255,255,.14)}
 .badge.atk{background:linear-gradient(180deg,#1f2a64,#15204a)}
 .badge.def{background:linear-gradient(180deg,#2a5f3a,#1e462b)}
-.tribe{font-size:12px;
-color:var(--muted)}
+/* tribe text removed */
 .art{display:flex;
 align-items:center;
 justify-content:center;
@@ -172,7 +171,7 @@ align-items:center;
 margin:0;
 min-height:26px;
 align-self:end}
-.mana-row{display:flex;align-items:center;gap:4px}
+.mana-row{display:flex;align-items:center;gap:4px;align-self:flex-end;margin-top:2px}
 .mana-dot{width:12px;height:12px;border-radius:50%;background:radial-gradient(circle at 30% 30%,#aee5ff,#4aa3ff);box-shadow:0 4px 8px rgba(74,163,255,.35),inset 0 0 8px rgba(255,255,255,.35)}
 .mana-num{font-weight:900;margin-left:4px}
 .gem{padding:6px 10px;
@@ -226,8 +225,8 @@ border-radius:inherit;
 background:radial-gradient(180px 180px at var(--mx) var(--my), rgba(255,255,255,.18), transparent 40%);
 opacity:0;
 transition:opacity .2s ease}
-.card.tilted::before{opacity:.28}
-.card.tilted::after{opacity:.22}
+.card.tilted::before{opacity:.5}
+.card.tilted::after{opacity:.4}
 .card.attack-lunge{animation:lunge .35s ease}
 .card.hit-shake{animation:shakeHit .35s ease}
 .card.shield-flash{animation:shieldFlash .6s ease}
@@ -293,6 +292,7 @@ border-radius:50%;
 border:1px solid #2b3a86;
 background:linear-gradient(180deg,#0e1636,#0a1027);
 box-shadow:inset 0 0 0 1px rgba(255,255,255,.06)}
+.opp-label{margin-left:6px;font-size:12px;color:var(--muted)}
 .start{position:fixed;
 inset:0;
 display:grid;
@@ -686,7 +686,7 @@ color:#24040a}
 .vikings-icon{
   width:96px;
   height:96px;
-  background-image:url('https://videos.openai.com/vg-assets/assets%2Ftask_01k32xw6bhfxatqs3evxmptrds%2F1755666416_img_1.png?st=2025-08-20T03%3A17%3A52Z&se=2025-08-26T04%3A17%3A52Z&sks=b&skt=2025-08-20T03%3A17%3A52Z&ske=2025-08-26T04%3A17%3A52Z&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skoid=8ebb0df1-a278-4e2e-9c20-f2d373479b3a&skv=2019-02-02&sv=2018-11-09&sr=b&sp=r&spr=https%2Chttp&sig=8%2Bisb3EsmtRseqBSReK2IiNlGwsqKxHKGeqSZMQd2M0%3D&az=oaivgprodscus');
+  background-image:url('https://videos.openai.com/vg-assets/assets%2Ftask_01k32xw6bhfxatqs3evxmptrds%2F1755666416_img_1.webp?st=2025-08-20T03%3A17%3A52Z&se=2025-08-26T04%3A17%3A52Z&sks=b&skt=2025-08-20T03%3A17%3A52Z&ske=2025-08-26T04%3A17%3A52Z&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skoid=8ebb0df1-a278-4e2e-9c20-f2d373479b3a&skv=2019-02-02&sv=2018-11-09&sr=b&sp=r&spr=https%2Chttp&sig=8%2Bisb3EsmtRseqBSReK2IiNlGwsqKxHKGeqSZMQd2M0%3D&az=oaivgprodscus');
   background-size:288px 288px;
   background-repeat:no-repeat;
   image-rendering:pixelated;
@@ -702,7 +702,7 @@ color:#24040a}
 .vik-icon-7{background-position:-96px -192px}
 .vik-icon-8{background-position:-192px -192px}
 .vik-icon-9{
-  background-image:url('https://videos.openai.com/vg-assets/assets%2Ftask_01k32xw6bhfxatqs3evxmptrds%2F1755666416_img_2.png?st=2025-08-20T03%3A17%3A52Z&se=2025-08-26T04%3A17%3A52Z&sks=b&skt=2025-08-20T03%3A17%3A52Z&ske=2025-08-26T04%3A17%3A52Z&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skoid=8ebb0df1-a278-4e2e-9c20-f2d373479b3a&skv=2019-02-02&sv=2018-11-09&sr=b&sp=r&spr=https%2Chttp&sig=8%2Bisb3EsmtRseqBSReK2IiNlGwsqKxHKGeqSZMQd2M0%3D&az=oaivgprodscus');
+  background-image:url('https://videos.openai.com/vg-assets/assets%2Ftask_01k32xw6bhfxatqs3evxmptrds%2F1755666416_img_2.webp?st=2025-08-20T03%3A17%3A52Z&se=2025-08-26T04%3A17%3A52Z&sks=b&skt=2025-08-20T03%3A17%3A52Z&ske=2025-08-26T04%3A17%3A52Z&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skoid=8ebb0df1-a278-4e2e-9c20-f2d373479b3a&skv=2019-02-02&sv=2018-11-09&sr=b&sp=r&spr=https%2Chttp&sig=8%2Bisb3EsmtRseqBSReK2IiNlGwsqKxHKGeqSZMQd2M0%3D&az=oaivgprodscus');
   background-size:96px 96px;
   background-position:0 0;
 }
@@ -710,6 +710,7 @@ color:#24040a}
 /* 3D projection / hologram for Vikings deck */
 .card .projection{position:absolute;top:50%;left:50%;width:96px;height:96px;transform-style:preserve-3d;transform:translate(-50%,-50%) rotateX(35deg) rotateY(0deg);animation:holoSpin 6s linear infinite;pointer-events:none;filter:drop-shadow(0 0 6px rgba(0,255,255,.6))}
 .card .projection::after{content:"";position:absolute;inset:0;background:linear-gradient(transparent 60%,rgba(0,255,255,.3) 61%);background-size:100% 4px;mix-blend-mode:overlay;animation:holoScan 2s linear infinite}
+.card .projection canvas{width:100%;height:100%;display:block}
 @keyframes holoSpin{from{transform:translate(-50%,-50%) rotateX(35deg) rotateY(0deg)}to{transform:translate(-50%,-50%) rotateX(35deg) rotateY(360deg)}}
 @keyframes holoScan{from{background-position:0 0}to{background-position:0 -4px}}
 
