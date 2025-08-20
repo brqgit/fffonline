@@ -15,8 +15,8 @@ const KW={P:'Protetor',F:'Furioso'},BC={D1:'draw1',H2:'heal2',P1:'ping1',BR1:'bu
 const G={playerHP:30,aiHP:30,turn:1,playerMana:0,playerManaCap:0,aiMana:0,aiManaCap:0,current:'player',playerDeck:[],aiDeck:[],playerHand:[],aiHand:[],playerBoard:[],aiBoard:[],playerDiscard:[],aiDiscard:[],chosen:null,playerDeckChoice:'vikings',aiDeckChoice:'animais',customDeck:null};
 const els={pHP:$('#playerHP'),pHP2:$('#playerHP2'),aHP:$('#aiHP'),aHP2:$('#aiHP2'),opponentLabel:$('#opponentLabel'),mana:$('#mana'),pHand:$('#playerHand'),pBoard:$('#playerBoard'),aBoard:$('#aiBoard'),endBtn:$('#endTurnBtn'),muteBtn:$('#muteBtn'),aAva:$('#aiAvatar'),drawCount:$('#drawCount'),discardCount:$('#discardCount'),barPHP:$('#barPlayerHP'),barAHP:$('#barAiHP'),barMana:$('#barMana'),wrap:$('#gameWrap'),start:$('#start'),openEncy:$('#openEncy'),ency:$('#ency'),encyGrid:$('#encyGrid'),encyFilters:$('#encyFilters'),closeEncy:$('#closeEncy'),startGame:$('#startGame'),endOverlay:$('#endOverlay'),endMsg:$('#endMsg'),endSub:$('#endSub'),playAgainBtn:$('#playAgainBtn'),rematchBtn:$('#rematchBtn'),menuBtn:$('#menuBtn'),openMenuBtn:$('#openMenuBtn'),gameMenu:$('#gameMenu'),closeMenuBtn:$('#closeMenuBtn'),resignBtn:$('#resignBtn'),restartBtn:$('#restartBtn'),mainMenuBtn:$('#mainMenuBtn'),turnIndicator:$('#turnIndicator'),emojiBar:$('#emojiBar'),playerEmoji:$('#playerEmoji'),opponentEmoji:$('#opponentEmoji')};
 const DECK_TITLES={vikings:'Fazendeiros Vikings',animais:'Bestas do Norte',pescadores:'Pescadores do Fiorde',floresta:'Feras da Floresta',custom:'Custom'};
-const VIKING_CHAR_DIR='img/vikings/characters';
-const VIKING_TOOL_DIR='img/vikings/tools';
+const VIKING_CHAR_SHEET='https://videos.openai.com/vg-assets/assets%2Ftask_01k32xw6bhfxatqs3evxmptrds%2F1755666416_img_1.webp?st=2025-08-20T03%3A17%3A52Z&se=2025-08-26T04%3A17%3A52Z&sks=b&skt=2025-08-20T03%3A17%3A52Z&ske=2025-08-26T04%3A17%3A52Z&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skoid=8ebb0df1-a278-4e2e-9c20-f2d373479b3a&skv=2019-02-02&sv=2018-11-09&sr=b&sp=r&spr=https%2Chttp&sig=8%2Bisb3EsmtRseqBSReK2IiNlGwsqKxHKGeqSZMQd2M0%3D&az=oaivgprodscus';
+const VIKING_TOOL_SHEET='https://videos.openai.com/vg-assets/assets%2Ftask_01k32xw6bhfxatqs3evxmptrds%2F1755666416_img_2.webp?st=2025-08-20T03%3A17%3A52Z&se=2025-08-26T04%3A17%3A52Z&sks=b&skt=2025-08-20T03%3A17%3A52Z&ske=2025-08-26T04%3A17%3A52Z&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skoid=8ebb0df1-a278-4e2e-9c20-f2d373479b3a&skv=2019-02-02&sv=2018-11-09&sr=b&sp=r&spr=https%2Chttp&sig=8%2Bisb3EsmtRseqBSReK2IiNlGwsqKxHKGeqSZMQd2M0%3D&az=oaivgprodscus';
 // deck builder DOM (may be null if builder UI not present)
 const poolEl=$('#pool'), chosenEl=$('#chosen'), countEl=$('#countDeck'), curveEl=$('#curve');
 // safe builder functions (no-ops if UI not present)
@@ -33,7 +33,8 @@ function createProjection(container,idx){
   const canvas=document.createElement('canvas');
   canvas.width=96;canvas.height=96;
   container.appendChild(canvas);
-  const renderer=new THREE.WebGLRenderer({canvas,alpha:true});
+  const renderer=new THREE.WebGLRenderer({canvas,alpha:true,antialias:true});
+  renderer.setClearColor(0x000000,0);
   renderer.setSize(96,96,false);
   const scene=new THREE.Scene();
   const camera=new THREE.PerspectiveCamera(35,1,0.1,1000);
@@ -41,21 +42,43 @@ function createProjection(container,idx){
   const light=new THREE.PointLight(0x00ffff,1.2);
   light.position.set(0,0,120);scene.add(light);
   const loader=new THREE.TextureLoader();
-  const url=idx>=9?`${VIKING_TOOL_DIR}/tool${idx-9}.png`:`${VIKING_CHAR_DIR}/char${idx}.png`;
-  const tex=loader.load(url);
-  const group=new THREE.Group();
-  for(let i=0;i<5;i++){
-    const mat=new THREE.MeshPhongMaterial({map:tex,transparent:true});
-    const geo=new THREE.PlaneGeometry(80,80);
-    const mesh=new THREE.Mesh(geo,mat);
-    mesh.position.z=i*2;
-    group.add(mesh);
-  }
-  group.position.z=-5;scene.add(group);
-  function anim(){group.rotation.y+=0.02;renderer.render(scene,camera);requestAnimationFrame(anim)}
-  anim();
+  loader.setCrossOrigin('anonymous');
+  const sheet=idx>=9?VIKING_TOOL_SHEET:VIKING_CHAR_SHEET;
+  loader.load(sheet,tex=>{
+    tex.magFilter=THREE.NearestFilter;tex.minFilter=THREE.NearestFilter;
+    const group=new THREE.Group();
+    const tiles=3;const size=1/tiles;const j=idx>=9?idx-9:idx;
+    const col=j%tiles,row=Math.floor(j/tiles);
+    for(let i=0;i<5;i++){
+      const geo=new THREE.PlaneGeometry(100,100);
+      const uvs=geo.attributes.uv.array;
+      const x0=col*size,y0=1-(row+1)*size,x1=x0+size,y1=y0+size;
+      uvs[0]=x0;uvs[1]=y0;uvs[2]=x1;uvs[3]=y0;uvs[4]=x1;uvs[5]=y1;uvs[6]=x0;uvs[7]=y1;
+      geo.attributes.uv.needsUpdate=true;
+      const mat=new THREE.MeshPhongMaterial({map:tex,transparent:true,side:THREE.DoubleSide});
+      const mesh=new THREE.Mesh(geo,mat);mesh.position.z=i*2;group.add(mesh);
+    }
+    group.position.z=-5;scene.add(group);
+    (function anim(){group.rotation.y+=0.02;renderer.render(scene,camera);requestAnimationFrame(anim)})();
+  });
 }
-function cardNode(c,owner,onBoard=false){const d=document.createElement('div');d.className=`card ${owner==='player'?'me':'enemy'} ${c.stance==='defense'?'defense':''}`;d.dataset.id=c.id;const art=(c.deck==='vikings')?(!onBoard?`<div class=\"vikings-icon vik-icon-${c.icon}\"></div>`:''):c.emoji;const manaDots='<span class="mana-dot"></span>'.repeat(c.cost);d.innerHTML=`<div class=\"bg bg-${c.deck||'default'}\"></div><div class=\"name-wrap\"><div class=\"name\">${c.name}</div><div class=\"mana-row\">${manaDots}<span class=\"mana-num\">${c.cost}</span></div>${c.stance?`<span class=\"badge ${c.stance==='defense'?'def':'atk'}\">${c.stance==='defense'?'DEFESA':'ATAQUE'}</span>`:''}</div><div class=\"art\">${art}</div><div class=\"text\">${(c.kw||[]).map(k=>`<span class='keyword' data-tip='${k==='Protetor'?'Enquanto houver Protetor ou carta em Defesa do lado do defensor, ataques devem mirá-los.':(k==='Furioso'?'Pode atacar no turno em que é jogada.':'')}' >${k}</span>`).join(' ')} ${c.text||''}</div><div class=\"stats\"><span class=\"gem atk\">⚔️ ${c.atk}</span><span class=\"gem hp ${c.hp<=2?'low':''}\">❤️ ${c.hp}</span></div>`;return d}
+function cardNode(c,owner,onBoard=false){
+  const d=document.createElement('div');
+  d.className=`card ${owner==='player'?'me':'enemy'} ${c.stance==='defense'?'defense':''}`;
+  d.dataset.id=c.id;
+  const art=(c.deck==='vikings')?(!onBoard?`<div class="vikings-icon vik-icon-${c.icon}"></div>`:''):c.emoji;
+  const manaDots='<span class="mana-dot"></span>'.repeat(c.cost);
+  const kwSpans=(c.kw||[]).map(k=>`<span class='keyword' data-tip='${k==='Protetor'?'Enquanto houver Protetor ou carta em Defesa do lado do defensor, ataques devem mirá-los.':(k==='Furioso'?'Pode atacar no turno em que é jogada.':'')}' >${k}</span>`).join(' ');
+  let text=c.text||'';
+  if((c.kw||[]).includes(text)) text='';
+  d.innerHTML=`<div class="bg bg-${c.deck||'default'}"></div>
+  <div class="name-bar">${c.name}</div>
+  <div class="cost-bar">${c.stance?`<span class=\"badge ${c.stance==='defense'?'def':'atk'}\">${c.stance==='defense'?'DEFESA':'ATAQUE'}</span>`:''}<div class="mana-row">${manaDots}<span class="mana-num">${c.cost}</span></div></div>
+  <div class="art">${art}</div>
+  <div class="text">${kwSpans}${text?(' '+text):''}</div>
+  <div class="stats"><span class="gem atk">⚔️ ${c.atk}</span><span class="gem hp ${c.hp<=2?'low':''}">❤️ ${c.hp}</span></div>`;
+  return d;
+}
 const hasGuard=b=>b.some(x=>x.kw.includes('Protetor')||x.stance==='defense');
 function updateMeters(){const pct=(v,max)=>(max>0?Math.max(0,Math.min(100,(v/max)*100)):0);els.barPHP.style.width=pct(G.playerHP,30)+'%';els.barAHP.style.width=pct(G.aiHP,30)+'%';els.barMana.style.width=pct(G.playerMana,G.playerManaCap)+'%'}
 function updateOpponentLabel(){if(!els.opponentLabel)return;if(window.isMultiplayer){els.opponentLabel.textContent=window.opponentName?` ${window.opponentName}`:'';}else{const t=DECK_TITLES[G.aiDeckChoice]||'';els.opponentLabel.textContent=t?` ${t}`:'';}}

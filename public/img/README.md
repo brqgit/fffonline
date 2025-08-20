@@ -1,8 +1,10 @@
 # Game Image Assets
 
-Place Viking deck icons as individual PNGs after cloning:
+Viking card icons are loaded from a remote sprite sheet.
 
-- `public/img/vikings/characters/char0.png` ... `char8.png`
+If you want to override them with your own art, add PNG files here after cloning:
+
+- `public/img/vikings/characters/char0.png` … `char8.png`
 - `public/img/vikings/tools/tool0.png`
 
-These files are not stored in the repository; add them manually to enable in‑game icons.
+Update the CSS/JS if you supply custom assets.
