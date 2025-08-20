@@ -38,8 +38,6 @@ function createProjection(container,idx){
   const scene=new THREE.Scene();
   const camera=new THREE.PerspectiveCamera(35,1,0.1,1000);
   camera.position.z=120;
-  const light=new THREE.PointLight(0x00ffff,1.2);
-  light.position.set(0,0,120);scene.add(light);
   const loader=new THREE.TextureLoader();
   loader.setCrossOrigin('anonymous');
   const url=vikIconUrl(idx);
@@ -48,7 +46,7 @@ function createProjection(container,idx){
     const group=new THREE.Group();
     for(let i=0;i<5;i++){
       const geo=new THREE.PlaneGeometry(100,100);
-      const mat=new THREE.MeshPhongMaterial({map:tex,transparent:true,side:THREE.DoubleSide});
+      const mat=new THREE.MeshBasicMaterial({map:tex,transparent:true,side:THREE.DoubleSide});
       const mesh=new THREE.Mesh(geo,mat);mesh.position.z=i*2;group.add(mesh);
     }
     group.position.z=-5;scene.add(group);
@@ -127,7 +125,7 @@ function renderBoard(){
 function openStanceChooser(anchor,cb){closeStanceChooser();const r=anchor.getBoundingClientRect(),box=document.createElement('div');box.className='stance-chooser';Object.assign(box.style,{left:Math.max(8,r.left+r.width/2-120)+'px',top:Math.max(8,r.top-48)+'px'});const bA=document.createElement('button');bA.className='btn';bA.textContent='⚔️ Ataque';const bD=document.createElement('button');bD.className='btn';bD.textContent='🛡️ Defesa';bA.onclick=()=>{closeStanceChooser();cb('attack')};bD.onclick=()=>{closeStanceChooser();cb('defense')};box.append(bA,bD);document.body.appendChild(box);setTimeout(()=>{const h=ev=>{if(ev.target.closest('.stance-chooser'))return;window.removeEventListener('click',h,true);closeStanceChooser()};window.addEventListener('click',h,true);bA.focus()},0)}const closeStanceChooser=()=>{const old=document.querySelector('.stance-chooser');old&&old.remove()}
 function flyToBoard(node,onEnd){const r=node.getBoundingClientRect(),clone=node.cloneNode(true);Object.assign(clone.style,{left:r.left+'px',top:r.top+'px',width:r.width+'px',height:r.height+'px',position:'fixed',zIndex:999,transition:'transform .45s ease,opacity .45s ease'});clone.classList.add('fly');document.body.appendChild(clone);const br=els.pBoard.getBoundingClientRect();requestAnimationFrame(()=>{const tx=br.left+br.width/2-r.left-r.width/2,ty=br.top+10-r.top;clone.style.transform=`translate(${tx}px,${ty}px) scale(.9)`;clone.style.opacity='0'});setTimeout(()=>{clone.remove();onEnd&&onEnd()},450)}
 function animateMove(fromEl,toEl){const r1=fromEl.getBoundingClientRect(),r2=toEl.getBoundingClientRect(),ghost=document.createElement('div');Object.assign(ghost.style,{left:r1.left+'px',top:r1.top+'px',width:r1.width+'px',height:r1.height+'px',position:'fixed',zIndex:998,transition:'transform .5s ease,opacity .5s ease',background:'#fff',borderRadius:'10px',opacity:1});document.body.appendChild(ghost);requestAnimationFrame(()=>{ghost.style.transform=`translate(${r2.left-r1.left}px,${r2.top-r1.top}px)`;ghost.style.opacity='0'});setTimeout(()=>ghost.remove(),500)}
-function stackHand(){const cards=$$('#playerHand .card');const total=cards.length;if(!total)return;const spread=Math.min(60,120/Math.max(total-1,1));cards.forEach((c,i)=>{const offset=(i-(total-1)/2)*spread;c.style.left=`calc(50% + ${offset}px - 88px)`;c.style.zIndex=i+1;c.style.transform=`rotate(${offset/5}deg)`})}
+function stackHand(){const cards=$$('#playerHand .card');const total=cards.length;if(!total)return;const spread=Math.min(60,120/Math.max(total-1,1));cards.forEach((c,i)=>{const offset=(i-(total-1)/2)*spread;c.style.left=`calc(50% + ${offset}px - 88px)`;c.style.zIndex=i+1;c.style.setProperty('--rot',offset/5)})}
 function startGame(first='player'){const sanitize=c=>{if(c.hp<1)c.hp=1;if(c.atk<0)c.atk=0;return c};G.playerDeck=(G.playerDeckChoice==='custom'&&G.customDeck?shuffle(G.customDeck.slice()):TEMPLATES[G.playerDeckChoice].map(makeCard));G.playerDeck.forEach(c=>{sanitize(c);c.owner='player';c.deck=(G.playerDeckChoice==='custom'?'custom':G.playerDeckChoice)});G.aiDeck=TEMPLATES[G.aiDeckChoice].map(makeCard);G.aiDeck.forEach(c=>{sanitize(c);c.owner='ai';c.deck=G.aiDeckChoice});G.playerDiscard=[];G.aiDiscard=[];G.playerHand=[];G.aiHand=[];G.playerBoard=[];G.aiBoard=[];G.playerHP=30;G.aiHP=30;G.current=first;G.playerMana=0;G.playerManaCap=0;if(!window.isMultiplayer){const diff=document.getElementById('difficulty');G.aiSkill=diff?parseInt(diff.value):1;}els.emojiBar&&(els.emojiBar.style.display=window.isMultiplayer?'flex':'none');draw('player',5);newTurn(true);renderAll();stopMenuMusic();startMenuMusic('combat');log('A batalha começou!');sfx('start')}
 const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
 function draw(who,n=1){const deck=who==='player'?G.playerDeck:G.aiDeck,hand=who==='player'?G.playerHand:G.aiHand,disc=who==='player'?G.playerDiscard:G.aiDiscard;const deckEl=document.getElementById('drawPile');const handEl=els.pHand;for(let i=0;i<n;i++){if(deck.length===0&&disc.length){deck.push(...shuffle(disc.splice(0)));deckEl.classList.add('shuffling');setTimeout(()=>deckEl.classList.remove('shuffling'),600)}if(deck.length){const c=deck.shift();if(c.hp<1)c.hp=1;hand.push(c);if(who==='player')animateMove(deckEl,handEl)}}if(who==='player'){els.drawCount.textContent=G.playerDeck.length;els.discardCount.textContent=G.playerDiscard.length;setTimeout(stackHand,500)}}
