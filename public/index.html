@@ -113,10 +113,19 @@
     <div class="panel">
       <div class="ency-hd">
         <h2 style="margin:0">Enciclopédia de Cartas</h2>
-        <div class="filters" id="encyFilters"><button class="fbtn active" data-deck="all">Todos</button><button class="fbtn" data-deck="vikings">Vikings</button><button class="fbtn" data-deck="animais">Animais</button><button class="fbtn" data-deck="pescadores">Pescadores</button><button class="fbtn" data-deck="floresta">Floresta</button></div>
+        <div class="filters" id="encyFilters">
+          <button class="fbtn active" data-deck="all">Todos</button>
+          <button class="fbtn" data-deck="vikings">Vikings</button>
+          <button class="fbtn" data-deck="animais">Animais</button>
+          <button class="fbtn" data-deck="pescadores">Pescadores</button>
+          <button class="fbtn" data-deck="floresta">Floresta</button>
+        </div>
       </div>
       <div class="ency-grid" id="encyGrid"></div>
-      <div class="footer"><span class="sub" style="margin:0">Passe o mouse sobre uma palavra‑chave para ver o que ela faz.</span><button class="btn-ghost" id="closeEncy">Fechar</button></div>
+      <div class="footer">
+        <span class="sub" style="margin:0">Passe o mouse sobre uma palavra‑chave para ver o que ela faz.</span>
+        <button class="btn-ghost" id="closeEncy">Fechar</button>
+      </div>
     </div>
   </div>
 
@@ -139,19 +148,37 @@
     <div class="zone-title">Sua Mão</div><div class="hand" id="playerHand"></div>
     <div class="zone-title">Registro</div><div class="log" id="log"></div>
     <div class="footer"><div class="face">👤 Você <span class="gem hp" id="playerHP2">30</span></div><div class="face">🧿 Inimigo <span class="gem hp" id="aiHP2">30</span></div></div>
-    <div class="emoji-bar" id="emojiBar"><button class="emoji-btn" data-emoji="😡">😡</button><button class="emoji-btn" data-emoji="🤔">🤔</button><button class="emoji-btn" data-emoji="❤️">❤️</button><button class="emoji-btn" data-emoji="🎉">🎉</button></div>
+    <div class="emoji-bar" id="emojiBar">
+      <button class="emoji-btn" data-emoji="😡">😡</button>
+      <button class="emoji-btn" data-emoji="🤔">🤔</button
+      ><button class="emoji-btn" data-emoji="❤️">❤️</button>
+      <button class="emoji-btn" data-emoji="🎉">🎉</button>
+    </div>
     <div class="emoji-popup player" id="playerEmoji"></div>
     <div class="emoji-popup opponent" id="opponentEmoji"></div>
   </div>
 
   <!-- In-game menu -->
   <div class="game-menu" id="gameMenu">
-    <div class="panel"><button class="btn" id="resignBtn">Desistir</button><button class="btn" id="restartBtn">Recomeçar</button><button class="btn" id="mainMenuBtn">Menu principal</button><button class="btn-ghost" id="closeMenuBtn">Fechar</button></div>
+    <div class="panel">
+      <button class="btn" id="resignBtn">Desistir</button>
+      <button class="btn" id="restartBtn">Recomeçar</button>
+      <button class="btn" id="mainMenuBtn">Menu principal</button>
+      <button class="btn-ghost" id="closeMenuBtn">Fechar</button>
+    </div>
   </div>
 
   <!-- End screen -->
   <div class="end-overlay" id="endOverlay">
-    <div class="end-box"><div class="end-msg" id="endMsg"></div><div class="end-sub" id="endSub"></div><div class="end-actions"><button class="btn" id="playAgainBtn">Jogar de novo</button><button class="btn" id="rematchBtn">Revanche</button><button class="btn-ghost" id="menuBtn">Menu inicial</button></div></div>
+    <div class="end-box">
+      <div class="end-msg" id="endMsg"></div>
+      <div class="end-sub" id="endSub"></div>
+      <div class="end-actions">
+        <button class="btn" id="playAgainBtn">Jogar de novo</button>
+        <button class="btn" id="rematchBtn">Revanche</button>
+        <button class="btn-ghost" id="menuBtn">Menu inicial</button>
+      </div>
+    </div>
   </div>
 
   <script src="/socket.io/socket.io.js"></script>

@@ -531,10 +531,10 @@ min-height:240px;
 overflow:visible}
 .ency-card .art{min-height:88px;
 font-size:48px}
- .ency-card .name{-webkit-line-clamp:2}
+.ency-card .name{-webkit-line-clamp:2}
 .ency-card:hover{transform:translateY(-6px) scale(1.03);
 box-shadow:0 16px 30px rgba(0,0,0,.45),0 0 0 2px rgba(124,196,255,.15) inset}
- .ency-card:hover{transform:scale(1.04);
+.ency-card:hover{transform:scale(1.04);
 z-index:3;
 box-shadow:0 16px 30px rgba(0,0,0,.45),0 0 0 2px rgba(124,196,255,.15) inset}
 .ency-card.tilted{transform:rotateX(var(--rX)) rotateY(var(--rY)) scale(1.06)}
@@ -599,8 +599,7 @@ white-space:nowrap}
 .chip[data-type=keyword]{background:linear-gradient(180deg,#6342b6,#3b1f7e)}
 .chip[data-type=etb]{background:linear-gradient(180deg,#7c5a21,#5a3f10)}
 .chip[data-type=trait]{background:linear-gradient(180deg,#1a2a54,#121d40)}
- .chip[data-tip], .keyword[data-tip]{position:relative}
-
+.chip[data-tip], .keyword[data-tip]{position:relative}
 .chip[data-tip]::after, .keyword[data-tip]::after{content:attr(data-tip);
 position:absolute;
 left:50%;
@@ -623,10 +622,8 @@ pointer-events:none;
 z-index:50;
 transition:opacity .15s ease,transform .15s ease;
 will-change:opacity,transform}
-
 .chip[data-tip]:hover::after, .keyword[data-tip]:hover::after{opacity:1;
 transform:translate(-50%,-10px)}
-
 .stance-chooser{position:fixed;
 z-index:1000;
 background:#0c1230;
@@ -636,7 +633,7 @@ box-shadow:0 20px 50px rgba(0,0,0,.5);
 padding:8px;
 display:flex;
 gap:8px}
- .row{display:grid;
+.row{display:grid;
 grid-template-columns:80px 1fr 80px;
 align-items:center;
 gap:12px}
@@ -688,4 +685,3 @@ color:#24040a}
 .brand .logo-wordmark{width:min(92vw,520px);
 height:auto;
 display:block}
-
