@@ -122,7 +122,7 @@ grid-template-columns:auto 1fr auto;
 gap:8px;
 align-items:center;
 margin-bottom:2px}
-.card .head .name{min-width:0}
+.card .head .name{min-width:0;padding:2px 4px;border-radius:4px;background:linear-gradient(180deg,rgba(0,0,0,.6),rgba(0,0,0,0));}
 .cost{display:grid;
 place-items:center;
 width:22px;
@@ -154,7 +154,8 @@ align-items:center;
 justify-content:center;
 min-height:88px;
 height:auto;
-font-size:48px}
+font-size:48px;
+position:relative}
 .text{font-size:12px;
 color:#d9e3ff;
 background:#0e1435;
@@ -660,7 +661,7 @@ color:#24040a}
 /* deck-specific backgrounds */
 .card .bg.bg-default{background:radial-gradient(140% 100% at 50% 0%,rgba(255,255,255,.04),rgba(0,0,0,0))}
 
-.card .bg.bg-vikings{background:radial-gradient(140% 120% at 0% 0%,rgba(255,214,102,.18),transparent 40%),linear-gradient(180deg,#1a2550,#0f183a)}
+.card .bg.bg-vikings{background:url('https://videos.openai.com/vg-assets/assets%2Ftask_01k32xgy2qf8gt1yqgr2ygnsk5%2F1755666056_img_0.webp?st=2025-08-20T03%3A19%3A09Z&se=2025-08-26T04%3A19%3A09Z&sks=b&skt=2025-08-20T03%3A19%3A09Z&ske=2025-08-26T04%3A19%3A09Z&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skoid=8ebb0df1-a278-4e2e-9c20-f2d373479b3a&skv=2019-02-02&sv=2018-11-09&sr=b&sp=r&spr=https%2Chttp&sig=iPqjN5M8F2u2KDkz4H8O9zqyyFbsnTJEBNwxr5IldAA%3D&az=oaivgprodscus') center/cover no-repeat,radial-gradient(140% 120% at 0% 0%,rgba(255,214,102,.18),transparent 40%),linear-gradient(180deg,#1a2550,#0f183a)}
 
 .card .bg.bg-animais{background:radial-gradient(140% 120% at 0% 0%,rgba(77,185,120,.22),transparent 40%),linear-gradient(180deg,#0f2b1d,#0b1620)}
 
@@ -677,6 +678,25 @@ color:#24040a}
 .ency-card.bg-pescadores{background:linear-gradient(180deg,#0a2a4f,#081a32)}
 
 .ency-card.bg-floresta{background:linear-gradient(180deg,#0f2c1b,#091a14)}
+
+/* Vikings deck sprite icons */
+.vikings-icon{width:48px;height:48px;background-image:url('https://videos.openai.com/vg-assets/assets%2Ftask_01k32xgy2qf8gt1yqgr2ygnsk5%2F1755666056_img_1.webp?st=2025-08-20T03%3A19%3A09Z&se=2025-08-26T04%3A19%3A09Z&sks=b&skt=2025-08-20T03%3A19%3A09Z&ske=2025-08-26T04%3A19%3A09Z&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skoid=8ebb0df1-a278-4e2e-9c20-f2d373479b3a&skv=2019-02-02&sv=2018-11-09&sr=b&sp=r&spr=https%2Chttp&sig=iPqjN5M8F2u2KDkz4H8O9zqyyFbsnTJEBNwxr5IldAA%3D&az=oaivgprodscus');background-size:300% 300%;background-repeat:no-repeat;image-rendering:pixelated}
+.vik-icon-0{background-position:0% 0%}
+.vik-icon-1{background-position:50% 0%}
+.vik-icon-2{background-position:100% 0%}
+.vik-icon-3{background-position:0% 50%}
+.vik-icon-4{background-position:50% 50%}
+.vik-icon-5{background-position:100% 50%}
+.vik-icon-6{background-position:0% 100%}
+.vik-icon-7{background-position:50% 100%}
+.vik-icon-8{background-position:100% 100%}
+.vik-icon-9{background-image:url('https://videos.openai.com/vg-assets/assets%2Ftask_01k32xgy2qf8gt1yqgr2ygnsk5%2F1755666056_img_2.webp?st=2025-08-20T03%3A19%3A09Z&se=2025-08-26T04%3A19%3A09Z&sks=b&skt=2025-08-20T03%3A19%3A09Z&ske=2025-08-26T04%3A19%3A09Z&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skoid=8ebb0df1-a278-4e2e-9c20-f2d373479b3a&skv=2019-02-02&sv=2018-11-09&sr=b&sp=r&spr=https%2Chttp&sig=iPqjN5M8F2u2KDkz4H8O9zqyyFbsnTJEBNwxr5IldAA%3D&az=oaivgprodscus');background-size:300% 300%;background-position:0% 0%}
+
+/* 3D projection / hologram for Vikings deck */
+.card .projection{position:absolute;top:50%;left:50%;width:48px;height:48px;transform:translate(-50%,-50%) rotateX(60deg);animation:holoFloat 1.5s ease-in-out infinite alternate;pointer-events:none}
+.card .projection::after{content:"";position:absolute;inset:0;background:linear-gradient(transparent 50%,rgba(0,255,255,.3) 51%);background-size:100% 4px;mix-blend-mode:overlay;animation:holoScan 2s linear infinite}
+@keyframes holoFloat{from{transform:translate(-50%,-50%) rotateX(60deg) translateY(0)}to{transform:translate(-50%,-50%) rotateX(60deg) translateY(-10px)}}
+@keyframes holoScan{from{background-position:0 0}to{background-position:0 -4px}}
 
 .ency-card.bg-custom{background:linear-gradient(180deg,#1a1a3f,#101028)}
 
