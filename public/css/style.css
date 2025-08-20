@@ -11,7 +11,7 @@
 --text:#e6e9ff;
 --muted:#a7b0d9}
 *{box-sizing:border-box}
-html,body{height:100%}
+html,body{height:100%;overflow:hidden}
 body{margin:0;
 font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Helvetica,Arial;
 background:radial-gradient(1200px 700px at 20% 0%,#0e1340 0%,var(--bg) 60%);
@@ -19,9 +19,7 @@ color:var(--text)}
 h1{margin:0 0 12px;
 font-size:clamp(22px,4vw,36px);
 letter-spacing:.5px}
-.wrap{max-width:1600px;
-margin:0 auto;
-padding:16px 24px}
+.wrap{max-width:1600px;margin:0 auto;padding:16px 24px;height:100vh;display:flex;flex-direction:column;overflow:hidden}
 .sub{color:var(--muted);
 margin-bottom:18px}
 .btn{cursor:pointer;
@@ -91,80 +89,57 @@ min-height:200px;
 border:1px dashed #31408b;
 position:relative;
 overflow:visible;
-margin:24px 0}
-.hand{display:flex;
-flex-wrap:wrap;
-gap:20px;
-align-items:flex-start;
-margin:24px 0 48px}
+margin:12px 0;
+flex:1;min-height:0}
+.row{display:flex;gap:14px;align-items:flex-start;flex:1}
+.row .board{flex:1}
+.hand{display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start;justify-content:center;margin:12px 0;flex:0 0 auto}
+.hand .card::before{opacity:.8}
+.hand .card:hover::before{animation:foilHue 1.2s linear infinite}
+.hand .card:hover::after{opacity:.3}
+@keyframes foilHue{from{filter:hue-rotate(0deg);}to{filter:hue-rotate(360deg);}}
 .card{width:176px;
-aspect-ratio:auto;
-min-height:240px;
-background:linear-gradient(180deg,var(--card2),var(--card));
-border-radius:18px;
-border:1px solid #28336b;
-box-shadow:0 10px 20px rgba(0,0,0,.35),inset 0 0 0 1px rgba(255,255,255,.06);
-padding:8px;
-display:grid;
-grid-template-rows:auto auto minmax(78px,1fr) auto auto;
-row-gap:6px;
-position:relative;
-user-select:none;
-transition:transform .18s ease,box-shadow .18s ease;
-overflow:visible;
-transform-style:preserve-3d;
---mx:50%;
---my:50%;
---rX:0deg;
---rY:0deg}
-.card .head{display:grid;
-grid-template-columns:auto 1fr auto;
-gap:8px;
-align-items:center;
-margin-bottom:2px}
-.card .head .name{min-width:0}
-.cost{display:grid;
-place-items:center;
-width:22px;
-height:22px;
-border-radius:50%;
-font-weight:900;
-color:#02122e;
-background:radial-gradient(circle at 30% 30%,#aee5ff,#4aa3ff);
-box-shadow:0 8px 14px rgba(74,163,255,.35),inset 0 0 18px rgba(255,255,255,.35)}
-.name{font-weight:800;
-font-size:14px;
-line-height:1.15;
-white-space:normal;
-overflow:visible;
-text-overflow:clip;
-display:-webkit-box;
--webkit-line-clamp:2;
--webkit-box-orient:vertical}
+ aspect-ratio:auto;
+ min-height:240px;
+ background:linear-gradient(180deg,var(--card2),var(--card));
+ border-radius:18px;
+ border:1px solid #28336b;
+ box-shadow:0 10px 20px rgba(0,0,0,.35),inset 0 0 0 1px rgba(255,255,255,.06);
+ padding:8px;
+ display:grid;
+ grid-template-rows:auto auto minmax(78px,1fr) auto auto;
+ row-gap:6px;
+ position:relative;
+ user-select:none;
+ transition:transform .18s ease,box-shadow .18s ease;
+ overflow:visible;
+ transform-style:preserve-3d;
+ --mx:50%;
+ --my:50%;
+ --rX:0deg;
+ --rY:0deg}
+.card .name-bar,.card .cost-bar{background:linear-gradient(180deg,rgba(0,0,0,.6),rgba(0,0,0,.2));padding:2px 4px;box-sizing:border-box}
+.card .name-bar{border-radius:6px 6px 0 0;font-weight:800;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card .cost-bar{display:flex;justify-content:flex-end;align-items:center;gap:4px;border-radius:0 0 6px 6px;margin-top:-4px;position:relative}
+.card .cost-bar .badge{position:absolute;left:4px}
+.card .mana-row{display:flex;align-items:center;gap:4px}
+.mana-dot{width:12px;height:12px;border-radius:50%;background:radial-gradient(circle at 30% 30%,#aee5ff,#4aa3ff);box-shadow:0 4px 8px rgba(74,163,255,.35),inset 0 0 8px rgba(255,255,255,.35)}
+.mana-num{font-weight:900;margin-left:4px}
 .badge{font-size:10px;
 padding:3px 6px;
 border-radius:999px;
 border:1px solid rgba(255,255,255,.14)}
 .badge.atk{background:linear-gradient(180deg,#1f2a64,#15204a)}
 .badge.def{background:linear-gradient(180deg,#2a5f3a,#1e462b)}
-.tribe{font-size:12px;
-color:var(--muted)}
+/* tribe text removed */
 .art{display:flex;
 align-items:center;
 justify-content:center;
 min-height:88px;
 height:auto;
-font-size:48px}
-.text{font-size:12px;
-color:#d9e3ff;
-background:#0e1435;
-border:1px solid #25306a;
-border-radius:10px;
-padding:6px;
-margin:0;
-max-width:100%;
-word-break:break-word;
-box-sizing:border-box}
+font-size:48px;
+position:relative}
+.text{font-size:12px;color:#d9e3ff;background:#0e1435;border:1px solid #25306a;border-radius:10px;padding:4px;margin:0;max-width:100%;word-break:break-word;box-sizing:border-box;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;height:18px}
 .stats{display:flex;
 justify-content:space-between;
 align-items:center;
@@ -222,8 +197,8 @@ border-radius:inherit;
 background:radial-gradient(180px 180px at var(--mx) var(--my), rgba(255,255,255,.18), transparent 40%);
 opacity:0;
 transition:opacity .2s ease}
-.card.tilted::before{opacity:.28}
-.card.tilted::after{opacity:.22}
+.card.tilted::before{opacity:.5}
+.card.tilted::after{opacity:.4}
 .card.attack-lunge{animation:lunge .35s ease}
 .card.hit-shake{animation:shakeHit .35s ease}
 .card.shield-flash{animation:shieldFlash .6s ease}
@@ -289,6 +264,7 @@ border-radius:50%;
 border:1px solid #2b3a86;
 background:linear-gradient(180deg,#0e1636,#0a1027);
 box-shadow:inset 0 0 0 1px rgba(255,255,255,.06)}
+.opp-label{margin-left:6px;font-size:12px;color:var(--muted)}
 .start{position:fixed;
 inset:0;
 display:grid;
@@ -391,19 +367,14 @@ box-shadow:0 12px 30px rgba(0,0,0,.45);
 opacity:0;
 white-space:nowrap}
 .view-cards:hover::after{opacity:1}
-.footer{display:flex;
-gap:8px;
-align-items:center;
-justify-content:space-between;
-margin-top:10px}
-.log{max-height:160px;
-overflow:auto;
-background:linear-gradient(180deg,#0e1331,#0a0f27);
-border:1px solid #243069;
-border-radius:12px;
-padding:8px;
-font-size:13px;
-color:#c9d2ff}
+.footer{display:flex;gap:8px;align-items:center;justify-content:space-between;margin-top:10px}
+.footer .controls{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+#difficulty{appearance:none;background:linear-gradient(180deg,#1a2550,#0f183a);color:#cfe3ff;border:1px solid #2b3a86;border-radius:8px;padding:6px 24px 6px 8px;font-size:14px}
+#difficulty:focus{outline:none;box-shadow:0 0 0 2px rgba(74,163,255,.6)}
+.log-wrap{position:fixed;right:8px;top:50%;transform:translateY(-50%);width:220px;max-height:60vh;display:flex;flex-direction:column;z-index:200}
+.log-wrap .zone-title{text-align:center;margin-bottom:4px}
+.log{flex:1;overflow:auto;background:linear-gradient(180deg,#0e1331,#0a0f27);border:1px solid #243069;border-radius:12px;padding:8px;font-size:13px;color:#c9d2ff}
+@media (max-width:720px){.log-wrap{width:150px;right:4px}}
 .pile{display:grid;
 place-items:center;
 width:66px;
@@ -631,10 +602,6 @@ box-shadow:0 20px 50px rgba(0,0,0,.5);
 padding:8px;
 display:flex;
 gap:8px}
-.row{display:grid;
-grid-template-columns:80px 1fr 80px;
-align-items:center;
-gap:12px}
 @media (max-width:720px){.board{grid-template-columns:repeat(auto-fit,minmax(140px,1fr));
 padding:16px 10px;
 min-height:180px}
@@ -649,18 +616,15 @@ gap:8px}
 .center-hud{flex-wrap:wrap;
 justify-content:space-between}
 }
-#playerBoard .card,#aiBoard .card{width:150px;
-min-height:220px}
-.board .card .art{font-size:44px}
-#playerBoard .card .art,#aiBoard .card .art{min-height:72px;
-font-size:40px}
+#playerBoard .card,#aiBoard .card{min-height:220px}
+#playerBoard .card .art,#aiBoard .card .art{min-height:88px;font-size:48px}
 .card.blocked .cost{background:radial-gradient(circle at 30% 30%,#ffc2c2,#ff4d6d);
 color:#24040a}
 
 /* deck-specific backgrounds */
 .card .bg.bg-default{background:radial-gradient(140% 100% at 50% 0%,rgba(255,255,255,.04),rgba(0,0,0,0))}
 
-.card .bg.bg-vikings{background:radial-gradient(140% 120% at 0% 0%,rgba(255,214,102,.18),transparent 40%),linear-gradient(180deg,#1a2550,#0f183a)}
+.card .bg.bg-vikings{background:url('https://videos.openai.com/vg-assets/assets%2Ftask_01k32xgy2qf8gt1yqgr2ygnsk5%2F1755666056_img_0.webp?st=2025-08-20T03%3A19%3A09Z&se=2025-08-26T04%3A19%3A09Z&sks=b&skt=2025-08-20T03%3A19%3A09Z&ske=2025-08-26T04%3A19%3A09Z&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skoid=8ebb0df1-a278-4e2e-9c20-f2d373479b3a&skv=2019-02-02&sv=2018-11-09&sr=b&sp=r&spr=https%2Chttp&sig=iPqjN5M8F2u2KDkz4H8O9zqyyFbsnTJEBNwxr5IldAA%3D&az=oaivgprodscus') center/cover no-repeat,radial-gradient(140% 120% at 0% 0%,rgba(255,214,102,.18),transparent 40%),linear-gradient(180deg,#1a2550,#0f183a)}
 
 .card .bg.bg-animais{background:radial-gradient(140% 120% at 0% 0%,rgba(77,185,120,.22),transparent 40%),linear-gradient(180deg,#0f2b1d,#0b1620)}
 
@@ -677,6 +641,26 @@ color:#24040a}
 .ency-card.bg-pescadores{background:linear-gradient(180deg,#0a2a4f,#081a32)}
 
 .ency-card.bg-floresta{background:linear-gradient(180deg,#0f2c1b,#091a14)}
+
+/* Vikings deck sprite icons */
+.vikings-icon{width:96px;height:96px;background-image:url('https://videos.openai.com/vg-assets/assets%2Ftask_01k32xw6bhfxatqs3evxmptrds%2F1755666416_img_1.webp?st=2025-08-20T03%3A17%3A52Z&se=2025-08-26T04%3A17%3A52Z&sks=b&skt=2025-08-20T03%3A17%3A52Z&ske=2025-08-26T04%3A17%3A52Z&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skoid=8ebb0df1-a278-4e2e-9c20-f2d373479b3a&skv=2019-02-02&sv=2018-11-09&sr=b&sp=r&spr=https%2Chttp&sig=8%2Bisb3EsmtRseqBSReK2IiNlGwsqKxHKGeqSZMQd2M0%3D&az=oaivgprodscus');background-size:288px 288px;background-repeat:no-repeat;image-rendering:pixelated;background-color:transparent}
+.vik-icon-0{background-position:0 0}
+.vik-icon-1{background-position:-96px 0}
+.vik-icon-2{background-position:-192px 0}
+.vik-icon-3{background-position:0 -96px}
+.vik-icon-4{background-position:-96px -96px}
+.vik-icon-5{background-position:-192px -96px}
+.vik-icon-6{background-position:0 -192px}
+.vik-icon-7{background-position:-96px -192px}
+.vik-icon-8{background-position:-192px -192px}
+.vik-icon-9{background-image:url('https://videos.openai.com/vg-assets/assets%2Ftask_01k32xw6bhfxatqs3evxmptrds%2F1755666416_img_2.webp?st=2025-08-20T03%3A17%3A52Z&se=2025-08-26T04%3A17%3A52Z&sks=b&skt=2025-08-20T03%3A17%3A52Z&ske=2025-08-26T04%3A17%3A52Z&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skoid=8ebb0df1-a278-4e2e-9c20-f2d373479b3a&skv=2019-02-02&sv=2018-11-09&sr=b&sp=r&spr=https%2Chttp&sig=8%2Bisb3EsmtRseqBSReK2IiNlGwsqKxHKGeqSZMQd2M0%3D&az=oaivgprodscus');background-size:288px 288px;background-position:0 0}
+
+/* 3D projection / hologram for Vikings deck */
+.card .projection{position:absolute;top:50%;left:50%;width:96px;height:96px;transform-style:preserve-3d;transform:translate(-50%,-50%) rotateX(35deg) rotateY(0deg);animation:holoSpin 6s linear infinite;pointer-events:none;filter:drop-shadow(0 0 6px rgba(0,255,255,.6))}
+.card .projection::after{content:"";position:absolute;inset:0;background:linear-gradient(transparent 60%,rgba(0,255,255,.3) 61%);background-size:100% 4px;mix-blend-mode:overlay;animation:holoScan 2s linear infinite}
+ .card .projection canvas{width:100%;height:100%;display:block}
+@keyframes holoSpin{from{transform:translate(-50%,-50%) rotateX(35deg) rotateY(0deg)}to{transform:translate(-50%,-50%) rotateX(35deg) rotateY(360deg)}}
+@keyframes holoScan{from{background-position:0 0}to{background-position:0 -4px}}
 
 .ency-card.bg-custom{background:linear-gradient(180deg,#1a1a3f,#101028)}
 
