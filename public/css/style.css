@@ -307,6 +307,10 @@ width:min(96vw,1200px)}
 .multiplayer .panel{background:linear-gradient(180deg,#121a44,#0c1230);border:1px solid #2b3a86;border-radius:16px;box-shadow:0 20px 50px rgba(0,0,0,.5);padding:26px 28px;max-width:480px;width:min(94vw,480px);text-align:center;display:flex;flex-direction:column;gap:12px}
 #joinCode{flex:1;padding:8px;border-radius:8px;border:1px solid #2b3a86;background:#0c1230;color:#cfe3ff}
 .multiplayer .panel div{display:flex;justify-content:center;gap:8px}
+#titleMenu .main-actions{display:flex;flex-direction:column;gap:12px;align-items:center;margin-top:20px}
+.options-menu{position:fixed;inset:0;display:none;place-items:center;z-index:60;background:rgba(0,0,0,.7)}
+.options-menu .panel{text-align:center;display:flex;flex-direction:column;gap:12px}
+.options-menu.show{display:grid}
 #roomList{margin-top:12px}
 #roomList .room{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
 #roomList .room button{margin-left:8px}
@@ -527,10 +531,10 @@ min-height:240px;
 overflow:visible}
 .ency-card .art{min-height:88px;
 font-size:48px}
- .ency-card .name{-webkit-line-clamp:2}
+.ency-card .name{-webkit-line-clamp:2}
 .ency-card:hover{transform:translateY(-6px) scale(1.03);
 box-shadow:0 16px 30px rgba(0,0,0,.45),0 0 0 2px rgba(124,196,255,.15) inset}
- .ency-card:hover{transform:scale(1.04);
+.ency-card:hover{transform:scale(1.04);
 z-index:3;
 box-shadow:0 16px 30px rgba(0,0,0,.45),0 0 0 2px rgba(124,196,255,.15) inset}
 .ency-card.tilted{transform:rotateX(var(--rX)) rotateY(var(--rY)) scale(1.06)}
@@ -595,8 +599,7 @@ white-space:nowrap}
 .chip[data-type=keyword]{background:linear-gradient(180deg,#6342b6,#3b1f7e)}
 .chip[data-type=etb]{background:linear-gradient(180deg,#7c5a21,#5a3f10)}
 .chip[data-type=trait]{background:linear-gradient(180deg,#1a2a54,#121d40)}
- .chip[data-tip], .keyword[data-tip]{position:relative}
-
+.chip[data-tip], .keyword[data-tip]{position:relative}
 .chip[data-tip]::after, .keyword[data-tip]::after{content:attr(data-tip);
 position:absolute;
 left:50%;
@@ -619,10 +622,8 @@ pointer-events:none;
 z-index:50;
 transition:opacity .15s ease,transform .15s ease;
 will-change:opacity,transform}
-
 .chip[data-tip]:hover::after, .keyword[data-tip]:hover::after{opacity:1;
 transform:translate(-50%,-10px)}
-
 .stance-chooser{position:fixed;
 z-index:1000;
 background:#0c1230;
@@ -632,7 +633,7 @@ box-shadow:0 20px 50px rgba(0,0,0,.5);
 padding:8px;
 display:flex;
 gap:8px}
- .row{display:grid;
+.row{display:grid;
 grid-template-columns:80px 1fr 80px;
 align-items:center;
 gap:12px}
