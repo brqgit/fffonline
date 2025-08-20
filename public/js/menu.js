@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (soloBtn) soloBtn.addEventListener('click', () => {
     if (titleMenu) titleMenu.style.display = 'none';
-    if (deckScreen) deckScreen.style.display = 'block';
+    if (deckScreen) deckScreen.style.display = 'grid';
   });
 
   if (multiBtn) multiBtn.addEventListener('click', () => {
@@ -25,7 +25,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (backToMenu) backToMenu.addEventListener('click', () => {
     if (deckScreen) deckScreen.style.display = 'none';
-    if (titleMenu) titleMenu.style.display = 'block';
+    if (titleMenu) titleMenu.style.display = 'grid';
   });
 
   if (closeOptions) closeOptions.addEventListener('click', () => {

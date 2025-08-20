@@ -15,7 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function showDeckSelect() {
     mpMenu.style.display = 'none';
-    startScreen.style.display = 'block';
+    startScreen.style.display = 'grid';
     const mpOpen = document.getElementById('openMultiplayer');
     if (mpOpen) mpOpen.style.display = 'none';
     const btn = document.getElementById('startGame');
@@ -40,7 +40,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (backBtn) {
     backBtn.addEventListener('click', () => {
       mpMenu.style.display = 'none';
-      startScreen.style.display = 'block';
+      startScreen.style.display = 'grid';
       statusEl.textContent = '';
       window.isMultiplayer = false;
       window.mpState = null;
