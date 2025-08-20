@@ -669,11 +669,10 @@ color:#24040a}
 .vik-icon-7{background-image:url('../img/vikings/characters/char7.png')}
 .vik-icon-8{background-image:url('../img/vikings/characters/char8.png')}
 .vik-icon-9{background-image:url('../img/vikings/tools/tool0.png')}
-
 /* 3D projection / hologram for Vikings deck */
 .card .projection{position:absolute;top:50%;left:50%;width:96px;height:96px;transform-style:preserve-3d;transform:translate(-50%,-50%) rotateX(35deg) rotateY(0deg);animation:holoSpin 6s linear infinite;pointer-events:none;filter:drop-shadow(0 0 6px rgba(0,255,255,.6))}
 .card .projection::after{content:"";position:absolute;inset:0;background:linear-gradient(transparent 60%,rgba(0,255,255,.3) 61%);background-size:100% 4px;mix-blend-mode:overlay;animation:holoScan 2s linear infinite}
- .card .projection canvas{width:100%;height:100%;display:block}
+.card .projection canvas{width:100%;height:100%;display:block}
 @keyframes holoSpin{from{transform:translate(-50%,-50%) rotateX(35deg) rotateY(0deg)}to{transform:translate(-50%,-50%) rotateX(35deg) rotateY(360deg)}}
 @keyframes holoScan{from{background-position:0 0}to{background-position:0 -4px}}
 
