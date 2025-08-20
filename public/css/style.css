@@ -680,7 +680,7 @@ color:#24040a}
 .ency-card.bg-floresta{background:linear-gradient(180deg,#0f2c1b,#091a14)}
 
 /* Vikings deck sprite icons */
-.vikings-icon{width:48px;height:48px;background-image:url('https://videos.openai.com/vg-assets/assets%2Ftask_01k32xgy2qf8gt1yqgr2ygnsk5%2F1755666056_img_1.png?st=2025-08-20T03%3A19%3A09Z&se=2025-08-26T04%3A19%3A09Z&sks=b&skt=2025-08-20T03%3A19%3A09Z&ske=2025-08-26T04%3A19%3A09Z&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skoid=8ebb0df1-a278-4e2e-9c20-f2d373479b3a&skv=2019-02-02&sv=2018-11-09&sr=b&sp=r&spr=https%2Chttp&sig=iPqjN5M8F2u2KDkz4H8O9zqyyFbsnTJEBNwxr5IldAA%3D&az=oaivgprodscus');background-size:300% 300%;background-repeat:no-repeat;image-rendering:pixelated}
+.vikings-icon{width:48px;height:48px;background-image:url('https://videos.openai.com/vg-assets/assets%2Ftask_01k32xgy2qf8gt1yqgr2ygnsk5%2F1755666056_img_1.webp?st=2025-08-20T03%3A19%3A09Z&se=2025-08-26T04%3A19%3A09Z&sks=b&skt=2025-08-20T03%3A19%3A09Z&ske=2025-08-26T04%3A19%3A09Z&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skoid=8ebb0df1-a278-4e2e-9c20-f2d373479b3a&skv=2019-02-02&sv=2018-11-09&sr=b&sp=r&spr=https%2Chttp&sig=iPqjN5M8F2u2KDkz4H8O9zqyyFbsnTJEBNwxr5IldAA%3D&az=oaivgprodscus');background-size:300% 300%;background-repeat:no-repeat;image-rendering:pixelated}
 .vik-icon-0{background-position:0% 0%}
 .vik-icon-1{background-position:50% 0%}
 .vik-icon-2{background-position:100% 0%}
@@ -690,7 +690,7 @@ color:#24040a}
 .vik-icon-6{background-position:0% 100%}
 .vik-icon-7{background-position:50% 100%}
 .vik-icon-8{background-position:100% 100%}
-.vik-icon-9{background-image:url('https://videos.openai.com/vg-assets/assets%2Ftask_01k32xgy2qf8gt1yqgr2ygnsk5%2F1755666056_img_2.png?st=2025-08-20T03%3A19%3A09Z&se=2025-08-26T04%3A19%3A09Z&sks=b&skt=2025-08-20T03%3A19%3A09Z&ske=2025-08-26T04%3A19%3A09Z&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skoid=8ebb0df1-a278-4e2e-9c20-f2d373479b3a&skv=2019-02-02&sv=2018-11-09&sr=b&sp=r&spr=https%2Chttp&sig=iPqjN5M8F2u2KDkz4H8O9zqyyFbsnTJEBNwxr5IldAA%3D&az=oaivgprodscus');background-size:300% 300%;background-position:0% 0%}
+.vik-icon-9{background-image:url('https://videos.openai.com/vg-assets/assets%2Ftask_01k32xgy2qf8gt1yqgr2ygnsk5%2F1755666056_img_2.webp?st=2025-08-20T03%3A19%3A09Z&se=2025-08-26T04%3A19%3A09Z&sks=b&skt=2025-08-20T03%3A19%3A09Z&ske=2025-08-26T04%3A19%3A09Z&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skoid=8ebb0df1-a278-4e2e-9c20-f2d373479b3a&skv=2019-02-02&sv=2018-11-09&sr=b&sp=r&spr=https%2Chttp&sig=iPqjN5M8F2u2KDkz4H8O9zqyyFbsnTJEBNwxr5IldAA%3D&az=oaivgprodscus');background-size:300% 300%;background-position:0% 0%}
 
 /* 3D projection / hologram for Vikings deck */
 .card .projection{position:absolute;top:50%;left:50%;width:48px;height:48px;transform:translate(-50%,-50%) rotateX(60deg);animation:holoFloat 1.5s ease-in-out infinite alternate;pointer-events:none}
