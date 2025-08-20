@@ -8,6 +8,11 @@
   let role = null; // 'host' or 'guest'
   let roomCode = null;
 
+  // store room code when hosting
+  socket.on('hosted', (code) => {
+    roomCode = code;
+  });
+
   function connectIfNeeded() {
     if (!socket.connected) {
       socket.connect();
@@ -84,6 +89,12 @@
     onOpponentLeft(handler) {
       socket.on('opponentLeft', handler);
     },
+    onOpponentDisconnected(handler) {
+      socket.on('opponentDisconnected', handler);
+    },
+    onOpponentReconnected(handler) {
+      socket.on('opponentReconnected', handler);
+    },
     onRematch(handler) {
       socket.on('rematch', handler);
     },
@@ -113,6 +124,12 @@
     console.warn('Disconnected:', reason);
     if (reason === 'io server disconnect') {
       socket.connect();
+    }
+  });
+
+  socket.on('reconnect', () => {
+    if (roomCode && role) {
+      socket.emit('rejoin', { room: roomCode, role });
     }
   });
 
