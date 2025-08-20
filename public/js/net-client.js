@@ -26,6 +26,10 @@
       connectIfNeeded();
       socket.emit('join', code);
     },
+    listRooms() {
+      connectIfNeeded();
+      socket.emit('listRooms');
+    },
     isHost() {
       return role === 'host';
     },
@@ -64,6 +68,9 @@
     },
     onJoinError(handler) {
       socket.on('joinError', handler);
+    },
+    onRooms(handler) {
+      socket.on('rooms', handler);
     },
     onOpponentLeft(handler) {
       socket.on('opponentLeft', handler);
