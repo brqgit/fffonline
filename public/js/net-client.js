@@ -48,6 +48,9 @@
     sendEmoji(emoji) {
       socket.emit('emoji', emoji);
     },
+    requestRematch() {
+      socket.emit('rematch');
+    },
     onOpponentDeckConfirmed(handler) {
       socket.on('opponentDeckConfirmed', handler);
     },
@@ -62,7 +65,7 @@
     },
     onEmoji(handler) {
       socket.on('emoji', handler);
-    },
+   ,
     onHosted(handler) {
       socket.on('hosted', handler);
     },
@@ -80,6 +83,9 @@
     },
     onOpponentLeft(handler) {
       socket.on('opponentLeft', handler);
+    },
+    onRematch(handler) {
+      socket.on('rematch', handler);
     },
     onConnectionError(handler) {
       socket.on('connect_error', handler);

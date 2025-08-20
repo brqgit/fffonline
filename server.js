@@ -112,6 +112,28 @@ io.on('connection', (socket) => {
     }
   });
 
+  socket.on('rematch', () => {
+    const room = socket.data.room;
+    if (!room) return;
+    socket.data.rematch = true;
+    const clients = io.sockets.adapter.rooms.get(room);
+    if (!clients || clients.size !== 2) return;
+    const ready = [...clients].every((id) => {
+      const s = io.sockets.sockets.get(id);
+      return s && s.data.rematch;
+    });
+    if (ready) {
+      [...clients].forEach((id) => {
+        const s = io.sockets.sockets.get(id);
+        if (s) {
+          s.data.startReady = false;
+          s.data.rematch = false;
+          s.emit('rematch');
+        }
+      });
+    }
+  });
+
   socket.on('disconnecting', () => {
     const { room } = socket.data;
     if (room) {
@@ -128,6 +150,7 @@ io.on('connection', (socket) => {
     delete socket.data.room;
     delete socket.data.deckChosen;
     delete socket.data.startReady;
+    delete socket.data.rematch;
   });
 
   socket.on('disconnect', async () => {
