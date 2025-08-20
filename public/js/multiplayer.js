@@ -12,6 +12,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   window.isMultiplayer = false;
   window.mpState = null;
+  let playerNamed=false;
+  function ensureName(){if(!playerNamed){const n=prompt('Seu nome?')||'Jogador';window.playerName=n;playerNamed=true;window.NET&&NET.setName(n);}}
 
   function showDeckSelect() {
     mpMenu.style.display = 'none';
@@ -31,6 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (openBtn) {
     openBtn.addEventListener('click', () => {
+      ensureName();
       if (startScreen) startScreen.style.display = 'none';
       if (mpMenu) mpMenu.style.display = 'grid';
       if (roomList) roomList.style.display = 'none';
@@ -55,6 +58,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (hostBtn) {
     hostBtn.addEventListener('click', () => {
+      ensureName();
       if (window.NET) {
         NET.host();
       }
@@ -66,6 +70,7 @@ document.addEventListener('DOMContentLoaded', () => {
     joinBtn.addEventListener('click', () => {
       const code = joinCodeInput.value.trim();
       if (code) {
+        ensureName();
         if (window.NET) {
           NET.join(code);
         }
@@ -106,11 +111,32 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     NET.onOpponentLeft(() => {
+      clearInterval(reconTimer);
       statusEl.textContent = 'Oponente saiu.';
     });
 
     NET.onConnectionError(() => {
       statusEl.textContent = 'Falha na conexão.';
+    });
+
+    let reconTimer = null;
+    NET.onOpponentDisconnected(() => {
+      let t = 10;
+      statusEl.textContent = `Oponente desconectado. Reconnectando em ${t}s`;
+      clearInterval(reconTimer);
+      reconTimer = setInterval(() => {
+        t -= 1;
+        if (t > 0) {
+          statusEl.textContent = `Oponente desconectado. Reconnectando em ${t}s`;
+        } else {
+          clearInterval(reconTimer);
+        }
+      }, 1000);
+    });
+
+    NET.onOpponentReconnected(() => {
+      clearInterval(reconTimer);
+      statusEl.textContent = 'Oponente reconectado.';
     });
 
     NET.onRooms((rooms) => {
@@ -120,22 +146,23 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
       roomList.innerHTML = '';
-      rooms.forEach((r) => {
-        const div = document.createElement('div');
-        div.className = 'room';
-        div.innerHTML = `<span>${r.code}</span><span>${r.players >= 2 ? 'Cheia' : r.players + '/2'}</span>`;
-        if (r.players < 2) {
-          const b = document.createElement('button');
-          b.className = 'btn';
-          b.textContent = 'Entrar';
-          b.addEventListener('click', () => {
+        rooms.forEach((r) => {
+          const div = document.createElement('div');
+          div.className = 'room';
+          div.innerHTML = `<span>${r.code}</span><span>${r.players >= 2 ? 'Cheia' : r.players + '/2'}</span>`;
+          if (r.players < 2) {
+            const b = document.createElement('button');
+            b.className = 'btn';
+            b.textContent = 'Entrar';
+            b.addEventListener('click', () => {
+            ensureName();
             NET.join(r.code);
             statusEl.textContent = 'Conectando...';
           });
           div.appendChild(b);
-        }
-        roomList.appendChild(div);
-      });
+          }
+          roomList.appendChild(div);
+        });
     });
   }
 });
