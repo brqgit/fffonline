@@ -4,7 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const openBtn = document.getElementById('openMultiplayer');
   const backBtn = document.getElementById('mpBack');
   const hostBtn = document.getElementById('hostBtn');
-  the findBtn = document.getElementById('findBtn');
+  const findBtn = document.getElementById('findBtn');
   const roomList = document.getElementById('roomList');
   const joinBtn = document.getElementById('joinBtn');
   const joinCodeInput = document.getElementById('joinCode');
@@ -31,10 +31,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (openBtn) {
     openBtn.addEventListener('click', () => {
-      startScreen.style.display = 'none';
-      mpMenu.style.display = 'block';
+      if (startScreen) startScreen.style.display = 'none';
+      if (mpMenu) mpMenu.style.display = 'grid';
       if (roomList) roomList.style.display = 'none';
-      if (openBtn) openBtn.style.display = '';
     });
   }
 
