@@ -19,9 +19,9 @@ color:var(--text)}
 h1{margin:0 0 12px;
 font-size:clamp(22px,4vw,36px);
 letter-spacing:.5px}
-.wrap{max-width:1200px;
+.wrap{max-width:1600px;
 margin:0 auto;
-padding:16px}
+padding:16px 24px}
 .sub{color:var(--muted);
 margin-bottom:18px}
 .btn{cursor:pointer;
@@ -301,8 +301,18 @@ border:1px solid #2b3a86;
 border-radius:16px;
 box-shadow:0 20px 50px rgba(0,0,0,.5);
 padding:26px 28px;
-max-width:980px;
-width:min(94vw,980px)}
+max-width:1200px;
+width:min(96vw,1200px)}
+.multiplayer{position:fixed;inset:0;display:grid;place-items:center;z-index:5;background:radial-gradient(1200px 700px at 80% 20%,#10236a 0%,#0b1020 60%)}
+.multiplayer .panel{background:linear-gradient(180deg,#121a44,#0c1230);border:1px solid #2b3a86;border-radius:16px;box-shadow:0 20px 50px rgba(0,0,0,.5);padding:26px 28px;max-width:480px;width:min(94vw,480px);text-align:center}
+#roomList{margin-top:12px}
+#roomList .room{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+#roomList .room button{margin-left:8px}
+.turn-info{font-size:14px;color:var(--muted)}
+.turn-banner{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,.6);padding:20px 30px;border-radius:12px;font-size:24px;font-weight:700;opacity:0;pointer-events:none;transition:opacity .3s ease}
+.turn-banner.show{opacity:1}
+.game-menu{position:fixed;inset:0;display:none;place-items:center;z-index:50;background:rgba(0,0,0,.7)}
+.game-menu .panel{text-align:center;display:flex;flex-direction:column;gap:12px}
 .brand{display:flex;
 align-items:center;
 gap:10px}
