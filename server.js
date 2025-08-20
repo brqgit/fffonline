@@ -105,6 +105,13 @@ io.on('connection', (socket) => {
     }
   });
 
+  socket.on('emoji', (emoji) => {
+    const room = socket.data.room;
+    if (room) {
+      socket.to(room).emit('emoji', emoji);
+    }
+  });
+
   socket.on('disconnecting', () => {
     const { room } = socket.data;
     if (room) {

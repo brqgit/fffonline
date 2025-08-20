@@ -308,11 +308,18 @@ width:min(96vw,1200px)}
 #roomList{margin-top:12px}
 #roomList .room{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
 #roomList .room button{margin-left:8px}
-.turn-info{font-size:14px;color:var(--muted)}
+.turn-info{position:fixed;top:8px;right:8px;font-size:14px;color:var(--muted)}
 .turn-banner{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,.6);padding:20px 30px;border-radius:12px;font-size:24px;font-weight:700;opacity:0;pointer-events:none;transition:opacity .3s ease}
 .turn-banner.show{opacity:1}
 .game-menu{position:fixed;inset:0;display:none;place-items:center;z-index:50;background:rgba(0,0,0,.7)}
+.game-menu.show{display:grid}
 .game-menu .panel{text-align:center;display:flex;flex-direction:column;gap:12px}
+.emoji-bar{position:fixed;bottom:8px;left:8px;display:none;gap:6px;z-index:30}
+.emoji-bar .emoji-btn{background:#fff;border:none;border-radius:6px;padding:2px 4px;font-size:24px;cursor:pointer}
+.emoji-popup{position:fixed;z-index:30;font-size:32px;opacity:0;transition:opacity .3s ease}
+.emoji-popup.player{bottom:60px;left:20px}
+.emoji-popup.opponent{top:60px;right:20px}
+.emoji-popup.show{opacity:1}
 .brand{display:flex;
 align-items:center;
 gap:10px}
@@ -675,4 +682,3 @@ color:#24040a}
 .brand .logo-wordmark{width:min(92vw,520px);
 height:auto;
 display:block}
-

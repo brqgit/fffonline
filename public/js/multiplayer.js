@@ -4,7 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const openBtn = document.getElementById('openMultiplayer');
   const backBtn = document.getElementById('mpBack');
   const hostBtn = document.getElementById('hostBtn');
-  const findBtn = document.getElementById('findBtn');
+  the findBtn = document.getElementById('findBtn');
   const roomList = document.getElementById('roomList');
   const joinBtn = document.getElementById('joinBtn');
   const joinCodeInput = document.getElementById('joinCode');
@@ -25,6 +25,8 @@ document.addEventListener('DOMContentLoaded', () => {
     window.isMultiplayer = true;
     window.mpState = null;
     window.opponentConfirmed = false;
+    const customBtn = document.querySelector('.deckbtn[data-deck="custom"]');
+    if (customBtn) customBtn.style.display = 'none';
   }
 
   if (openBtn) {
@@ -47,6 +49,8 @@ document.addEventListener('DOMContentLoaded', () => {
       const mpOpen = document.getElementById('openMultiplayer');
       if (mpOpen) mpOpen.style.display = '';
       if (roomList) roomList.style.display = 'none';
+      const customBtn = document.querySelector('.deckbtn[data-deck="custom"]');
+      if (customBtn) customBtn.style.display = '';
     });
   }
 

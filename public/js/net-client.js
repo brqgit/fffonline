@@ -45,6 +45,9 @@
     sendTurn(turn) {
       socket.emit('turn', turn);
     },
+    sendEmoji(emoji) {
+      socket.emit('emoji', emoji);
+    },
     onOpponentDeckConfirmed(handler) {
       socket.on('opponentDeckConfirmed', handler);
     },
@@ -56,6 +59,9 @@
     },
     onTurn(handler) {
       socket.on('turn', handler);
+    },
+    onEmoji(handler) {
+      socket.on('emoji', handler);
     },
     onHosted(handler) {
       socket.on('hosted', handler);
