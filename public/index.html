@@ -80,7 +80,13 @@
       </div>
       <div class="footer">
         <span class="sub" style="margin:0">Dicas: Clique numa carta da mão para jogar e escolha <b>Ataque</b> ou <b>Defesa</b>. Em <b>Defesa</b>, o oponente deve focá-la.</span>
-        <div>
+        <div class="controls">
+          <label for="difficulty" class="sub">Dificuldade:</label>
+          <select id="difficulty" class="difficulty">
+            <option value="0">Ameba</option>
+            <option value="1" selected>Equilibrado</option>
+            <option value="2">IMPOSSIBLE!!!</option>
+          </select>
           <button class="btn" id="openEncy">Enciclopédia</button>
           <button class="btn" id="startGame">Jogar</button>
           <button class="btn" id="backToMenu">Menu</button>
@@ -139,7 +145,7 @@
     <div class="hud">
       <div class="meter"><b>Seu HP</b><span class="value" id="playerHP">30</span><div class="bar"><div class="fill" id="barPlayerHP"></div></div></div>
       <div class="center-hud"><div class="meter mana"><b>Mana</b><span class="value" id="mana">0/0</span><div class="bar"><div class="fill" id="barMana"></div></div></div><button class="btn" id="endTurnBtn">Encerrar turno</button><button class="btn-ghost" id="muteBtn" title="Som">🔊 Som</button><button class="btn-ghost" id="openMenuBtn" title="Menu">☰ Menu</button></div>
-      <div class="meter enemy" style="justify-self:end"><b>HP Inimigo</b><span class="value" id="aiHP">30</span><div class="enemy-img" id="aiAvatar">🧿</div><div class="bar"><div class="fill" id="barAiHP"></div></div></div>
+      <div class="meter enemy" style="justify-self:end"><b>HP Inimigo</b><span class="opp-label" id="opponentLabel"></span><span class="value" id="aiHP">30</span><div class="enemy-img" id="aiAvatar">🧿</div><div class="bar"><div class="fill" id="barAiHP"></div></div></div>
     </div>
     <div class="zone-title">Tabuleiro do Inimigo</div><div class="board" id="aiBoard"></div>
     <div class="turn-indicator" id="turnIndicator"></div>
@@ -150,7 +156,7 @@
       <div class="pile" id="discardPile"><span>🗂️</span><div class="count" id="discardCount">0</div></div>
     </div>
     <div class="zone-title">Sua Mão</div><div class="hand" id="playerHand"></div>
-    <div class="zone-title">Registro</div><div class="log" id="log"></div>
+    <div class="log-wrap"><div class="zone-title">Registro</div><div class="log" id="log"></div></div>
     <div class="footer"><div class="face">👤 Você <span class="gem hp" id="playerHP2">30</span></div><div class="face">🧿 Inimigo <span class="gem hp" id="aiHP2">30</span></div></div>
     <div class="emoji-bar" id="emojiBar">
       <button class="emoji-btn" data-emoji="😡">😡</button>
@@ -189,6 +195,7 @@
   <script src="js/net-client.js"></script>
   <script src="js/multiplayer.js"></script>
   <script src="js/menu.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
   <script src="js/game.js"></script>
 </body>
 </html>
