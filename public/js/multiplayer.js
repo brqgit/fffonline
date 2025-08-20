@@ -4,6 +4,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const openBtn = document.getElementById('openMultiplayer');
   const backBtn = document.getElementById('mpBack');
   const hostBtn = document.getElementById('hostBtn');
+  const findBtn = document.getElementById('findBtn');
+  const roomList = document.getElementById('roomList');
   const joinBtn = document.getElementById('joinBtn');
   const joinCodeInput = document.getElementById('joinCode');
   const statusEl = document.getElementById('mpStatus');
@@ -14,6 +16,8 @@ document.addEventListener('DOMContentLoaded', () => {
   function showDeckSelect() {
     mpMenu.style.display = 'none';
     startScreen.style.display = 'block';
+    const mpOpen = document.getElementById('openMultiplayer');
+    if (mpOpen) mpOpen.style.display = 'none';
     const btn = document.getElementById('startGame');
     if (!btn) return;
     btn.textContent = 'Confirmar deck';
@@ -21,12 +25,15 @@ document.addEventListener('DOMContentLoaded', () => {
     window.isMultiplayer = true;
     window.mpState = null;
     window.opponentConfirmed = false;
+    const customBtn = document.querySelector('.deckbtn[data-deck="custom"]');
+    if (customBtn) customBtn.style.display = 'none';
   }
 
   if (openBtn) {
     openBtn.addEventListener('click', () => {
-      startScreen.style.display = 'none';
-      mpMenu.style.display = 'block';
+      if (startScreen) startScreen.style.display = 'none';
+      if (mpMenu) mpMenu.style.display = 'grid';
+      if (roomList) roomList.style.display = 'none';
     });
   }
 
@@ -38,6 +45,11 @@ document.addEventListener('DOMContentLoaded', () => {
       window.isMultiplayer = false;
       window.mpState = null;
       window.opponentConfirmed = false;
+      const mpOpen = document.getElementById('openMultiplayer');
+      if (mpOpen) mpOpen.style.display = '';
+      if (roomList) roomList.style.display = 'none';
+      const customBtn = document.querySelector('.deckbtn[data-deck="custom"]');
+      if (customBtn) customBtn.style.display = '';
     });
   }
 
@@ -58,6 +70,18 @@ document.addEventListener('DOMContentLoaded', () => {
           NET.join(code);
         }
         statusEl.textContent = 'Conectando...';
+      }
+    });
+  }
+
+  if (findBtn) {
+    findBtn.addEventListener('click', () => {
+      if (roomList) {
+        roomList.style.display = 'block';
+        roomList.textContent = 'Carregando...';
+      }
+      if (window.NET) {
+        NET.listRooms();
       }
     });
   }
@@ -87,6 +111,31 @@ document.addEventListener('DOMContentLoaded', () => {
 
     NET.onConnectionError(() => {
       statusEl.textContent = 'Falha na conexão.';
+    });
+
+    NET.onRooms((rooms) => {
+      if (!roomList) return;
+      if (!rooms.length) {
+        roomList.textContent = 'Nenhuma sala disponível';
+        return;
+      }
+      roomList.innerHTML = '';
+      rooms.forEach((r) => {
+        const div = document.createElement('div');
+        div.className = 'room';
+        div.innerHTML = `<span>${r.code}</span><span>${r.players >= 2 ? 'Cheia' : r.players + '/2'}</span>`;
+        if (r.players < 2) {
+          const b = document.createElement('button');
+          b.className = 'btn';
+          b.textContent = 'Entrar';
+          b.addEventListener('click', () => {
+            NET.join(r.code);
+            statusEl.textContent = 'Conectando...';
+          });
+          div.appendChild(b);
+        }
+        roomList.appendChild(div);
+      });
     });
   }
 });
