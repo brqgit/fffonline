@@ -8,6 +8,11 @@
   let role = null; // 'host' or 'guest'
   let roomCode = null;
 
+  // store room code when hosting
+  socket.on('hosted', (code) => {
+    roomCode = code;
+  });
+
   function connectIfNeeded() {
     if (!socket.connected) {
       socket.connect();
@@ -48,6 +53,10 @@
     sendEmoji(emoji) {
       socket.emit('emoji', emoji);
     },
+    setName(name){
+      connectIfNeeded();
+      socket.emit('setName',name);
+    },
     requestRematch() {
       socket.emit('rematch');
     },
@@ -84,6 +93,15 @@
     onOpponentLeft(handler) {
       socket.on('opponentLeft', handler);
     },
+    onOpponentDisconnected(handler) {
+      socket.on('opponentDisconnected', handler);
+    },
+    onOpponentReconnected(handler) {
+      socket.on('opponentReconnected', handler);
+    },
+    onOpponentName(handler){
+      socket.on('opponentName',handler);
+    },
     onRematch(handler) {
       socket.on('rematch', handler);
     },
@@ -113,6 +131,12 @@
     console.warn('Disconnected:', reason);
     if (reason === 'io server disconnect') {
       socket.connect();
+    }
+  });
+
+  socket.on('reconnect', () => {
+    if (roomCode && role) {
+      socket.emit('rejoin', { room: roomCode, role });
     }
   });
 
