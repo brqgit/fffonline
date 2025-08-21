@@ -11,7 +11,7 @@
 --text:#e6e9ff;
 --muted:#a7b0d9}
 *{box-sizing:border-box}
-html,body{height:100%;overflow:hidden}
+html,body{height:100%;overflow:auto}
 body{margin:0;
 font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Helvetica,Arial;
 background:radial-gradient(1200px 700px at 20% 0%,#0e1340 0%,var(--bg) 60%);
@@ -80,23 +80,24 @@ text-transform:uppercase;
 letter-spacing:.8px;
 margin:6px 0 2px}
 .board{display:grid;
-grid-template-columns:repeat(5,176px);
-gap:14px;
-background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,0));
-border-radius:16px;
-padding:20px 12px;
-height:240px;
-border:1px dashed #31408b;
-position:relative;
-overflow:visible;
-margin:12px 0;
+ grid-template-columns:repeat(5,176px);
+ gap:14px;
+ background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,0));
+ border-radius:16px;
+ padding:20px 12px;
+ height:280px;
+ border:1px dashed #31408b;
+ position:relative;
+ overflow:visible;
+ margin:12px 0;
 width:calc(5*176px + 4*14px + 24px)}
-.row{display:flex;gap:14px;align-items:flex-start;flex:1}
+#aiBoard,#playerBoard{margin:0 auto}
+.row{display:flex;gap:14px;align-items:flex-start;flex:1;justify-content:center}
 .row .board{flex:0 0 auto}
-.hand{position:relative;height:260px;margin:12px 0;flex:0 0 auto}
+.hand{position:relative;height:260px;margin:12px 0;flex:0 0 auto;overflow:visible}
 .hand .card{position:absolute;top:0;left:50%;transform-origin:bottom center;width:176px;--rot:0;transform:rotate(calc(var(--rot)*1deg));transition:transform .2s}
-.hand .card::before{opacity:.8}
-.hand .card:hover{z-index:100;transform:translateY(-80px) scale(1.3) rotate(calc(var(--rot)*1deg))}
+.hand .card::before{opacity:0}
+.hand .card:hover{z-index:999;transform:translateY(-80px) scale(1.3) rotate(calc(var(--rot)*1deg));box-shadow:0 0 12px var(--accent),0 16px 30px rgba(0,0,0,.45)}
 .hand .card:hover::before{animation:foilHue 1.2s linear infinite}
 .hand .card:hover::after{opacity:.3}
 @keyframes foilHue{from{filter:hue-rotate(0deg);}to{filter:hue-rotate(360deg);}}
@@ -140,7 +141,7 @@ min-height:88px;
 height:auto;
 font-size:48px;
 position:relative}
-.text{font-size:12px;color:#d9e3ff;background:#0e1435;border:1px solid #25306a;border-radius:10px;padding:4px;margin:0;max-width:100%;word-break:break-word;box-sizing:border-box;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;height:18px}
+.text{font-size:12px;color:#d9e3ff;background:#0e1435;border:1px solid #25306a;border-radius:10px;padding:4px;margin:0;max-width:100%;word-break:break-word;box-sizing:border-box;white-space:normal;overflow:visible;height:auto}
 .stats{display:flex;
 justify-content:space-between;
 align-items:center;
@@ -171,8 +172,10 @@ border:1px solid rgba(255,255,255,.12)}
 .selectable{outline:2px solid rgba(124,196,255,.8);
 box-shadow:0 0 0 6px rgba(124,196,255,.2)}
 .card.blocked{border-color:#7a2230;
-box-shadow:0 0 0 3px rgba(251,113,133,.2) inset,0 8px 18px rgba(122,34,48,.25);
-cursor:not-allowed}
+ box-shadow:0 0 0 3px rgba(251,113,133,.2) inset,0 8px 18px rgba(122,34,48,.25);
+ cursor:not-allowed}
+.card.blocked .mana-dot{background:radial-gradient(circle at 30% 30%,#b33,#800);box-shadow:0 0 6px rgba(128,0,0,.6),inset 0 0 8px rgba(255,255,255,.35)}
+.card.blocked .mana-num{color:var(--bad)}
 .card .bg{position:absolute;
 inset:0;
 border-radius:18px;
@@ -375,6 +378,7 @@ white-space:nowrap}
 .footer .controls{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
 #difficulty{appearance:none;background:linear-gradient(180deg,#1a2550,#0f183a);color:#cfe3ff;border:1px solid #2b3a86;border-radius:8px;padding:6px 24px 6px 8px;font-size:14px}
 #difficulty:focus{outline:none;box-shadow:0 0 0 2px rgba(74,163,255,.6)}
+#difficulty option{background:var(--panel2);color:var(--text)}
 .log-wrap{width:220px;max-height:60vh;display:flex;flex-direction:column;flex:0 0 220px}
 .log-wrap .zone-title{text-align:center;margin-bottom:4px}
 .log{flex:1;overflow:auto;background:linear-gradient(180deg,#0e1331,#0a0f27);border:1px solid #243069;border-radius:12px;padding:8px;font-size:13px;color:#c9d2ff}
@@ -652,10 +656,10 @@ color:#24040a}
 .vikings-icon{width:96px;height:96px;background-size:contain;background-repeat:no-repeat;image-rendering:pixelated;background-color:transparent}
 
 /* 3D projection / hologram for Vikings deck */
-.card .projection{position:absolute;top:50%;left:50%;width:96px;height:96px;transform-style:preserve-3d;transform:translate(-50%,-50%) rotateX(35deg) rotateY(0deg);animation:holoSpin 6s linear infinite;pointer-events:none;filter:drop-shadow(0 0 6px rgba(0,255,255,.6))}
-.card .projection::after{content:"";position:absolute;inset:0;background:linear-gradient(transparent 60%,rgba(0,255,255,.3) 61%);background-size:100% 4px;mix-blend-mode:overlay;animation:holoScan 2s linear infinite}
- .card .projection canvas{width:100%;height:100%;display:block}
-@keyframes holoSpin{from{transform:translate(-50%,-50%) rotateX(35deg) rotateY(0deg)}to{transform:translate(-50%,-50%) rotateX(35deg) rotateY(360deg)}}
+.card .projection{position:absolute;top:50%;left:50%;width:96px;height:96px;transform:translate(-50%,-50%);animation:holoBounce 2s ease-in-out infinite;pointer-events:none;filter:drop-shadow(0 0 6px rgba(0,255,255,.6))}
+.card .projection::after{content:"";position:absolute;inset:0;background:linear-gradient(transparent 60%,rgba(0,255,255,.3)61%);background-size:100% 4px;mix-blend-mode:overlay;animation:holoScan 2s linear infinite}
+.card .projection canvas{width:100%;height:100%;display:block}
+@keyframes holoBounce{0%,100%{transform:translate(-50%,-50%) translateY(0)}50%{transform:translate(-50%,-50%) translateY(-6px)}}
 @keyframes holoScan{from{background-position:0 0}to{background-position:0 -4px}}
 
 .ency-card.bg-custom{background:linear-gradient(180deg,#1a1a3f,#101028)}
