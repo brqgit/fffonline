@@ -126,7 +126,8 @@ width:calc(5*176px + 4*14px + 24px)}
 .card .head-bar .cost-bar{display:flex;justify-content:flex-end;align-items:center;gap:4px;position:relative}
 .card .head-bar .cost-bar .badge{position:absolute;left:4px}
 .card .mana-row{display:flex;align-items:center;gap:4px}
-.mana-dot{width:16px;height:24px;background-image:url('https://videos.openai.com/vg-assets/assets%2Ftask_01k351wj3yeyjtztwpp9p137fn%2F1755737767_img_3.webp?st=2025-08-21T01%3A58%3A15Z&se=2025-08-27T02%3A58%3A15Z&sks=b&skt=2025-08-21T01%3A58%3A15Z&ske=2025-08-27T02%3A58%3A15Z&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skoid=3d249c53-07fa-4ba4-9b65-0bf8eb4ea46a&skv=2019-02-02&sv=2018-11-09&sr=b&sp=r&spr=https%2Chttp&sig=M0BkxIFkLRiq%2FHGpcTc3WTvYokatvt8HejsR%2B3eGfHg%3D&az=oaivgprodscus');background-size:500% 100%;image-rendering:pixelated;display:inline-block}
+/* Mana icons use a local sprite sheet with five gems in a row */
+.mana-dot{width:16px;height:16px;background-image:url('../img/mana/mana.png');background-size:500% 100%;image-rendering:pixelated;display:inline-block}
 .mana-dot.animais{background-position:0 0}
 .mana-dot.vikings{background-position:25% 0}
 .mana-dot.pescadores{background-position:50% 0}
@@ -154,9 +155,7 @@ align-items:center;
 margin:0;
 min-height:26px;
 align-self:end}
-.mana-row{display:flex;align-items:center;gap:4px;margin-top:0}
-.mana-dot{width:12px;height:12px;border-radius:50%;background:radial-gradient(circle at 30% 30%,#aee5ff,#4aa3ff);box-shadow:0 4px 8px rgba(74,163,255,.35),inset 0 0 8px rgba(255,255,255,.35)}
-.mana-num{font-weight:900;margin-left:4px}
+
 .gem{padding:6px 10px;
 border-radius:999px;
 font-size:12px;
@@ -177,7 +176,7 @@ margin-right:6px;
 border:1px solid rgba(255,255,255,.12)}
 .selectable{outline:2px solid rgba(124,196,255,.8);
 box-shadow:0 0 0 6px rgba(124,196,255,.2)}
-.card.blocked{border-color:#7a2230;
+.card.blocked{border-color:var(--bad);
  box-shadow:0 0 0 3px rgba(251,113,133,.2) inset,0 8px 18px rgba(122,34,48,.25);
  cursor:not-allowed}
 .card.blocked .mana-dot{filter:hue-rotate(-120deg) saturate(4) brightness(0.8)}
@@ -669,18 +668,7 @@ color:#24040a}
 .ency-card.bg-floresta{background:linear-gradient(180deg,#0f2c1b,#091a14)}
 
 /* Deck sprite icons */
-.card-icon{width:96px;height:96px;background-repeat:no-repeat;image-rendering:pixelated;background-color:transparent;background-size:300% 300%}
-.card-icon.vik-char-0,.card-icon.vik-char-1,.card-icon.vik-char-2,.card-icon.vik-char-3,.card-icon.vik-char-4,.card-icon.vik-char-5,.card-icon.vik-char-6,.card-icon.vik-char-7,.card-icon.vik-char-8{background-image:url('https://videos.openai.com/vg-assets/assets%2Ftask_01k32xw6bhfxatqs3evxmptrds%2F1755666416_img_1.webp?st=2025-08-20T03%3A17%3A52Z&se=2025-08-26T04%3A17%3A52Z&sks=b&skt=2025-08-20T03%3A17%3A52Z&ske=2025-08-26T04%3A17%3A52Z&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skoid=8ebb0df1-a278-4e2e-9c20-f2d373479b3a&skv=2019-02-02&sv=2018-11-09&sr=b&sp=r&spr=https%2Chttp&sig=8%2Bisb3EsmtRseqBSReK2IiNlGwsqKxHKGeqSZMQd2M0%3D&az=oaivgprodscus')}
-.card-icon.vik-char-0{background-position:0% 0%}
-.card-icon.vik-char-1{background-position:50% 0%}
-.card-icon.vik-char-2{background-position:100% 0%}
-.card-icon.vik-char-3{background-position:0% 50%}
-.card-icon.vik-char-4{background-position:50% 50%}
-.card-icon.vik-char-5{background-position:100% 50%}
-.card-icon.vik-char-6{background-position:0% 100%}
-.card-icon.vik-char-7{background-position:50% 100%}
-.card-icon.vik-char-8{background-position:100% 100%}
-.card-icon.vik-tool-0{background-image:url('https://videos.openai.com/vg-assets/assets%2Ftask_01k32xw6bhfxatqs3evxmptrds%2F1755666416_img_2.webp?st=2025-08-20T03%3A17%3A52Z&se=2025-08-26T04%3A17%3A52Z&sks=b&skt=2025-08-20T03%3A17%3A52Z&ske=2025-08-26T04%3A17%3A52Z&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skoid=8ebb0df1-a278-4e2e-9c20-f2d373479b3a&skv=2019-02-02&sv=2018-11-09&sr=b&sp=r&spr=https%2Chttp&sig=8%2Bisb3EsmtRseqBSReK2IiNlGwsqKxHKGeqSZMQd2M0%3D&az=oaivgprodscus');background-position:0% 0%}
+.card-icon{width:96px;height:96px;background-repeat:no-repeat;background-position:center;image-rendering:pixelated;background-color:transparent;background-size:contain}
 
 /* 3D projection / hologram for Vikings deck */
 .card .projection{position:absolute;top:50%;left:50%;width:96px;height:96px;transform:translate(-50%,-50%);animation:holoBounce 2s ease-in-out infinite;pointer-events:none;filter:drop-shadow(0 0 6px rgba(0,255,255,.6))}

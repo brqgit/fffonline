@@ -21,11 +21,13 @@ const G={playerHP:30,aiHP:30,turn:0,playerMana:0,playerManaCap:0,aiMana:0,aiMana
 const els={pHP:$('#playerHP'),pHP2:$('#playerHP2'),aHP:$('#aiHP'),aHP2:$('#aiHP2'),opponentLabel:$('#opponentLabel'),mana:$('#mana'),pHand:$('#playerHand'),pBoard:$('#playerBoard'),aBoard:$('#aiBoard'),endBtn:$('#endTurnBtn'),muteBtn:$('#muteBtn'),aAva:$('#aiAvatar'),drawCount:$('#drawCount'),discardCount:$('#discardCount'),barPHP:$('#barPlayerHP'),barAHP:$('#barAiHP'),barMana:$('#barMana'),wrap:$('#gameWrap'),start:$('#start'),openEncy:$('#openEncy'),ency:$('#ency'),encyGrid:$('#encyGrid'),encyFilters:$('#encyFilters'),closeEncy:$('#closeEncy'),startGame:$('#startGame'),endOverlay:$('#endOverlay'),endMsg:$('#endMsg'),endSub:$('#endSub'),playAgainBtn:$('#playAgainBtn'),rematchBtn:$('#rematchBtn'),menuBtn:$('#menuBtn'),openMenuBtn:$('#openMenuBtn'),gameMenu:$('#gameMenu'),closeMenuBtn:$('#closeMenuBtn'),resignBtn:$('#resignBtn'),restartBtn:$('#restartBtn'),mainMenuBtn:$('#mainMenuBtn'),turnIndicator:$('#turnIndicator'),emojiBar:$('#emojiBar'),playerEmoji:$('#playerEmoji'),opponentEmoji:$('#opponentEmoji'),deckBuilder:$('#deckBuilder'),saveDeck:$('#saveDeck')};
 els.startGame.disabled=true;
 const DECK_TITLES={vikings:'Fazendeiros Vikings',animais:'Bestas do Norte',pescadores:'Pescadores do Fiorde',floresta:'Feras da Floresta',custom:'Custom'};
-function iconUrl(deck,idx){return null;}
-const VIKING_CHARS_URL='https://videos.openai.com/vg-assets/assets%2Ftask_01k32xw6bhfxatqs3evxmptrds%2F1755666416_img_1.webp?st=2025-08-20T03%3A17%3A52Z&se=2025-08-26T04%3A17%3A52Z&sks=b&skt=2025-08-20T03%3A17%3A52Z&ske=2025-08-26T04%3A17%3A52Z&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skoid=8ebb0df1-a278-4e2e-9c20-f2d373479b3a&skv=2019-02-02&sv=2018-11-09&sr=b&sp=r&spr=https%2Chttp&sig=8%2Bisb3EsmtRseqBSReK2IiNlGwsqKxHKGeqSZMQd2M0%3D&az=oaivgprodscus';
-const VIKING_TOOLS_URL='https://videos.openai.com/vg-assets/assets%2Ftask_01k32xw6bhfxatqs3evxmptrds%2F1755666416_img_2.webp?st=2025-08-20T03%3A17%3A52Z&se=2025-08-26T04%3A17%3A52Z&sks=b&skt=2025-08-20T03%3A17%3A52Z&ske=2025-08-26T04%3A17%3A52Z&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skoid=8ebb0df1-a278-4e2e-9c20-f2d373479b3a&skv=2019-02-02&sv=2018-11-09&sr=b&sp=r&spr=https%2Chttp&sig=8%2Bisb3EsmtRseqBSReK2IiNlGwsqKxHKGeqSZMQd2M0%3D&az=oaivgprodscus';
-function vikingIconClass(idx){return idx>=9?`vik-tool-${idx-9}`:`vik-char-${idx}`}
-function loadVikingTexture(idx,cb){const url=idx>=9?VIKING_TOOLS_URL:VIKING_CHARS_URL;const pos=idx>=9?idx-9:idx;const loader=new THREE.TextureLoader();loader.setCrossOrigin('anonymous');loader.load(url,tex=>{tex.magFilter=THREE.NearestFilter;tex.minFilter=THREE.NearestFilter;const cols=3,rows=3;const u=1/cols,v=1/rows;const col=pos%cols,row=Math.floor(pos/cols);tex.repeat.set(u,v);tex.offset.set(col*u,1-v-row*v);cb(tex)})}
+// Return local icon paths for decks that provide artwork
+function iconUrl(deck,idx){
+  if(deck==='vikings'){
+    return `/img/farm-vikings/characters/char${(idx||0)+1}.png`;
+  }
+  return null;
+}
 // deck builder DOM (may be null if builder UI not present)
 const poolEl=$('#pool'), chosenEl=$('#chosen'), countEl=$('#countDeck'), curveEl=$('#curve');
 // safe builder functions (no-ops if UI not present)
@@ -60,25 +62,21 @@ function createProjection(container,card){
     group.position.z=-5;scene.add(group);
     let a=0;(function anim(){a+=0.03;group.rotation.y=Math.sin(a)*0.3;renderer.render(scene,camera);requestAnimationFrame(anim)})();
   };
-  if(card.deck==='vikings'){
-    loadVikingTexture(card.icon||0,tex=>build(tex));
+  const url=iconUrl(card.deck,card.icon);
+  if(url){
+    const loader=new THREE.TextureLoader();
+    loader.setCrossOrigin('anonymous');
+    loader.load(url,tex=>build(tex));
   }else{
-    const url=iconUrl(card.deck,card.icon);
-    if(url){
-      const loader=new THREE.TextureLoader();
-      loader.setCrossOrigin('anonymous');
-      loader.load(url,tex=>build(tex));
-    }else{
-      const cc=document.createElement('canvas');cc.width=128;cc.height=128;const ctx=cc.getContext('2d');ctx.font='96px serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(card.emoji||'',64,76);build(new THREE.CanvasTexture(cc));
-    }
+    const cc=document.createElement('canvas');cc.width=128;cc.height=128;const ctx=cc.getContext('2d');ctx.font='96px serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(card.emoji||'',64,76);build(new THREE.CanvasTexture(cc));
   }
 }
 function cardNode(c,owner,onBoard=false){
   const d=document.createElement('div');
   d.className=`card ${owner==='player'?'me':'enemy'} ${c.stance==='defense'?'defense':''}`;
   d.dataset.id=c.id;
-  const icoClass=c.deck==='vikings'?vikingIconClass(c.icon):'';
-  const art=(!onBoard?(icoClass?`<div class="card-icon ${icoClass}"></div>`:c.emoji):'');
+  const icoUrl=iconUrl(c.deck,c.icon);
+  const art=(!onBoard?(icoUrl?`<div class="card-icon" style="background-image:url('${icoUrl}')"></div>`:c.emoji):'');
   const manaDots=`<span class="mana-dot ${c.deck}"></span>`.repeat(c.cost);
   const kwTags=[];
   (c.kw||[]).forEach(k=>kwTags.push(`<span class='keyword' data-tip='${KW_TIPS[k]||''}'>${k}</span>`));
@@ -155,7 +153,22 @@ function stackHand(){const cards=$$('#playerHand .card');const total=cards.lengt
 const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
 function draw(who,n=1){const deck=who==='player'?G.playerDeck:G.aiDeck,hand=who==='player'?G.playerHand:G.aiHand,disc=who==='player'?G.playerDiscard:G.aiDiscard;const deckEl=document.getElementById('drawPile');const handEl=els.pHand;for(let i=0;i<n;i++){if(deck.length===0&&disc.length){deck.push(...shuffle(disc.splice(0)));deckEl.classList.add('shuffling');setTimeout(()=>deckEl.classList.remove('shuffling'),600)}if(deck.length){const c=deck.shift();if(c.hp<1)c.hp=1;hand.push(c);if(who==='player')animateMove(deckEl,handEl)}}if(who==='player'){els.drawCount.textContent=G.playerDeck.length;els.discardCount.textContent=G.playerDiscard.length;setTimeout(stackHand,500)}}
 function discardHand(side){const hand=side==='player'?G.playerHand:G.aiHand;const disc=side==='player'?G.playerDiscard:G.aiDiscard;if(hand.length){if(side==='player'){const cards=$$('#playerHand .card');const pile=document.getElementById('discardPile');cards.forEach(c=>animateMove(c,pile))}disc.push(...hand.splice(0));if(side==='player'){els.discardCount.textContent=G.playerDiscard.length;setTimeout(stackHand,500)}}}
-function showMultiplayerDeckSelect(){els.wrap.style.display='none';els.start.style.display='grid';const mpOpen=document.getElementById('openMultiplayer');mpOpen&&(mpOpen.style.display='none');const btn=document.getElementById('startGame');if(btn){btn.textContent='Confirmar deck';btn.disabled=false}window.isMultiplayer=true;window.mpState=null;window.opponentConfirmed=false;const custom=document.querySelector('.deckbtn[data-deck="custom"]');custom&&(custom.style.display='none')}
+function showMultiplayerDeckSelect(){
+  els.wrap.style.display='none';
+  els.start.style.display='grid';
+  const mpOpen=document.getElementById('openMultiplayer');
+  mpOpen&&(mpOpen.style.display='none');
+  const btn=document.getElementById('startGame');
+  if(btn){btn.textContent='Confirmar deck';btn.disabled=false}
+  // hide difficulty controls in multiplayer mode
+  const diffLabel=document.querySelector('label[for="difficulty"]');
+  const diffSelect=document.getElementById('difficulty');
+  diffLabel&&(diffLabel.style.display='none');
+  diffSelect&&(diffSelect.style.display='none');
+  window.isMultiplayer=true;window.mpState=null;window.opponentConfirmed=false;
+  const custom=document.querySelector('.deckbtn[data-deck="custom"]');
+  custom&&(custom.style.display='none');
+}
 function showTurnIndicator(){if(!els.turnIndicator)return;els.turnIndicator.textContent=G.current==='player'?'Seu turno':'Turno do oponente'}
 function showEmoji(side,e){const el=side==='player'?els.playerEmoji:els.opponentEmoji;if(!el)return;el.textContent=e;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),1500)}
 function newTurn(skipDraw=false){G.turn++;if(G.current==='player'){if(!skipDraw){if(G.playerDeck.length<=4){G.playerDeck.push(...shuffle(G.playerDiscard.splice(0)))}draw('player',5)}G.playerManaCap=clamp(G.playerManaCap+1,0,10);G.playerMana=G.playerManaCap;G.playerBoard.forEach(c=>c.canAttack=true)}else{if(!skipDraw){if(G.aiDeck.length<=4){G.aiDeck.push(...shuffle(G.aiDiscard.splice(0)))}draw('ai',5)}G.aiManaCap=clamp(G.aiManaCap+1,0,10);G.aiMana=G.aiManaCap;G.aiBoard.forEach(c=>c.canAttack=true)}renderAll();showTurnIndicator()}
