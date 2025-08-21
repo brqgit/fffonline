@@ -1,10 +1,11 @@
-# Game Image Assets
+# Game image assets
 
-Viking card icons are resolved from individual PNG files so no binaries are tracked in Git.
+Binary art files are not stored in this repository. After cloning, add your images to the folders below:
 
-After cloning, drop your art into:
+- `public/img/farm-vikings/characters/fv_char0.png` … `fv_char8.png`
+- `public/img/farm-vikings/tools/fv_tool0.png`
+- `public/img/farm-vikings/bufs/` and `public/img/farm-vikings/effects/`
+- `public/img/north-beasts/`, `public/img/fjord-fishers/`, `public/img/forest-beasts/` — each with `characters`, `tools`, `bufs` and `effects`
+- `public/img/mana/mana.png` — sprite sheet with six colored mana gems
 
-- `public/img/vikings/characters/char0.png` … `char8.png`
-- `public/img/vikings/tools/tool0.png`
-
-Each card in the **Fazendeiros Vikings** deck references these paths directly.
+These paths are referenced at runtime for card icons and effects.
