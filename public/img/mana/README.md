@@ -1,2 +1,3 @@
 # Mana sprite sheet
-Add `mana.png` here containing six colored mana icons in a single row.
+Mana icons are loaded from a remote sprite sheet by default.
+To override, add `mana.png` here containing five colored mana gems in a single row.
