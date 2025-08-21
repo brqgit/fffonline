@@ -8,10 +8,14 @@ document.addEventListener('DOMContentLoaded', () => {
   const optBtn = document.getElementById('menuOptions');
   const backToMenu = document.getElementById('backToMenu');
   const closeOptions = document.getElementById('closeOptions');
+  const diffLabel = document.querySelector('label[for="difficulty"]');
+  const diffSelect = document.getElementById('difficulty');
 
   if (soloBtn) soloBtn.addEventListener('click', () => {
     if (titleMenu) titleMenu.style.display = 'none';
     if (deckScreen) deckScreen.style.display = 'grid';
+    if (diffLabel) diffLabel.style.display = '';
+    if (diffSelect) diffSelect.style.display = '';
   });
 
   if (multiBtn) multiBtn.addEventListener('click', () => {
