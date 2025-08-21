@@ -153,6 +153,9 @@ align-items:center;
 margin:0;
 min-height:26px;
 align-self:end}
+.mana-row{display:flex;align-items:center;gap:4px;margin-top:0}
+.mana-dot{width:12px;height:12px;border-radius:50%;background:radial-gradient(circle at 30% 30%,#aee5ff,#4aa3ff);box-shadow:0 4px 8px rgba(74,163,255,.35),inset 0 0 8px rgba(255,255,255,.35)}
+.mana-num{font-weight:900;margin-left:4px}
 .gem{padding:6px 10px;
 border-radius:999px;
 font-size:12px;
