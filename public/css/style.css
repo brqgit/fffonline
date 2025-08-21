@@ -148,7 +148,7 @@ min-height:88px;
 height:auto;
 font-size:48px;
 position:relative}
-.text{font-size:12px;color:#d9e3ff;background:#0e1435;border:1px solid #25306a;border-radius:10px;padding:4px;margin:0;max-width:100%;word-break:break-word;box-sizing:border-box;white-space:normal;overflow:visible;height:auto}
+.text{font-size:12px;color:#d9e3ff;background:#0e1435;border:1px solid #25306a;border-radius:10px;padding:4px;margin:0;max-width:100%;word-break:break-word;box-sizing:border-box;white-space:normal;overflow:hidden;height:auto}
 .stats{display:flex;
 justify-content:space-between;
 align-items:center;
@@ -671,12 +671,10 @@ color:#24040a}
 .card-icon{width:96px;height:96px;background-repeat:no-repeat;background-position:center;image-rendering:pixelated;background-color:transparent;background-size:contain}
 
 /* 3D projection / hologram for Vikings deck */
-.card .projection{position:absolute;top:50%;left:50%;width:96px;height:96px;transform:translate(-50%,-50%);animation:holoBounce 2s ease-in-out infinite;pointer-events:none;filter:drop-shadow(0 0 6px rgba(0,255,255,.6))}
-.card .projection::after{content:"";position:absolute;inset:0;background:linear-gradient(transparent 60%,rgba(0,255,255,.3)61%);background-size:100% 4px;mix-blend-mode:overlay;animation:holoScan 2s linear infinite}
-.card .projection canvas{width:100%;height:100%;display:block}
+.card .projection{position:absolute;top:50%;left:50%;width:96px;height:96px;transform:translate(-50%,-50%);animation:holoBounce 2s ease-in-out infinite;pointer-events:none}
+.card .projection img,.card .projection canvas{width:100%;height:100%;display:block;filter:drop-shadow(0 0 6px rgba(0,255,255,.6))}
 .card-popup{position:fixed;padding:4px 6px;background:rgba(0,0,0,.8);color:#fff;border-radius:4px;font-size:12px;z-index:2000;pointer-events:none;transform:translate(-50%,-100%)}
 @keyframes holoBounce{0%,100%{transform:translate(-50%,-50%) translateY(0)}50%{transform:translate(-50%,-50%) translateY(-6px)}}
-@keyframes holoScan{from{background-position:0 0}to{background-position:0 -4px}}
 
 .ency-card.bg-custom{background:linear-gradient(180deg,#1a1a3f,#101028)}
 
