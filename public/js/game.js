@@ -40,7 +40,7 @@ function iconUrl(deck,idx){
 
 function setCardBack(){
   const info=DECK_ASSETS[G.playerDeckChoice];
-  if(!info)return;const path=`/img/decks/${info.folder}/card-backs/${info.back}-cb.png`;
+  if(!info)return;const path=`/img/decks/${info.folder}/deck-backs/${info.back}-db-default.webp`;
   const drawImg=document.querySelector('#drawPile img');
   const discImg=document.querySelector('#discardPile img');
   drawImg&&(drawImg.src=path);discImg&&(discImg.src=path);
