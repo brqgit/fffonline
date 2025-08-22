@@ -9,7 +9,11 @@
 --card:#141d3f;
 --card2:#1a2454;
 --text:#e6e9ff;
---muted:#a7b0d9}
+--muted:#a7b0d9;
+--cb-vikings:url('/img/decks/farm-vikings/card-backs/fv-cb-default.webp');
+--cb-pescadores:url('/img/decks/fJord-fishers/card-backs/jf-cb-default.webp');
+--cb-floresta:url('/img/decks/forest-beasts/card-backs/fb-cb-default.webp');
+--cb-animais:url('/img/decks/north-beasts/card-backs/nb-cb-default.webp')}
 *{box-sizing:border-box}
 html,body{height:100%;overflow:auto}
 body{margin:0;
@@ -289,7 +293,7 @@ inset:0;
 display:grid;
 place-items:center;
 z-index:5;
-background:radial-gradient(1200px 700px at 80% 20%,#10236a 0%,#0b1020 60%)}
+background:var(--start-bg,none),radial-gradient(1200px 700px at 80% 20%,#10236a 0%,#0b1020 60%)}
 .start .panel{position:relative;
 background:linear-gradient(180deg,#121a44,#0c1230);
 border:1px solid #2b3a86;
@@ -321,6 +325,7 @@ width:min(96vw,1200px)}
 .emoji-popup.show{opacity:1}
 .brand{display:flex;
 align-items:center;
+justify-content:center;
 gap:10px}
 .logoFFF{width:36px;
 height:36px}
@@ -656,13 +661,13 @@ color:#24040a}
 /* deck-specific backgrounds */
 .card .bg.bg-default{background:radial-gradient(140% 100% at 50% 0%,rgba(255,255,255,.04),rgba(0,0,0,0))}
 
-.card .bg.bg-vikings{background:url('https://videos.openai.com/vg-assets/assets%2Ftask_01k32xgy2qf8gt1yqgr2ygnsk5%2F1755666056_img_0.webp?st=2025-08-20T03%3A19%3A09Z&se=2025-08-26T04%3A19%3A09Z&sks=b&skt=2025-08-20T03%3A19%3A09Z&ske=2025-08-26T04%3A19%3A09Z&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skoid=8ebb0df1-a278-4e2e-9c20-f2d373479b3a&skv=2019-02-02&sv=2018-11-09&sr=b&sp=r&spr=https%2Chttp&sig=iPqjN5M8F2u2KDkz4H8O9zqyyFbsnTJEBNwxr5IldAA%3D&az=oaivgprodscus') center/cover no-repeat,radial-gradient(140% 120% at 0% 0%,rgba(255,214,102,.18),transparent 40%),linear-gradient(180deg,#1a2550,#0f183a)}
+.card .bg.bg-vikings{background:var(--cb-vikings) center/cover no-repeat,radial-gradient(140% 120% at 0% 0%,rgba(255,214,102,.18),transparent 40%),linear-gradient(180deg,#1a2550,#0f183a)}
 
-.card .bg.bg-animais{background:radial-gradient(140% 120% at 0% 0%,rgba(77,185,120,.22),transparent 40%),linear-gradient(180deg,#0f2b1d,#0b1620)}
+.card .bg.bg-animais{background:var(--cb-animais) center/cover no-repeat,radial-gradient(140% 120% at 0% 0%,rgba(77,185,120,.22),transparent 40%),linear-gradient(180deg,#0f2b1d,#0b1620)}
 
-.card .bg.bg-pescadores{background:url('/img/decks/fJord-fishers/card-backs/jf-cb-default.webp') center/cover no-repeat,radial-gradient(140% 120% at 0% 0%,rgba(124,196,255,.25),transparent 40%),linear-gradient(180deg,#0a2a4f,#081a32)}
+.card .bg.bg-pescadores{background:var(--cb-pescadores) center/cover no-repeat,radial-gradient(140% 120% at 0% 0%,rgba(124,196,255,.25),transparent 40%),linear-gradient(180deg,#0a2a4f,#081a32)}
 
-.card .bg.bg-floresta{background:radial-gradient(140% 120% at 0% 0%,rgba(90,190,120,.22),transparent 40%),linear-gradient(180deg,#0f2c1b,#091a14)}
+.card .bg.bg-floresta{background:var(--cb-floresta) center/cover no-repeat,radial-gradient(140% 120% at 0% 0%,rgba(90,190,120,.22),transparent 40%),linear-gradient(180deg,#0f2c1b,#091a14)}
 
 .card .bg.bg-custom{background:radial-gradient(140% 120% at 0% 0%,rgba(165,180,252,.18),transparent 40%),linear-gradient(180deg,#1a1a3f,#101028)}
 
@@ -688,3 +693,4 @@ color:#24040a}
 .brand .logo-wordmark{width:min(92vw,520px);
 height:auto;
 display:block}
+.holo-logo{animation:holoBounce 2s ease-in-out infinite;filter:drop-shadow(0 0 6px rgba(0,255,255,.6))}
