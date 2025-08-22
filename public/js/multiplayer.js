@@ -53,6 +53,8 @@ document.addEventListener('DOMContentLoaded', () => {
       if (roomList) roomList.style.display = 'none';
       const customBtn = document.querySelector('.deckbtn[data-deck="custom"]');
       if (customBtn) customBtn.style.display = '';
+      const startBtn = document.getElementById('startGame');
+      if (startBtn){startBtn.textContent='Jogar';startBtn.disabled=true;}
     });
   }
 

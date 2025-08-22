@@ -148,7 +148,9 @@ min-height:88px;
 height:auto;
 font-size:48px;
 position:relative}
+.art::after{content:"";position:absolute;inset:0;background:linear-gradient(115deg,rgba(255,255,255,.25),rgba(255,255,255,0) 60%);mix-blend-mode:screen;pointer-events:none;opacity:.2}
 .text{font-size:12px;color:#d9e3ff;background:#0e1435;border:1px solid #25306a;border-radius:10px;padding:4px;margin:0;max-width:100%;word-break:break-word;box-sizing:border-box;white-space:normal;overflow:hidden;height:auto}
+.text::after{content:"";display:block;clear:both}
 .stats{display:flex;
 justify-content:space-between;
 align-items:center;
@@ -174,11 +176,16 @@ border-radius:999px;
 font-size:11px;
 margin-right:6px;
 border:1px solid rgba(255,255,255,.12)}
+.class-tag{display:inline-block;float:right;margin-left:auto;padding:2px 6px;border-radius:999px;font-size:11px;border:1px solid rgba(255,255,255,.12);color:#fff}
+.class-tag.tank{background:#2a5f3a}
+.class-tag.dps{background:#5f2a2a}
+.class-tag.support{background:#2a4a5f}
+.class-tag.control{background:#4a2a5f}
 .selectable{outline:2px solid rgba(124,196,255,.8);
 box-shadow:0 0 0 6px rgba(124,196,255,.2)}
-.card.blocked{border-color:var(--bad);
- box-shadow:0 0 0 3px rgba(251,113,133,.2) inset,0 8px 18px rgba(122,34,48,.25);
- cursor:not-allowed}
+.board .card.attackable{outline:3px solid var(--accent);box-shadow:0 0 12px var(--accent)}
+.hand .card.playable{box-shadow:0 0 8px var(--good)}
+.card.blocked{border-color:var(--bad);box-shadow:0 0 0 3px rgba(251,113,133,.4) inset,0 8px 18px rgba(122,34,48,.25);cursor:not-allowed;filter:brightness(.9)saturate(.8)}
 .card.blocked .mana-dot{filter:hue-rotate(-120deg) saturate(4) brightness(0.8)}
 .card.blocked .mana-num{color:var(--bad)}
 .card .bg{position:absolute;
@@ -618,7 +625,7 @@ transition:opacity .15s ease,transform .15s ease;
 will-change:opacity,transform}
 .chip[data-tip]:hover::after, .keyword[data-tip]:hover::after{opacity:1;
 transform:translate(-50%,-10px)}
-.stance-chooser{position:fixed;
+.stance-chooser{position:absolute;
 z-index:1000;
 background:#0c1230;
 border:1px solid #2b3a86;
