@@ -1,19 +1,4 @@
-document.addEventListener('DOMContentLoaded', async () => {
-  try{
-    const res=await fetch('/backgrounds');
-    const list=await res.json();
-    if(list.length){
-      const pick=list[Math.floor(Math.random()*list.length)];
-      const url=`/img/ui/backgrounds/${pick}`;
-      const root=document.documentElement;
-      const img=new Image();
-      img.onload=()=>{
-        root.style.setProperty('--start-bg',`url('${url}')`);
-        root.style.setProperty('--body-bg',`url('${url}')`);
-      };
-      img.src=url;
-    }
-  }catch(err){console.error('Failed to load backgrounds',err);}
+document.addEventListener('DOMContentLoaded', () => {
   const titleMenu = document.getElementById('titleMenu');
   const deckScreen = document.getElementById('start');
   const multiMenu = document.getElementById('multiplayerMenu');

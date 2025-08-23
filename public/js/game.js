@@ -44,7 +44,6 @@ function preloadAssets(){
   const list=[];
   for(const [key,info] of Object.entries(DECK_ASSETS)){
     list.push(`/img/decks/${info.folder}/card-backs/${info.back}-cb-default.webp`);
-    list.push(`/img/decks/${info.folder}/deck-backs/${info.back}-db-default.webp`);
     (DECK_IMAGES[key]||[]).forEach(fn=>{
       const base=`/img/decks/${info.folder}/characters/${fn.replace(/\.[^.]+$/,'')}.png`;
       list.push(base);
@@ -70,7 +69,7 @@ function setCardBacks(){
   const apply=(deck,drawId,discId)=>{
     const info=DECK_ASSETS[deck];
     if(!info)return;
-    const base=`/img/decks/${info.folder}/deck-backs/${info.back}-db-default.webp`;
+    const base=`/img/decks/${info.folder}/card-backs/${info.back}-cb-default.webp`;
     const drawImg=document.querySelector(`#${drawId} img`);
     const discImg=document.querySelector(`#${discId} img`);
     drawImg&&setSrcFallback(drawImg,[base]);
@@ -148,7 +147,7 @@ function cardNode(c,owner,onBoard=false){
   const text=c.text||'';
   const tip=text&&!kwTags.some(s=>s.includes('>'+text.trim()+'<'))?text:'';
   d.innerHTML=`<div class="bg bg-${c.deck||'default'}"></div>
-  <div class="head-bar"><div class="name">${c.name}</div><div class="cost-bar"><div class="mana-row">${manaDots}<span class="mana-num">${c.cost}</span></div></div></div>
+  <div class="head-bar"><div class="name">${c.name}</div><div class="cost-bar"><div class="mana-row"><span class="mana-num">${c.cost}</span>${manaDots}</div></div></div>
   <div class="art"></div>
   <div class="text" ${tip?`data-tip='${tip}' title='${tip}'`:''}>${kwTags.join(' ')}</div>
   <div class="stats"><span class="gem atk">⚔️ ${c.atk}</span>${c.stance?`<span class=\"stance-label ${c.stance}\">${c.stance==='defense'?'DEFESA':'ATAQUE'}</span>`:''}<span class="gem hp ${c.hp<=2?'low':''}">❤️ ${c.hp}</span></div>`;
@@ -310,7 +309,7 @@ if(els.openMenuBtn)els.openMenuBtn.addEventListener('click',()=>{els.gameMenu.cl
 if(els.closeMenuBtn)els.closeMenuBtn.addEventListener('click',()=>{els.gameMenu.classList.remove('show')});
 if(els.mainMenuBtn)els.mainMenuBtn.addEventListener('click',()=>{els.gameMenu.classList.remove('show');els.start.style.display='grid';els.wrap.style.display='none';startMenuMusic('menu');if(window.isMultiplayer&&window.NET){NET.disconnect();}window.isMultiplayer=false;window.mpState=null;const custom=document.querySelector('.deckbtn[data-deck="custom"]');custom&&(custom.style.display='');if(els.startGame){els.startGame.textContent='Jogar';els.startGame.disabled=true;}});
 if(els.restartBtn)els.restartBtn.addEventListener('click',()=>{if(!window.isMultiplayer){els.gameMenu.classList.remove('show');startGame()}});
-if(els.resignBtn)els.resignBtn.addEventListener('click',()=>{els.gameMenu.classList.remove('show');if(window.isMultiplayer&&window.NET){NET.disconnect();}endGame(false)});
+if(els.resignBtn)els.resignBtn.addEventListener('click',()=>{els.gameMenu.classList.remove('show');if(window.isMultiplayer&&window.NET){NET.resign();}endGame(false)});
 if(els.emojiBar){els.emojiBar.querySelectorAll('.emoji-btn').forEach(b=>b.addEventListener('click',()=>{const em=b.dataset.emoji;showEmoji('player',em);if(window.isMultiplayer&&window.NET){NET.sendEmoji(em)}}));}
 function initDeckButtons(){
   $$('.deckbtn').forEach(btn=>{
@@ -363,7 +362,7 @@ els.playAgainBtn.addEventListener('click',()=>{if(window.isMultiplayer){showMult
 function handleMove(move){switch(move.type){case 'summon':{summon('ai',move.card,move.stance,true);applyBattlecryEffects('ai',move.effects||[]);G.aiMana-=move.card.cost;renderAll();break}case 'attack':{const a=G.aiBoard.find(x=>x.id===move.attackerId);const t=G.playerBoard.find(x=>x.id===move.targetId);if(a&&t)attackCard(a,t);break}case 'attackFace':{const a=G.aiBoard.find(x=>x.id===move.attackerId);if(a)attackFace(a,'player');break}}}
 function handleTurn(turn){if(turn==='end'){G.current='player';G.chosen=null;updateTargetingUI();newTurn()}}
 if(window.NET){NET.onOpponentDeckConfirmed(d=>{G.aiDeckChoice=d;if(window.mpState==='waitingDeck'){els.startGame.textContent='Iniciar';els.startGame.disabled=false;window.mpState='readyStart'}else{window.opponentConfirmed=true}});NET.onStartGame(()=>{els.start.style.display='none';els.wrap.style.display='block';initAudio();ensureRunning();stopMenuMusic();startGame(NET.isHost()?'player':'ai');window.mpState=null;window.opponentConfirmed=false});NET.onOpponentName(n=>{window.opponentName=n;updateOpponentLabel()})}
-if(window.NET){NET.onMove(handleMove);NET.onTurn(handleTurn);NET.onEmoji(e=>showEmoji('opponent',e));NET.onOpponentLeft(()=>{log('Oponente desconectou.');if(window.isMultiplayer&&els.wrap.style.display==='block')endGame(true);});NET.onRematch(()=>{showMultiplayerDeckSelect();els.endOverlay.classList.remove('show')})}
+if(window.NET){NET.onMove(handleMove);NET.onTurn(handleTurn);NET.onEmoji(e=>showEmoji('opponent',e));NET.onOpponentLeft(()=>{log('Oponente desconectou.');if(window.isMultiplayer&&els.wrap.style.display==='block')endGame(true);});NET.onOpponentResigned(()=>endGame(true));NET.onRematch(()=>{showMultiplayerDeckSelect();els.endOverlay.classList.remove('show')})}
 document.addEventListener('DOMContentLoaded',tryStartMenuMusicImmediate);
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')tryStartMenuMusicImmediate()});
 document.addEventListener('pointerdown',()=>{tryStartMenuMusicImmediate()},{once:true});
