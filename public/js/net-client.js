@@ -60,6 +60,9 @@
     requestRematch() {
       socket.emit('rematch');
     },
+    resign() {
+      socket.emit('resign');
+    },
     onOpponentDeckConfirmed(handler) {
       socket.on('opponentDeckConfirmed', handler);
     },
@@ -98,6 +101,9 @@
     },
     onOpponentReconnected(handler) {
       socket.on('opponentReconnected', handler);
+    },
+    onOpponentResigned(handler) {
+      socket.on('opponentResigned', handler);
     },
     onOpponentName(handler){
       socket.on('opponentName',handler);

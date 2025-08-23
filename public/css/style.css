@@ -14,8 +14,8 @@
 --cb-pescadores:url('/img/decks/fJord-fishers/card-backs/jf-cb-default.webp');
 --cb-floresta:url('/img/decks/forest-beasts/card-backs/fb-cb-default.webp');
 --cb-animais:url('/img/decks/north-beasts/card-backs/nb-cb-default.webp');
---body-bg:none;
---start-bg:none}
+--body-bg:url('/img/ui/backgrounds/fff-bg-01.webp');
+--start-bg:url('/img/ui/backgrounds/fff-bg-01.webp')}
 *{box-sizing:border-box}
 html,body{height:100%;overflow:auto}
 body{margin:0;
@@ -25,7 +25,7 @@ background-size:cover,auto;
 background-repeat:no-repeat,no-repeat;
 background-position:center,0 0;
 color:var(--text);
-padding-bottom:48px}
+padding-bottom:36px}
 h1{margin:0 0 12px;
 font-size:clamp(22px,4vw,36px);
 letter-spacing:.5px}
@@ -142,7 +142,7 @@ width:calc(5*176px + 4*14px + 24px)}
 .mana-dot.pescadores{background-position:50% 0}
 .mana-dot.floresta{background-position:75% 0}
 .mana-dot.custom{background-position:100% 0}
-.mana-num{font-weight:900;margin-left:4px}
+.mana-num{font-weight:900}
 .badge{font-size:10px;
 padding:3px 6px;
 border-radius:999px;
@@ -704,9 +704,11 @@ color:#24040a}
 .card-popup{position:fixed;padding:4px 6px;background:rgba(0,0,0,.8);color:#fff;border-radius:4px;font-size:12px;z-index:2000;pointer-events:none;transform:translate(-50%,-100%)}
 @keyframes holoBounce{0%,100%{transform:translate(-50%,-50%) translateY(0)}50%{transform:translate(-50%,-50%) translateY(-6px)}}
 
+@keyframes logoBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+
 .ency-card.bg-custom{background:linear-gradient(180deg,#1a1a3f,#101028)}
 
 .brand .logo-wordmark{width:min(92vw,520px);
 height:auto;
 display:block}
-.holo-logo{animation:holoBounce 2s ease-in-out infinite;filter:drop-shadow(0 0 6px rgba(0,255,255,.6))}
+.holo-logo{animation:logoBounce 2s ease-in-out infinite;filter:drop-shadow(0 0 6px rgba(0,255,255,.6))}
