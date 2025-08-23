@@ -13,17 +13,22 @@
 --cb-vikings:url('/img/decks/farm-vikings/card-backs/fv-cb-default.webp');
 --cb-pescadores:url('/img/decks/fJord-fishers/card-backs/jf-cb-default.webp');
 --cb-floresta:url('/img/decks/forest-beasts/card-backs/fb-cb-default.webp');
---cb-animais:url('/img/decks/north-beasts/card-backs/nb-cb-default.webp')}
+--cb-animais:url('/img/decks/north-beasts/card-backs/nb-cb-default.webp');
+--body-bg:none;
+--start-bg:none}
 *{box-sizing:border-box}
 html,body{height:100%;overflow:auto}
 body{margin:0;
 font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Helvetica,Arial;
-background:radial-gradient(1200px 700px at 20% 0%,#0e1340 0%,var(--bg) 60%);
+background-image:var(--body-bg),radial-gradient(1200px 700px at 20% 0%,#0e1340 0%,var(--bg) 60%);
+background-size:cover,auto;
+background-repeat:no-repeat,no-repeat;
+background-position:center,0 0;
 color:var(--text)}
 h1{margin:0 0 12px;
 font-size:clamp(22px,4vw,36px);
 letter-spacing:.5px}
-.wrap{max-width:1600px;margin:0 auto;padding:16px 24px;height:100vh;display:flex;flex-direction:column;overflow:hidden}
+.wrap{max-width:1600px;margin:0 auto;padding:16px 24px;min-height:100vh;display:flex;flex-direction:column}
 .sub{color:var(--muted);
 margin-bottom:18px}
 .btn{cursor:pointer;
@@ -98,7 +103,7 @@ width:calc(5*176px + 4*14px + 24px)}
 #aiBoard,#playerBoard{margin:0 auto}
 .row{display:flex;gap:14px;align-items:flex-start;flex:1;justify-content:center}
 .row .board{flex:0 0 auto}
-.hand{position:relative;height:260px;margin:12px 0;flex:0 0 auto;overflow:visible}
+.hand{position:relative;height:220px;margin:12px 0;flex:0 0 auto;overflow:visible}
 .hand .card{position:absolute;top:0;left:50%;transform-origin:bottom center;width:176px;--rot:0;transform:rotate(calc(var(--rot)*1deg));transition:transform .2s,box-shadow .2s}
 .hand .card::before{opacity:0}
 .hand .card:hover{transform:translateY(-24px) scale(1.06) rotate(calc(var(--rot)*1deg))}
@@ -293,7 +298,10 @@ inset:0;
 display:grid;
 place-items:center;
 z-index:5;
-background:var(--start-bg,none),radial-gradient(1200px 700px at 80% 20%,#10236a 0%,#0b1020 60%)}
+background-image:var(--start-bg),radial-gradient(1200px 700px at 80% 20%,#10236a 0%,#0b1020 60%);
+background-size:cover,auto;
+background-repeat:no-repeat,no-repeat;
+background-position:center,0 0}
 .start .panel{position:relative;
 background:linear-gradient(180deg,#121a44,#0c1230);
 border:1px solid #2b3a86;
@@ -301,7 +309,10 @@ border-radius:16px;
 box-shadow:0 20px 50px rgba(0,0,0,.5);
 padding:26px 28px;
 max-width:1200px;
-width:min(96vw,1200px)}
+width:min(96vw,1200px);
+display:flex;
+flex-direction:column;
+align-items:center}
 .multiplayer{position:fixed;inset:0;display:grid;place-items:center;z-index:5;background:radial-gradient(1200px 700px at 80% 20%,#10236a 0%,#0b1020 60%)}
 .multiplayer .panel{background:linear-gradient(180deg,#121a44,#0c1230);border:1px solid #2b3a86;border-radius:16px;box-shadow:0 20px 50px rgba(0,0,0,.5);padding:26px 28px;max-width:480px;width:min(94vw,480px);text-align:center;display:flex;flex-direction:column;gap:12px}
 #joinCode{flex:1;padding:8px;border-radius:8px;border:1px solid #2b3a86;background:#0c1230;color:#cfe3ff}
@@ -324,9 +335,12 @@ width:min(96vw,1200px)}
 .emoji-popup.opponent{top:60px;right:20px}
 .emoji-popup.show{opacity:1}
 .brand{display:flex;
+flex-direction:column;
 align-items:center;
 justify-content:center;
-gap:10px}
+gap:10px;
+text-align:center;
+margin:0 auto}
 .logoFFF{width:36px;
 height:36px}
 .deckpick{display:grid;
