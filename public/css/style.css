@@ -143,18 +143,19 @@ width:calc(5*176px + 4*14px + 24px)}
 .mana-dot.floresta{background-position:75% 0}
 .mana-dot.custom{background-position:100% 0}
 .mana-num{font-weight:900}
-.badge{font-size:10px;
+.badge{font-size:16px;
 padding:3px 6px;
 border-radius:999px;
-border:1px solid rgba(255,255,255,.14)}
+border:1px solid rgba(255,255,255,.14);
+display:flex;
+align-items:center;
+justify-content:center}
 .badge.atk{background:linear-gradient(180deg,#1f2a64,#15204a)}
 .badge.def{background:linear-gradient(180deg,#2a5f3a,#1e462b)}
- .stance-label{position:relative;padding:3px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.14);font-size:10px;font-weight:700;overflow:hidden;color:#fff}
- .stance-label.attack{background:linear-gradient(180deg,#1f2a64,#15204a)}
- .stance-label.defense{background:linear-gradient(180deg,#2a5f3a,#1e462b)}
- .stance-label::before{content:"";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:16px;opacity:.3}
- .stance-label.attack::before{content:"⚔️"}
- .stance-label.defense::before{content:"🛡️"}
+.stance-label.attack,.stance-label.defense{animation:holoBounce 2s ease-in-out infinite;filter:drop-shadow(0 0 6px rgba(0,255,255,.6))}
+.stance-label{padding:3px 6px;border-radius:999px;border:1px solid rgba(255,255,255,.14);font-size:16px;display:flex;align-items:center;justify-content:center;color:#fff}
+.stance-label.attack{background:linear-gradient(180deg,#1f2a64,#15204a)}
+.stance-label.defense{background:linear-gradient(180deg,#2a5f3a,#1e462b)}
 /* tribe text removed */
 .art{display:flex;
 align-items:center;

@@ -157,7 +157,7 @@ function cardNode(c,owner,onBoard=false){
   <div class="head-bar"><div class="name">${c.name}</div><div class="cost-bar"><div class="mana-row"><span class="mana-num">${c.cost}</span>${manaDots}</div></div></div>
   <div class="art"></div>
   <div class="text" ${tip?`data-tip='${tip}' title='${tip}'`:''}>${kwTags.join(' ')}</div>
-  <div class="stats"><span class="gem atk">⚔️ ${c.atk}</span>${c.stance?`<span class=\"stance-label ${c.stance}\">${c.stance==='defense'?'DEFESA':'ATAQUE'}</span>`:''}<span class="gem hp ${c.hp<=2?'low':''}">❤️ ${c.hp}</span></div>`;
+  <div class="stats"><span class="gem atk">⚔️ ${c.atk}</span>${c.stance?`<span class=\"stance-label ${c.stance}\">${c.stance==='defense'?'🛡️':'⚔️'}</span>`:''}<span class="gem hp ${c.hp<=2?'low':''}">❤️ ${c.hp}</span></div>`;
   if(!onBoard){
     const art=d.querySelector('.art');
     createProjection(art,c);
