@@ -9,12 +9,21 @@ import {
   sfx,
 } from "../audio/index.js";
 import { aiTurn } from "../ai/index.js";
+import { Keyword } from "./card.js";
 
 const rand = (a) => a[Math.floor(Math.random() * a.length)];
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const uid = () => Math.random().toString(36).slice(2);
 
-const KW = { P: "Protetor", F: "Furioso" },
+const KW = {
+    P: Keyword.PROTETOR,
+    F: Keyword.FURIOSO,
+    PE: Keyword.PERCEPCAO,
+    C: Keyword.CURA,
+    B: Keyword.BENCAO,
+    CV: Keyword.CORVO,
+    S: Keyword.SERPENTE,
+  },
   BC = {
     D1: "draw1",
     H2: "heal2",
@@ -23,7 +32,7 @@ const KW = { P: "Protetor", F: "Furioso" },
     BA1: "buffAlliesAtk1",
   };
 const makeCard = (a) => {
-  const [n, e, t, atk, hp, cost, tx, k = 0, b = 0] = a;
+  const [n, e, t, atk, hp, cost, tx, k = 0, b = 0, harvest = 0] = a;
   return {
     name: n,
     emoji: e,
@@ -31,6 +40,7 @@ const makeCard = (a) => {
     atk,
     hp,
     cost,
+    harvestCost: harvest,
     text: tx,
     kw: k ? k.split("|").map((x) => KW[x]) : [],
     battlecry: b ? BC[b] : void 0,
@@ -169,8 +179,12 @@ const G = {
   turn: 1,
   playerMana: 0,
   playerManaCap: 0,
+  playerHarvest: 0,
+  playerHarvestCap: 0,
   aiMana: 0,
   aiManaCap: 0,
+  aiHarvest: 0,
+  aiHarvestCap: 0,
   current: "player",
   playerDeck: [],
   aiDeck: [],
@@ -234,7 +248,7 @@ function renderPool() {
   all.forEach((raw) => {
     const row = document.createElement("div");
     row.className = "pitem";
-    row.innerHTML = `<span class="c">${raw[5]}</span><div>${raw[1]} ${raw[0]}</div><button class="add">+</button>`;
+    row.innerHTML = `<span class="c">${raw[5]}${raw[9] ? "🌾" + raw[9] : ""}</span><div>${raw[1]} ${raw[0]}</div><button class="add">+</button>`;
     row.querySelector(".add").onclick = () => {
       if (!G.customDeck) G.customDeck = [];
       if (G.customDeck.length >= 20) return;
@@ -254,7 +268,7 @@ function renderChosen() {
     const item = document.createElement("div");
     item.className = "chitem";
     item.dataset.idx = i;
-    item.innerHTML = `<div>${c.emoji} ${c.name} <small>(${c.cost})</small></div><button class="rm">remover</button>`;
+    item.innerHTML = `<div>${c.emoji} ${c.name} <small>(${c.cost}${c.harvestCost ? "🌾" + c.harvestCost : ""})</small></div><button class="rm">remover</button>`;
     item.querySelector(".rm").onclick = () => {
       const idx = Number(item.dataset.idx);
       if (idx >= 0) {
@@ -322,7 +336,8 @@ function cardNode(c, owner) {
   const d = document.createElement("div");
   d.className = `card ${owner === "player" ? "me" : "enemy"} ${c.stance === "defense" ? "defense" : ""}`;
   d.dataset.id = c.id;
-  d.innerHTML = `<div class=\"bg bg-${c.deck || "default"}\"></div><div class=\"head\"><span class=\"cost\">${c.cost}</span><div class=\"name\">${c.name}</div>${c.stance ? `<span class=\"badge ${c.stance === "defense" ? "def" : "atk"}\">${c.stance === "defense" ? "DEFESA" : "ATAQUE"}</span>` : ""}</div><div class=\"tribe\">${c.tribe}</div><div class=\"art\">${c.emoji}</div><div class=\"text\">${(c.kw || []).map((k) => `<span class='keyword' data-tip='${k === "Protetor" ? "Enquanto houver Protetor ou carta em Defesa do lado do defensor, ataques devem mirá-los." : k === "Furioso" ? "Pode atacar no turno em que é jogada." : ""}' >${k}</span>`).join(" ")} ${c.text || ""}</div><div class=\"stats\"><span class=\"gem atk\">⚔️ ${c.atk}</span><span class=\"gem hp ${c.hp <= 2 ? "low" : ""}\">❤️ ${c.hp}</span></div>`;
+  const costText = `${c.cost}${c.harvestCost ? `🌾${c.harvestCost}` : ""}`;
+  d.innerHTML = `<div class="bg bg-${c.deck || "default"}"></div><div class="head"><span class="cost">${costText}</span><div class="name">${c.name}</div>${c.stance ? `<span class="badge ${c.stance === "defense" ? "def" : "atk"}">${c.stance === "defense" ? "DEFESA" : "ATAQUE"}</span>` : ""}</div><div class="tribe">${c.tribe}</div><div class="art">${c.emoji}</div><div class="text">${(c.kw || []).map((k) => `<span class='keyword' data-tip='${k === "Protetor" ? "Enquanto houver Protetor ou carta em Defesa do lado do defensor, ataques devem mirá-los." : k === "Furioso" ? "Pode atacar no turno em que é jogada." : ""}' >${k}</span>`).join(" ")} ${c.text || ""}</div><div class="stats"><span class="gem atk">⚔️ ${c.atk}</span><span class="gem hp ${c.hp <= 2 ? "low" : ""}">❤️ ${c.hp}</span></div>`;
   return d;
 }
 const hasGuard = (b) =>
@@ -339,7 +354,7 @@ function renderAll() {
   els.pHP2.textContent = G.playerHP;
   els.aHP.textContent = G.aiHP;
   els.aHP2.textContent = G.aiHP;
-  els.mana.textContent = `${G.playerMana}/${G.playerManaCap}`;
+  els.mana.textContent = `${G.playerMana}/${G.playerManaCap} | 🌾 ${G.playerHarvest}/${G.playerHarvestCap}`;
   els.endBtn.disabled = G.current !== "player";
   els.drawCount.textContent = G.playerDeck.length;
   els.discardCount.textContent = G.playerDiscard.length;
@@ -356,6 +371,7 @@ function renderHand() {
     d.addEventListener("click", (e) => {
       const blocked =
         c.cost > G.playerMana ||
+        c.harvestCost > G.playerHarvest ||
         G.current !== "player" ||
         G.playerBoard.length >= 5;
       if (blocked) {
@@ -369,7 +385,7 @@ function renderHand() {
         flyToBoard(d, () => playFromHand(c.id, st)),
       );
     });
-    const cantPay = c.cost > G.playerMana;
+    const cantPay = c.cost > G.playerMana || c.harvestCost > G.playerHarvest;
     const disable = G.current !== "player" || G.playerBoard.length >= 5;
     d.classList.toggle("blocked", cantPay);
     d.style.opacity = cantPay || disable ? 0.9 : 1;
@@ -517,8 +533,12 @@ export function startGame() {
   G.current = "player";
   G.playerMana = 0;
   G.playerManaCap = 0;
+  G.playerHarvest = 0;
+  G.playerHarvestCap = 0;
   G.aiMana = 0;
   G.aiManaCap = 0;
+  G.aiHarvest = 0;
+  G.aiHarvestCap = 0;
   draw("player", 3);
   draw("ai", 3);
   newTurn();
@@ -558,11 +578,15 @@ function newTurn() {
   if (G.current === "player") {
     G.playerManaCap = clamp(G.playerManaCap + 1, 0, 10);
     G.playerMana = G.playerManaCap;
+    G.playerHarvestCap = clamp(G.playerHarvestCap + 1, 0, 10);
+    G.playerHarvest = G.playerHarvestCap;
     draw("player", 1);
     G.playerBoard.forEach((c) => (c.canAttack = true));
   } else {
     G.aiManaCap = clamp(G.aiManaCap + 1, 0, 10);
     G.aiMana = G.aiManaCap;
+    G.aiHarvestCap = clamp(G.aiHarvestCap + 1, 0, 10);
+    G.aiHarvest = G.aiHarvestCap;
     draw("ai", 1);
     G.aiBoard.forEach((c) => (c.canAttack = true));
   }
@@ -595,10 +619,16 @@ function playFromHand(id, st) {
   const i = G.playerHand.findIndex((c) => c.id === id);
   if (i < 0) return;
   const c = G.playerHand[i];
-  if (c.cost > G.playerMana || G.playerBoard.length >= 5) return;
+  if (
+    c.cost > G.playerMana ||
+    c.harvestCost > G.playerHarvest ||
+    G.playerBoard.length >= 5
+  )
+    return;
   G.playerHand.splice(i, 1);
   summon("player", c, st);
   G.playerMana -= c.cost;
+  G.playerHarvest -= c.harvestCost;
   renderAll();
   sfx(st === "defense" ? "defense" : "play");
 }
@@ -940,7 +970,7 @@ function renderEncy(filter = "all", locked = false) {
   cards.forEach((c) => {
     const d = document.createElement("div");
     d.className = `card ency-card bg-${c.deck}`;
-    d.innerHTML = `<div class='bg bg-${c.deck}'></div><div class='head'><span class='cost'>${c.cost}</span><div class='name'>${c.name}</div></div><div class='mini'>${c.tribe} • ⚔️ ${c.atk} / ❤️ ${c.hp}</div><div class='art'>${c.emoji}</div><div class='details'><div>${(c.kw || []).map((k) => `<span class='chip' data-type='keyword' data-tip='${k === "Protetor" ? "Enquanto houver Protetor ou carta em Defesa do lado do defensor, ataques devem mirá-los." : k === "Furioso" ? "Pode atacar no turno em que é jogada." : ""}' >${k}</span>`).join(" ")}</div><div style='margin-top:6px'>${c.text || ""}</div></div>`;
+    d.innerHTML = `<div class='bg bg-${c.deck}'></div><div class='head'><span class='cost'>${c.cost}${c.harvestCost ? `🌾${c.harvestCost}` : ""}</span><div class='name'>${c.name}</div></div><div class='mini'>${c.tribe} • ⚔️ ${c.atk} / ❤️ ${c.hp}</div><div class='art'>${c.emoji}</div><div class='details'><div>${(c.kw || []).map((k) => `<span class='chip' data-type='keyword' data-tip='${k === "Protetor" ? "Enquanto houver Protetor ou carta em Defesa do lado do defensor, ataques devem mirá-los." : k === "Furioso" ? "Pode atacar no turno em que é jogada." : ""}' >${k}</span>`).join(" ")}</div><div style='margin-top:6px'>${c.text || ""}</div></div>`;
     tiltify(d);
     els.encyGrid.appendChild(d);
   });
