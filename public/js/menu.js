@@ -1,4 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
+  const backgrounds=['img/ui/backgrounds/fff-bg-01.webp','img/ui/backgrounds/fff-bg-02.webp'];
+  const pick=backgrounds[Math.floor(Math.random()*backgrounds.length)];
+  document.documentElement.style.setProperty('--start-bg',`url('${pick}') center/cover no-repeat`);
   const titleMenu = document.getElementById('titleMenu');
   const deckScreen = document.getElementById('start');
   const multiMenu = document.getElementById('multiplayerMenu');
