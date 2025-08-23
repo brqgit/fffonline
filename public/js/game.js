@@ -44,6 +44,7 @@ function preloadAssets(){
   const list=[];
   for(const [key,info] of Object.entries(DECK_ASSETS)){
     list.push(`/img/decks/${info.folder}/card-backs/${info.back}-cb-default.webp`);
+    list.push(`/img/decks/${info.folder}/deck-backs/${info.back}-db-default.webp`);
     (DECK_IMAGES[key]||[]).forEach(fn=>{
       const base=`/img/decks/${info.folder}/characters/${fn.replace(/\.[^.]+$/,'')}.png`;
       list.push(base);
@@ -69,7 +70,7 @@ function setCardBacks(){
   const apply=(deck,drawId,discId)=>{
     const info=DECK_ASSETS[deck];
     if(!info)return;
-    const base=`/img/decks/${info.folder}/card-backs/${info.back}-cb-default.webp`;
+    const base=`/img/decks/${info.folder}/deck-backs/${info.back}-db-default.webp`;
     const drawImg=document.querySelector(`#${drawId} img`);
     const discImg=document.querySelector(`#${discId} img`);
     drawImg&&setSrcFallback(drawImg,[base]);
@@ -79,7 +80,22 @@ function setCardBacks(){
   apply(G.aiDeckChoice,'aiDrawPile','aiDiscardPile');
 }
 
-function determineClass(c){const n=c.name.toLowerCase();if(n.includes('guardião'))return{name:'Guardião',group:'tank'};if(n.includes('berserker'))return{name:'Berserker',group:'tank'};if(n.includes('caçador'))return{name:'Caçador',group:'dps'};if(n.includes('curandeir'))return{name:'Curandeiro',group:'support'};if(n.includes('sacerdote'))return{name:'Tecelão',group:'support'};if(n.includes('xamã'))return{name:'Xamã',group:'control'};if(n.includes('serpente'))return{name:'Serpente',group:'dps'};return null;}
+function determineClass(c){
+  const n=c.name.toLowerCase();
+  if(n.includes('berserker')) return {name:'Berserker',group:'tank'};
+  if(n.includes('guardião do véu')||n.includes('véu')) return {name:'Guardião do Véu',group:'control'};
+  if(n.includes('guardião')) return {name:'Guardião',group:'tank'};
+  if(n.includes('uivante')) return {name:'Uivante',group:'tank'};
+  if(n.includes('caçador')) return {name:'Caçador',group:'dps'};
+  if(n.includes('runomante')) return {name:'Runomante',group:'dps'};
+  if(n.includes('serpente')) return {name:'Serpente',group:'dps'};
+  if(n.includes('curandeir')) return {name:'Curandeiro',group:'support'};
+  if(n.includes('totêmico')||n.includes('totemico')) return {name:'Totêmico',group:'support'};
+  if(n.includes('sacerdote')||n.includes('tecelão')) return {name:'Tecelão',group:'support'};
+  if(n.includes('xamã')) return {name:'Xamã',group:'control'};
+  if(n.includes('corvo')) return {name:'Corvo',group:'control'};
+  return null;
+}
 // deck builder DOM (may be null if builder UI not present)
 const poolEl=$('#pool'), chosenEl=$('#chosen'), countEl=$('#countDeck'), curveEl=$('#curve');
 // safe builder functions (no-ops if UI not present)
@@ -129,13 +145,13 @@ function cardNode(c,owner,onBoard=false){
     if(n)kwTags.push(`<span class='keyword' data-tip='${tip}' title='${tip}'>${n}</span>`);
   }
   const cls=determineClass(c);if(cls)kwTags.push(`<span class='class-tag ${cls.group}'>${cls.name}</span>`);
-  let text=c.text||'';
-  if(kwTags.some(s=>s.includes('>'+text.trim()+'<'))) text='';
+  const text=c.text||'';
+  const tip=text&&!kwTags.some(s=>s.includes('>'+text.trim()+'<'))?text:'';
   d.innerHTML=`<div class="bg bg-${c.deck||'default'}"></div>
-  <div class="head-bar"><div class="name">${c.name}</div><div class="cost-bar">${c.stance?`<span class=\"badge ${c.stance==='defense'?'def':'atk'}\">${c.stance==='defense'?'DEFESA':'ATAQUE'}</span>`:''}<div class="mana-row">${manaDots}<span class="mana-num">${c.cost}</span></div></div></div>
+  <div class="head-bar"><div class="name">${c.name}</div><div class="cost-bar"><div class="mana-row">${manaDots}<span class="mana-num">${c.cost}</span></div></div></div>
   <div class="art"></div>
-  <div class="text">${kwTags.join(' ')}${text?(' '+text):''}</div>
-  <div class="stats"><span class="gem atk">⚔️ ${c.atk}</span><span class="gem hp ${c.hp<=2?'low':''}">❤️ ${c.hp}</span></div>`;
+  <div class="text" ${tip?`data-tip='${tip}' title='${tip}'`:''}>${kwTags.join(' ')}</div>
+  <div class="stats"><span class="gem atk">⚔️ ${c.atk}</span>${c.stance?`<span class=\"stance-label ${c.stance}\">${c.stance==='defense'?'DEFESA':'ATAQUE'}</span>`:''}<span class="gem hp ${c.hp<=2?'low':''}">❤️ ${c.hp}</span></div>`;
   if(!onBoard){
     const art=d.querySelector('.art');
     createProjection(art,c);
