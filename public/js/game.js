@@ -43,9 +43,13 @@ const IMG_CACHE={};
 function preloadAssets(){
   const list=[];
   for(const [key,info] of Object.entries(DECK_ASSETS)){
-    // Preload both deck-back and card-back images
-    list.push(`/img/decks/${info.folder}/deck-backs/${info.back}-db-default.webp`);
-    list.push(`/img/decks/${info.folder}/card-backs/${info.back}-cb-default.webp`);
+    // Preload both deck-back and card-back images (try webp then png)
+    const dbBase=`/img/decks/${info.folder}/deck-backs/${info.back}-db-default`;
+    list.push(dbBase+`.webp`);
+    list.push(dbBase+`.png`);
+    const cbBase=`/img/decks/${info.folder}/card-backs/${info.back}-cb-default`;
+    list.push(cbBase+`.webp`);
+    list.push(cbBase+`.png`);
     (DECK_IMAGES[key]||[]).forEach(fn=>{
       const base=`/img/decks/${info.folder}/characters/${fn.replace(/\.[^.]+$/,'')}.png`;
       list.push(base);
@@ -72,11 +76,11 @@ function setDeckBacks(){
     const info=DECK_ASSETS[deck];
     if(!info)return;
     // Use deck-back art for both the draw and discard piles
-    const base=`/img/decks/${info.folder}/deck-backs/${info.back}-db-default.webp`;
+    const base=`/img/decks/${info.folder}/deck-backs/${info.back}-db-default`;
     const drawImg=document.querySelector(`#${drawId} img`);
     const discImg=document.querySelector(`#${discId} img`);
-    drawImg&&setSrcFallback(drawImg,[base]);
-    discImg&&setSrcFallback(discImg,[base]);
+    drawImg&&setSrcFallback(drawImg,[base+`.webp`,base+`.png`]);
+    discImg&&setSrcFallback(discImg,[base+`.webp`,base+`.png`]);
   };
   apply(G.playerDeckChoice,'drawPile','discardPile');
   apply(G.aiDeckChoice,'aiDrawPile','aiDiscardPile');
