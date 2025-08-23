@@ -5,9 +5,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     if(list.length){
       const pick=list[Math.floor(Math.random()*list.length)];
       const url=`img/ui/backgrounds/${pick}`;
-      const style=`url('${url}') center/cover no-repeat`;
-      document.documentElement.style.setProperty('--start-bg',style);
-      document.body.style.setProperty('--body-bg',style);
+      const root=document.documentElement;
+      const img=new Image();
+      img.onload=()=>{
+        root.style.setProperty('--start-bg',`url('${url}')`);
+        root.style.setProperty('--body-bg',`url('${url}')`);
+      };
+      img.src=url;
     }
   }catch(err){console.error('Failed to load backgrounds',err);}
   const titleMenu = document.getElementById('titleMenu');

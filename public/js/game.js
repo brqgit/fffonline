@@ -41,6 +41,19 @@ const DECK_ASSETS={
   floresta:{folder:'forest-beasts',back:'fb'},
   animais:{folder:'north-beasts',back:'nb'}
 };
+const IMG_CACHE={};
+function preloadAssets(){
+  const list=[];
+  for(const [key,info] of Object.entries(DECK_ASSETS)){
+    list.push(...imgCandidates(`/img/decks/${info.folder}/deck-backs/${info.back}-db-default`));
+    (DECK_IMAGES[key]||[]).forEach(fn=>{
+      const base=`/img/decks/${info.folder}/characters/${fn.replace(/\.[^.]+$/,'')}`;
+      list.push(...imgCandidates(base));
+    });
+  }
+  list.forEach(src=>{const img=new Image();img.src=src;IMG_CACHE[src]=img;});
+}
+preloadAssets();
 // Return local icon path candidates for decks that provide artwork
 function iconUrl(deck,idx){
   const info=DECK_ASSETS[deck];
@@ -54,15 +67,19 @@ function iconUrl(deck,idx){
   return imgCandidates(`/img/decks/${info.folder}/characters/${base}`);
 }
 
-function setCardBack(){
-  const info=DECK_ASSETS[G.playerDeckChoice];
-  if(!info)return;
-  const base=`/img/decks/${info.folder}/card-backs/${info.back}-cb-default`;
-  const drawImg=document.querySelector('#drawPile img');
-  const discImg=document.querySelector('#discardPile img');
-  const paths=imgCandidates(base);
-  drawImg&&setSrcFallback(drawImg,paths.slice());
-  discImg&&setSrcFallback(discImg,paths.slice());
+function setCardBacks(){
+  const apply=(deck,drawId,discId)=>{
+    const info=DECK_ASSETS[deck];
+    if(!info)return;
+    const base=`/img/decks/${info.folder}/deck-backs/${info.back}-db-default`;
+    const paths=imgCandidates(base);
+    const drawImg=document.querySelector(`#${drawId} img`);
+    const discImg=document.querySelector(`#${discId} img`);
+    drawImg&&setSrcFallback(drawImg,paths.slice());
+    discImg&&setSrcFallback(discImg,paths.slice());
+  };
+  apply(G.playerDeckChoice,'drawPile','discardPile');
+  apply(G.aiDeckChoice,'aiDrawPile','aiDiscardPile');
 }
 
 function determineClass(c){const n=c.name.toLowerCase();if(n.includes('guardião'))return{name:'Guardião',group:'tank'};if(n.includes('berserker'))return{name:'Berserker',group:'tank'};if(n.includes('caçador'))return{name:'Caçador',group:'dps'};if(n.includes('curandeir'))return{name:'Curandeiro',group:'support'};if(n.includes('sacerdote'))return{name:'Tecelão',group:'support'};if(n.includes('xamã'))return{name:'Xamã',group:'control'};if(n.includes('serpente'))return{name:'Serpente',group:'dps'};return null;}
@@ -81,9 +98,16 @@ function showPopup(anchor,text){const box=document.createElement('div');box.clas
 function createProjection(container,card){
   const urls=iconUrl(card.deck,card.icon);
   if(urls){
-    const img=document.createElement('img');
+    const src=urls[0];
+    let img;
+    if(IMG_CACHE[src]&&IMG_CACHE[src].complete){
+      img=IMG_CACHE[src].cloneNode();
+    }else{
+      img=document.createElement('img');
+      setSrcFallback(img,urls.slice());
+    }
     img.width=96;img.height=96;
-    setSrcFallback(img,urls.slice());
+    img.loading='eager';
     container.appendChild(img);
   }else if(card.emoji){
     const c=document.createElement('canvas');
@@ -100,8 +124,6 @@ function cardNode(c,owner,onBoard=false){
   const d=document.createElement('div');
   d.className=`card ${owner==='player'?'me':'enemy'} ${c.stance==='defense'?'defense':''}`;
   d.dataset.id=c.id;
-  const icoUrl=iconUrl(c.deck,c.icon);
-  const art=(!onBoard?(icoUrl?`<div class="card-icon" style="background-image:url('${icoUrl}')"></div>`:c.emoji):'');
   const manaDots=`<span class="mana-dot ${c.deck}"></span>`.repeat(c.cost);
   const kwTags=[];
   (c.kw||[]).forEach(k=>{const tip=KW_TIPS[k]||'';kwTags.push(`<span class='keyword' data-tip='${tip}' title='${tip}'>${k}</span>`)});
@@ -111,13 +133,16 @@ function cardNode(c,owner,onBoard=false){
   }
   const cls=determineClass(c);if(cls)kwTags.push(`<span class='class-tag ${cls.group}'>${cls.name}</span>`);
   let text=c.text||'';
-  if(c.battlecry) text='';
-  else if(kwTags.some(s=>s.includes('>'+text.trim()+'<'))) text='';
+  if(kwTags.some(s=>s.includes('>'+text.trim()+'<'))) text='';
   d.innerHTML=`<div class="bg bg-${c.deck||'default'}"></div>
   <div class="head-bar"><div class="name">${c.name}</div><div class="cost-bar">${c.stance?`<span class=\"badge ${c.stance==='defense'?'def':'atk'}\">${c.stance==='defense'?'DEFESA':'ATAQUE'}</span>`:''}<div class="mana-row">${manaDots}<span class="mana-num">${c.cost}</span></div></div></div>
-  <div class="art">${art}</div>
+  <div class="art"></div>
   <div class="text">${kwTags.join(' ')}${text?(' '+text):''}</div>
   <div class="stats"><span class="gem atk">⚔️ ${c.atk}</span><span class="gem hp ${c.hp<=2?'low':''}">❤️ ${c.hp}</span></div>`;
+  if(!onBoard){
+    const art=d.querySelector('.art');
+    createProjection(art,c);
+  }
   return d;
 }
 const hasGuard=b=>b.some(x=>x.kw.includes('Protetor')||x.stance==='defense');
@@ -193,7 +218,7 @@ const closeStanceChooser=()=>{const old=document.querySelector('.stance-chooser'
 function flyToBoard(node,onEnd){const r=node.getBoundingClientRect(),clone=node.cloneNode(true);Object.assign(clone.style,{left:r.left+'px',top:r.top+'px',width:r.width+'px',height:r.height+'px',position:'fixed',zIndex:999,transition:'transform .45s ease,opacity .45s ease'});clone.classList.add('fly');document.body.appendChild(clone);const br=els.pBoard.getBoundingClientRect();requestAnimationFrame(()=>{const tx=br.left+br.width/2-r.left-r.width/2,ty=br.top+10-r.top;clone.style.transform=`translate(${tx}px,${ty}px) scale(.9)`;clone.style.opacity='0'});setTimeout(()=>{clone.remove();onEnd&&onEnd()},450)}
 function animateMove(fromEl,toEl){const r1=fromEl.getBoundingClientRect(),r2=toEl.getBoundingClientRect(),ghost=document.createElement('div');Object.assign(ghost.style,{left:r1.left+'px',top:r1.top+'px',width:r1.width+'px',height:r1.height+'px',position:'fixed',zIndex:998,transition:'transform .5s ease,opacity .5s ease',background:'#fff',borderRadius:'10px',opacity:1});document.body.appendChild(ghost);requestAnimationFrame(()=>{ghost.style.transform=`translate(${r2.left-r1.left}px,${r2.top-r1.top}px)`;ghost.style.opacity='0'});setTimeout(()=>ghost.remove(),500)}
 function stackHand(){const cards=$$('#playerHand .card');const total=cards.length;if(!total)return;const spread=Math.min(60,120/Math.max(total-1,1));cards.forEach((c,i)=>{const offset=(i-(total-1)/2)*spread;c.style.left=`calc(50% + ${offset}px - 88px)`;c.style.zIndex=i+1;c.style.setProperty('--rot',offset/5);c.onmouseenter=()=>c.style.zIndex=1000;c.onmouseleave=()=>c.style.zIndex=i+1;})}
-function startGame(first='player'){const sanitize=c=>{if(c.hp<1)c.hp=1;if(c.atk<0)c.atk=0;return c};G.playerDeck=(G.playerDeckChoice==='custom'&&G.customDeck?shuffle(G.customDeck.slice()):TEMPLATES[G.playerDeckChoice].map(makeCard));G.playerDeck.forEach(c=>{sanitize(c);c.owner='player';c.deck=(G.playerDeckChoice==='custom'?'custom':G.playerDeckChoice)});G.aiDeck=TEMPLATES[G.aiDeckChoice].map(makeCard);G.aiDeck.forEach(c=>{sanitize(c);c.owner='ai';c.deck=G.aiDeckChoice});G.playerDiscard=[];G.aiDiscard=[];G.playerHand=[];G.aiHand=[];G.playerBoard=[];G.aiBoard=[];G.playerHP=30;G.aiHP=30;G.current=first;G.playerMana=0;G.playerManaCap=0;G.turn=0;if(!window.isMultiplayer){const diff=document.getElementById('difficulty');G.aiSkill=diff?parseInt(diff.value):1;}els.emojiBar&&(els.emojiBar.style.display=window.isMultiplayer?'flex':'none');setCardBack();if(first==='player')draw('player',5);else draw('ai',5);newTurn(true);renderAll();stopMenuMusic();startMenuMusic('combat');log('A batalha começou!');sfx('start')}
+function startGame(first='player'){const sanitize=c=>{if(c.hp<1)c.hp=1;if(c.atk<0)c.atk=0;return c};G.playerDeck=(G.playerDeckChoice==='custom'&&G.customDeck?shuffle(G.customDeck.slice()):TEMPLATES[G.playerDeckChoice].map(makeCard));G.playerDeck.forEach(c=>{sanitize(c);c.owner='player';c.deck=(G.playerDeckChoice==='custom'?'custom':G.playerDeckChoice)});G.aiDeck=TEMPLATES[G.aiDeckChoice].map(makeCard);G.aiDeck.forEach(c=>{sanitize(c);c.owner='ai';c.deck=G.aiDeckChoice});G.playerDiscard=[];G.aiDiscard=[];G.playerHand=[];G.aiHand=[];G.playerBoard=[];G.aiBoard=[];G.playerHP=30;G.aiHP=30;G.current=first;G.playerMana=0;G.playerManaCap=0;G.turn=0;if(!window.isMultiplayer){const diff=document.getElementById('difficulty');G.aiSkill=diff?parseInt(diff.value):1;}els.emojiBar&&(els.emojiBar.style.display=window.isMultiplayer?'flex':'none');setCardBacks();if(first==='player')draw('player',5);else draw('ai',5);newTurn(true);renderAll();stopMenuMusic();startMenuMusic('combat');log('A batalha começou!');sfx('start')}
 const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
 function draw(who,n=1){const deck=who==='player'?G.playerDeck:G.aiDeck,hand=who==='player'?G.playerHand:G.aiHand,disc=who==='player'?G.playerDiscard:G.aiDiscard;const deckEl=document.getElementById('drawPile');const handEl=els.pHand;for(let i=0;i<n;i++){if(deck.length===0&&disc.length){deck.push(...shuffle(disc.splice(0)));deckEl.classList.add('shuffling');setTimeout(()=>deckEl.classList.remove('shuffling'),600)}if(deck.length){const c=deck.shift();if(c.hp<1)c.hp=1;hand.push(c);if(who==='player')animateMove(deckEl,handEl)}}if(who==='player'){els.drawCount.textContent=G.playerDeck.length;els.discardCount.textContent=G.playerDiscard.length;setTimeout(stackHand,500)}}
 function discardHand(side){const hand=side==='player'?G.playerHand:G.aiHand;const disc=side==='player'?G.playerDiscard:G.aiDiscard;if(hand.length){if(side==='player'){const cards=$$('#playerHand .card');const pile=document.getElementById('discardPile');cards.forEach(c=>animateMove(c,pile))}disc.push(...hand.splice(0));if(side==='player'){els.discardCount.textContent=G.playerDiscard.length;setTimeout(stackHand,500)}}}
