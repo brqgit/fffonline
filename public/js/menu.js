@@ -1,7 +1,15 @@
-document.addEventListener('DOMContentLoaded', () => {
-  const backgrounds=['img/ui/backgrounds/fff-bg-01.webp','img/ui/backgrounds/fff-bg-02.webp'];
-  const pick=backgrounds[Math.floor(Math.random()*backgrounds.length)];
-  document.documentElement.style.setProperty('--start-bg',`url('${pick}') center/cover no-repeat`);
+document.addEventListener('DOMContentLoaded', async () => {
+  try{
+    const res=await fetch('/backgrounds');
+    const list=await res.json();
+    if(list.length){
+      const pick=list[Math.floor(Math.random()*list.length)];
+      const url=`img/ui/backgrounds/${pick}`;
+      const style=`url('${url}') center/cover no-repeat`;
+      document.documentElement.style.setProperty('--start-bg',style);
+      document.body.style.setProperty('--body-bg',style);
+    }
+  }catch(err){console.error('Failed to load backgrounds',err);}
   const titleMenu = document.getElementById('titleMenu');
   const deckScreen = document.getElementById('start');
   const multiMenu = document.getElementById('multiplayerMenu');
