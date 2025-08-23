@@ -4,7 +4,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const list=await res.json();
     if(list.length){
       const pick=list[Math.floor(Math.random()*list.length)];
-      const url=`img/ui/backgrounds/${pick}`;
+      const url=`/img/ui/backgrounds/${pick}`;
       const root=document.documentElement;
       const img=new Image();
       img.onload=()=>{

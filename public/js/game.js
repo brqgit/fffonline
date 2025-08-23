@@ -1,7 +1,5 @@
 (function(){const $=s=>document.querySelector(s),$$=s=>Array.from(document.querySelectorAll(s));const logBox=$('#log');const log=t=>{if(!logBox)return;const d=document.createElement('div');d.textContent=t;logBox.prepend(d)};const rand=a=>a[Math.floor(Math.random()*a.length)],clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),uid=()=>(Math.random().toString(36).slice(2));
 const AudioCtx=window.AudioContext||window.webkitAudioContext;let actx=null,master=null,musicGain=null,musicLoopId=null,musicOn=false,musicPreset='menu',musicMuted=false,sfxMuted=false,musicVolume=1,sfxVolume=1,musicBase=.18,allMuted=false;function initAudio(){if(!AudioCtx)return;if(!actx){actx=new AudioCtx();master=actx.createGain();master.gain.value=.18*sfxVolume;master.connect(actx.destination)}}function ensureRunning(){if(actx&&actx.state==='suspended')actx.resume()}function tone(f=440,d=.1,t='sine',v=1,w=0){if(!actx||sfxMuted)return;ensureRunning();const o=actx.createOscillator(),g=actx.createGain();o.type=t;o.frequency.setValueAtTime(f,actx.currentTime+w);g.gain.setValueAtTime(.0001,actx.currentTime+w);g.gain.exponentialRampToValueAtTime(Math.max(.0002,v)*sfxVolume,actx.currentTime+w+.01);g.gain.exponentialRampToValueAtTime(.0001,actx.currentTime+w+d);o.connect(g);g.connect(master);o.start(actx.currentTime+w);o.stop(actx.currentTime+w+d+.02)}function sfx(n){if(!actx||sfxMuted)return;({start:()=>{tone(520,.08,'triangle',.7,0);tone(780,.09,'triangle',.6,.08)},play:()=>{tone(420,.07,'sine',.7,0);tone(560,.08,'sine',.6,.06)},defense:()=>{tone(280,.09,'square',.6,0);tone(200,.12,'sine',.5,.08)},attack:()=>{tone(300,.06,'sawtooth',.7,0);tone(220,.06,'sawtooth',.6,.05)},hit:()=>{tone(160,.07,'square',.6,0)},overflow:()=>{tone(600,.1,'triangle',.6,0)},death:()=>{tone(420,.08,'sawtooth',.6,0);tone(260,.12,'sawtooth',.55,.06)},end:()=>{tone(600,.06,'triangle',.6,0);tone(400,.06,'triangle',.5,.05)},crit:()=>{tone(120,.08,'square',.75,0);tone(90,.12,'square',.7,.06)},error:()=>{tone(140,.05,'square',.6,0);tone(140,.05,'square',.6,.06)}}[n]||(()=>{}))()}
-const IMG_EXTS=['.webp','.png','.jpg','.jpeg','.gif'];
-const imgCandidates=base=>IMG_EXTS.map(ext=>base+ext);
 function setSrcFallback(el,urls){const tryNext=()=>{if(!urls.length)return;const u=urls.shift();el.onerror=tryNext;el.src=u;};tryNext();}
 // --- MENU MUSIC (procedural, deck-themed) ---
 const MUSIC={menu:{bpm:84,leadBase:196,bassBase:98,leadWave:'triangle',bassWave:'sine',scale:[0,3,5,7,5,3,0,-5]},vikings:{bpm:76,leadBase:174.61,bassBase:87.31,leadWave:'sawtooth',bassWave:'sine',scale:[0,3,5,7,10,7,5,3]},animais:{bpm:90,leadBase:220,bassBase:110,leadWave:'square',bassWave:'sine',scale:[0,2,5,7,9,7,5,2]},pescadores:{bpm:96,leadBase:196,bassBase:98,leadWave:'triangle',bassWave:'triangle',scale:[0,2,4,7,9,7,4,2]},floresta:{bpm:68,leadBase:207.65,bassBase:103.83,leadWave:'sine',bassWave:'sine',scale:[0,3,5,10,5,3,0,-2]},combat:{bpm:118,leadBase:220,bassBase:110,leadWave:'sawtooth',bassWave:'square',scale:[0,2,3,5,7,8,7,5],perc:true,ac:4}};
@@ -45,10 +43,10 @@ const IMG_CACHE={};
 function preloadAssets(){
   const list=[];
   for(const [key,info] of Object.entries(DECK_ASSETS)){
-    list.push(...imgCandidates(`/img/decks/${info.folder}/deck-backs/${info.back}-db-default`));
+    list.push(`/img/decks/${info.folder}/card-backs/${info.back}-cb-default.webp`);
     (DECK_IMAGES[key]||[]).forEach(fn=>{
-      const base=`/img/decks/${info.folder}/characters/${fn.replace(/\.[^.]+$/,'')}`;
-      list.push(...imgCandidates(base));
+      const base=`/img/decks/${info.folder}/characters/${fn.replace(/\.[^.]+$/,'')}.png`;
+      list.push(base);
     });
   }
   list.forEach(src=>{const img=new Image();img.src=src;IMG_CACHE[src]=img;});
@@ -64,19 +62,18 @@ function iconUrl(deck,idx){
   }else{
     base=`char${(idx||0)+1}`;
   }
-  return imgCandidates(`/img/decks/${info.folder}/characters/${base}`);
+  return [`/img/decks/${info.folder}/characters/${base}.png`];
 }
 
 function setCardBacks(){
   const apply=(deck,drawId,discId)=>{
     const info=DECK_ASSETS[deck];
     if(!info)return;
-    const base=`/img/decks/${info.folder}/deck-backs/${info.back}-db-default`;
-    const paths=imgCandidates(base);
+    const base=`/img/decks/${info.folder}/card-backs/${info.back}-cb-default.webp`;
     const drawImg=document.querySelector(`#${drawId} img`);
     const discImg=document.querySelector(`#${discId} img`);
-    drawImg&&setSrcFallback(drawImg,paths.slice());
-    discImg&&setSrcFallback(discImg,paths.slice());
+    drawImg&&setSrcFallback(drawImg,[base]);
+    discImg&&setSrcFallback(discImg,[base]);
   };
   apply(G.playerDeckChoice,'drawPile','discardPile');
   apply(G.aiDeckChoice,'aiDrawPile','aiDiscardPile');
