@@ -627,6 +627,11 @@ function triggerBattlecry(side, c) {
           const t = rand(allies);
           t.hp = Math.min(t.hp + 2, 20);
           fxTextOnCard(t.id, "+2", "heal");
+          const n = nodeById(t.id);
+          if (n) {
+            const r = n.getBoundingClientRect();
+            screenParticle("healing", r.left + r.width / 2, r.top + r.height / 2);
+          }
           log(`${c.name}: curou 2 em ${t.name}.`);
         }
       }
@@ -637,6 +642,7 @@ function triggerBattlecry(side, c) {
         if (foes.length) {
           const t = rand(foes);
           damageMinion(t, 1);
+          particleOnCard(t.id, "attack");
           fxTextOnCard(t.id, "-1", "dmg");
           log(`${c.name}: 1 de dano em ${t.name}.`);
           checkDeaths();
@@ -655,6 +661,7 @@ function triggerBattlecry(side, c) {
           t.atk += 1;
           t.hp += 1;
           fxTextOnCard(t.id, "+1/+1", "buff");
+          particleOnCard(t.id, "magic");
           log(`${c.name}: deu +1/+1 em ${t.name}.`);
         }
       }
@@ -667,6 +674,7 @@ function triggerBattlecry(side, c) {
         allies.forEach((x) => {
           x.atk += 1;
           fxTextOnCard(x.id, "+1 ATK", "buff");
+          particleOnCard(x.id, "magic");
         });
         if (allies.length) log(`${c.name}: aliados ganharam +1 de ataque.`);
       }
@@ -753,6 +761,26 @@ function screenSlash(x, y, ang) {
   document.body.appendChild(fx);
   setTimeout(() => fx.remove(), 380);
 }
+function screenParticle(name, x, y) {
+  const fx = document.createElement("div");
+  fx.className = "fx fx-" + name;
+  fx.style.left = x + "px";
+  fx.style.top = y + "px";
+  document.body.appendChild(fx);
+  setTimeout(() => fx.remove(), 600);
+}
+function particleOnCard(cid, name) {
+  const n = nodeById(cid);
+  if (!n) return;
+  const r = n.getBoundingClientRect();
+  screenParticle(name, r.left + r.width / 2, r.top + r.height / 2);
+}
+function particleOnFace(side, name) {
+  const el = side === "ai" ? els.aHP2 : els.pHP2;
+  if (!el) return;
+  const r = el.getBoundingClientRect();
+  screenParticle(name, r.left + r.width / 2, r.top + r.height / 2);
+}
 function fxTextOnCard(cid, text, cls) {
   const n = document.querySelector(`.card[data-id="${cid}"]`);
   if (!n) return;
@@ -778,6 +806,7 @@ function attackCard(attacker, target) {
   }
   animateAttack(attacker.id, target.id);
   if (target.stance === "defense") animateDefense(target.id);
+  particleOnCard(target.id, "attack");
   const pre = target.hp,
     overflow = Math.max(0, attacker.atk - pre);
   damageMinion(target, attacker.atk);
@@ -816,6 +845,7 @@ function attackFace(attacker, face) {
     screenSlash(ar.right, ar.top + ar.height / 2, 10);
   }
   animateAttack(attacker.id, null);
+  particleOnFace(face, "attack");
   const dmg = attacker.atk;
   attacker.canAttack = false;
   if (face === "ai") {
@@ -840,12 +870,14 @@ function damageMinion(m, amt) {
 }
 function checkDeaths() {
   const deadA = G.aiBoard.filter((c) => c.hp <= 0);
+  deadA.forEach((c) => particleOnCard(c.id, "explosion"));
   if (deadA.length) {
     G.aiBoard = G.aiBoard.filter((c) => c.hp > 0);
     G.aiDiscard.push(...deadA);
     log("Uma criatura inimiga caiu.");
   }
   const deadP = G.playerBoard.filter((c) => c.hp <= 0);
+  deadP.forEach((c) => particleOnCard(c.id, "explosion"));
   if (deadP.length) {
     G.playerBoard = G.playerBoard.filter((c) => c.hp > 0);
     G.playerDiscard.push(...deadP);

@@ -265,6 +265,11 @@ transform:scaleX(0) rotate(var(--ang,0deg))}
 100%{opacity:0;
 transform:scaleX(1) rotate(var(--ang,0deg))}
 }
+.fx.fx-healing{width:64px;height:64px;background:url("../img/particles/healing.png") no-repeat center/contain;filter:invert(1) sepia(1) saturate(5) hue-rotate(85deg);opacity:0;animation:healPop .6s ease-out forwards}
+.fx.fx-attack{width:64px;height:64px;background:url("../img/particles/attack.png") no-repeat center/contain;filter:invert(1) sepia(1) saturate(5) hue-rotate(0deg);opacity:0;animation:healPop .6s ease-out forwards}
+.fx.fx-magic{width:64px;height:64px;background:url("../img/particles/magic.png") no-repeat center/contain;filter:invert(1) sepia(1) saturate(5) hue-rotate(200deg);opacity:0;animation:healPop .6s ease-out forwards}
+.fx.fx-explosion{width:64px;height:64px;background:url("../img/particles/explosion.png") no-repeat center/contain;filter:invert(1) sepia(1) saturate(5) hue-rotate(20deg);opacity:0;animation:healPop .6s ease-out forwards}
+@keyframes healPop{0%{opacity:0;transform:translate(-50%,-50%) scale(.5)}50%{opacity:1}100%{opacity:0;transform:translate(-50%,-80%) scale(1)}}
 .fx-float{position:fixed;
 z-index:1300;
 left:0;
