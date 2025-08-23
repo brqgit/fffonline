@@ -25,7 +25,7 @@ background-size:cover,auto;
 background-repeat:no-repeat,no-repeat;
 background-position:center,0 0;
 color:var(--text);
-padding-bottom:36px}
+padding-bottom:16px}
 h1{margin:0 0 12px;
 font-size:clamp(22px,4vw,36px);
 letter-spacing:.5px}
@@ -104,7 +104,7 @@ width:calc(5*176px + 4*14px + 24px)}
 #aiBoard,#playerBoard{margin:0 auto}
 .row{display:flex;gap:14px;align-items:flex-start;flex:1;justify-content:center}
 .row .board{flex:0 0 auto}
-.hand{position:relative;height:220px;margin:12px 0;flex:0 0 auto;overflow:visible}
+.hand{position:relative;height:220px;margin:20px 0 0;flex:0 0 auto;overflow:visible}
 .hand .card{position:absolute;top:0;left:50%;transform-origin:bottom center;width:176px;--rot:0;transform:rotate(calc(var(--rot)*1deg));transition:transform .2s,box-shadow .2s}
 .hand .card::before{opacity:0}
 .hand .card:hover{transform:translateY(-24px) scale(1.06) rotate(calc(var(--rot)*1deg))}
