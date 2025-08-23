@@ -3,6 +3,7 @@ const http = require('http');
 const path = require('path');
 const { Server } = require('socket.io');
 const { randomUUID } = require('crypto');
+const fs = require('fs');
 
 const app = express();
 const server = http.createServer(app);
@@ -17,6 +18,15 @@ const VALID_DECKS = new Set(['vikings', 'animais', 'pescadores', 'floresta', 'cu
 const rooms = new Map();
 
 app.use(express.static(path.join(__dirname, 'public')));
+
+app.get('/backgrounds', (req, res) => {
+  const dir = path.join(__dirname, 'public', 'img', 'ui', 'backgrounds');
+  fs.readdir(dir, (err, files) => {
+    if (err) return res.status(500).json([]);
+    const list = files.filter(f => /\.(png|jpe?g|webp|gif)$/i.test(f));
+    res.json(list);
+  });
+});
 
 io.on('connection', (socket) => {
   socket.on('host', () => {
