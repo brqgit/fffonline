@@ -12,16 +12,16 @@ A história de **FFF Online** se passa em Fjörnburg, uma terra gelada onde faze
 ## Facções e Decks
 
 ### Vikings
-Filhos dos campos nevados, os Vikings combinam trabalho árduo e táticas de guerra. Cartas como **Lavrador de Lança** e **Escudeiro Rural** protegem as aldeias, enquanto líderes como o **Chefe da Colheita** inspiram os camponeses. As novas adições — **Camponês Vigilante**, **Batedor da Aldeia** e o sábio **Patriarca da Fazenda** — reforçam a temática de comunidade, proteção e força coletivizada.
+Filhos dos campos nevados, os Vikings combinam trabalho árduo e táticas de guerra. Cartas como **Lavrador de Lança** e **Escudeiro Rural** protegem as aldeias, enquanto líderes como o **Chefe da Colheita** inspiram os camponeses. As novas adições — **Camponês Vigilante**, **Herbalista do Vilarejo**, **Batedor da Aldeia**, **Ancião do Trigo** e o sábio **Patriarca da Fazenda** — reforçam a temática de comunidade, proteção e força coletivizada.
 
 ### Animais
-As feras do norte defendem seus territórios selvagens. O **Urso Pardo** ergue-se como barreira, o **Lobo Cinzento** avança com ferocidade e a **Coruja Sábia** fornece visão estratégica. Entre os recém-chegados, o **Lobo Alfa** lidera matilhas, enquanto o **Texugo Ártico** e o **Falcão das Montanhas** mostram que a fauna possui tanto garra quanto astúcia. Este deck valoriza ataques rápidos e instintos primitivos.
+As feras do norte defendem seus territórios selvagens. O **Urso Pardo** ergue-se como barreira, o **Lobo Cinzento** avança com ferocidade e a **Coruja Sábia** fornece visão estratégica. Entre os recém-chegados, o **Lobo Alfa** lidera matilhas, ao lado do ágil **Lince Ártico**, do perseverante **Caribu Selvagem**, do astuto **Texugo Ártico** e do **Falcão das Montanhas**, provando que a fauna possui tanto garra quanto astúcia. Este deck valoriza ataques rápidos e instintos primitivos.
 
 ### Pescadores
-Nas aldeias costeiras de Fjörnburg, os pescadores dominam mares tempestuosos. O **Grumete do Fiorde** inicia a jornada nas redes, e o **Arpoador Nórdico** protege os companheiros com golpes certeiros. Com a chegada de figuras como o **Curandeiro do Mar** e o inspirador **Bardo do Porto**, o deck explora estratégias de suporte e domínio das ondas, transformando recursos em vitórias inesperadas.
+Nas aldeias costeiras de Fjörnburg, os pescadores dominam mares tempestuosos. O **Grumete do Fiorde** inicia a jornada nas redes, e o **Arpoador Nórdico** protege os companheiros com golpes certeiros. Com a chegada de figuras como o **Curandeiro do Mar**, o inspirador **Bardo do Porto**, o oportunista **Caçador de Tesouros**, o resiliente **Escudeiro do Convés** e o vigilante **Guarda do Cais**, o deck explora estratégias de suporte e domínio das ondas, transformando recursos em vitórias inesperadas.
 
 ### Floresta
-Nas sombras das árvores milenares vive o povo da floresta. Unidades como o **Lobo da Mata** e a ágil **Raposa Ágil** caçam silenciosamente, enquanto criaturas místicas como o **Bisonte das Colinas** manifestam a força bruta da natureza. As novas cartas — **Lince da Sombra**, **Guardião Musgoso** e o **Cervo Rúnico** — simbolizam a simbiose entre fauna e magia vegetal, representando um reino que responde com vigor a qualquer invasão.
+Nas sombras das árvores milenares vive o povo da floresta. Unidades como o **Lobo da Mata** e a ágil **Raposa Ágil** caçam silenciosamente, enquanto criaturas místicas como o **Bisonte das Colinas** manifestam a força bruta da natureza. As novas cartas — **Lince da Sombra**, o atento **Corvo Observador**, o firme **Guardião Musgoso**, o ancestral **Cervo Rúnico** e o impetuoso **Javali Voraz** — simbolizam a simbiose entre fauna e magia vegetal, representando um reino que responde com vigor a qualquer invasão.
 
 ## Conclusão
 A Lore de Fjörnburg reflete um mundo onde cultura humana e selvageria natural se chocam sob a aurora boreal. Cada deck oferece uma perspectiva distinta desse universo, permitindo que jogadores mergulhem em histórias de honra, sobrevivência e equilíbrio entre civilização e natureza.
