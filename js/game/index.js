@@ -14,6 +14,8 @@ import { Keyword } from "./card.js";
 const rand = (a) => a[Math.floor(Math.random() * a.length)];
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const uid = () => Math.random().toString(36).slice(2);
+let targetLine = null,
+  targetMove = null;
 
 const KW = {
     P: Keyword.PROTETOR,
@@ -241,6 +243,10 @@ const els = {
   pHand: $("#playerHand"),
   pBoard: $("#playerBoard"),
   aBoard: $("#aiBoard"),
+  drawPile: $("#drawPile"),
+  discardPile: $("#discardPile"),
+  aiDrawPile: $("#aiDrawPile"),
+  aiDiscardPile: $("#aiDiscardPile"),
   endBtn: $("#endTurnBtn"),
   muteBtn: $("#muteBtn"),
   aAva: $("#aiAvatar"),
@@ -348,21 +354,33 @@ window.addEventListener("unhandledrejection", function (e) {
   } catch (_) {}
 });
 
-function tiltify(card) {
+function tiltify(card, lift = false) {
+  const height = card.offsetHeight;
+  const width = card.offsetWidth;
+  let hovering = false;
+  if (lift) {
+    card.addEventListener("mouseenter", () => {
+      hovering = true;
+      card.style.zIndex = 1000;
+      card.style.transform = "translateY(-20px)";
+    });
+    card.addEventListener("mouseleave", () => {
+      hovering = false;
+      card.style.zIndex = card.dataset.z || "";
+      card.style.transform = "";
+    });
+  } else {
+    card.addEventListener("mouseleave", () => {
+      card.style.transform = "";
+    });
+  }
   card.addEventListener("mousemove", (e) => {
-    const r = card.getBoundingClientRect();
-    const mx = ((e.clientX - r.left) / r.width) * 100,
-      my = ((e.clientY - r.top) / r.height) * 100;
-    card.style.setProperty("--mx", mx + "%");
-    card.style.setProperty("--my", my + "%");
-    card.style.setProperty("--rY", (mx - 50) / 8 + "deg");
-    card.style.setProperty("--rX", -(my - 50) / 8 + "deg");
-    card.classList.add("tilted");
-  });
-  card.addEventListener("mouseleave", () => {
-    card.classList.remove("tilted");
-    card.style.removeProperty("--rX");
-    card.style.removeProperty("--rY");
+    if (card.classList.contains("chosen") || card.classList.contains("no-tilt"))
+      return;
+    const x = (e.offsetX / width - 0.5) * 12;
+    const y = (e.offsetY / height - 0.5) * -12;
+    const ty = hovering ? -20 : 0;
+    card.style.transform = `translateY(${ty}px) perspective(600px) rotateX(${y}deg) rotateY(${x}deg)`;
   });
 }
 function cardNode(c, owner) {
@@ -418,8 +436,8 @@ function renderHand() {
   els.pHand.innerHTML = "";
   G.playerHand.forEach((c) => {
     const d = cardNode(c, "player");
-    tiltify(d);
     d.classList.add("handcard");
+    tiltify(d, true);
     d.addEventListener("click", (e) => {
       const blocked =
         c.cost > G.playerMana ||
@@ -433,9 +451,7 @@ function renderHand() {
         return;
       }
       e.stopPropagation();
-      openStanceChooser(d, (st) =>
-        flyToBoard(d, () => playFromHand(c.id, st)),
-      );
+      showCardAction(c, d);
     });
     const cantPay = c.cost > G.playerMana || c.harvestCost > G.playerHarvest;
     const disable = G.current !== "player" || G.playerBoard.length >= 5;
@@ -451,12 +467,14 @@ function stackHand() {
   const total = cards.length;
   if (!total) return;
   const spread = 150;
+  const width = cards[0].offsetWidth;
+  const overlap = width - spread;
+  els.pHand.style.setProperty("--hover-shift", `${overlap}px`);
   cards.forEach((c, i) => {
     const offset = (i - (total - 1) / 2) * spread;
-    c.style.left = `calc(50% + ${offset}px - 88px)`;
+    c.style.setProperty("--x", `${offset}px`);
+    c.dataset.z = String(i + 1);
     c.style.zIndex = i + 1;
-    c.onmouseenter = () => (c.style.zIndex = 1000);
-    c.onmouseleave = () => (c.style.zIndex = i + 1);
   });
 }
 function renderBoard() {
@@ -501,46 +519,49 @@ function renderBoard() {
     els.aBoard.appendChild(btn);
   }
   updateFaceAttackZone();
+  if (G.chosen) {
+    const n = nodeById(G.chosen.id);
+    n && startTargetLine(n);
+  } else {
+    stopTargetLine();
+  }
 }
-function openStanceChooser(anchor, cb) {
-  closeStanceChooser();
-  const r = anchor.getBoundingClientRect(),
-    box = document.createElement("div");
-  box.className = "stance-chooser";
-  Object.assign(box.style, {
-    left: Math.max(8, r.left + r.width / 2 - 120) + "px",
-    top: Math.max(8, r.top - 48) + "px",
-  });
+function showCardAction(card, node) {
+  const modal = document.createElement("div");
+  modal.className = "card-modal";
+  const clone = node.cloneNode(true);
+  tiltify(clone);
+  const actions = document.createElement("div");
+  actions.className = "actions";
   const bA = document.createElement("button");
   bA.className = "btn";
   bA.textContent = "⚔️ Ataque";
   const bD = document.createElement("button");
   bD.className = "btn";
   bD.textContent = "🛡️ Defesa";
+  const bC = document.createElement("button");
+  bC.className = "btn-ghost";
+  bC.textContent = "Cancelar";
+  actions.append(bA, bD, bC);
+  modal.append(clone, actions);
+  document.body.appendChild(modal);
+  node.classList.add("no-tilt");
+  node.style.visibility = "hidden";
+  const cleanup = () => {
+    modal.remove();
+    node.style.visibility = "";
+    node.classList.remove("no-tilt");
+  };
+  bC.onclick = cleanup;
   bA.onclick = () => {
-    closeStanceChooser();
-    cb("attack");
+    cleanup();
+    flyToBoard(node, () => playFromHand(card.id, "attack"));
   };
   bD.onclick = () => {
-    closeStanceChooser();
-    cb("defense");
+    cleanup();
+    flyToBoard(node, () => playFromHand(card.id, "defense"));
   };
-  box.append(bA, bD);
-  document.body.appendChild(box);
-  setTimeout(() => {
-    const h = (ev) => {
-      if (ev.target.closest(".stance-chooser")) return;
-      window.removeEventListener("click", h, true);
-      closeStanceChooser();
-    };
-    window.addEventListener("click", h, true);
-    bA.focus();
-  }, 0);
 }
-const closeStanceChooser = () => {
-  const old = document.querySelector(".stance-chooser");
-  old && old.remove();
-};
 function flyToBoard(node, onEnd) {
   const r = node.getBoundingClientRect(),
     clone = node.cloneNode(true);
@@ -621,12 +642,69 @@ const shuffle = (a) => {
   }
   return a;
 };
+function animateDraw(cards, done) {
+  const pile = els.drawPile;
+  const pr = pile.getBoundingClientRect();
+  let finished = 0;
+  const handR = els.pHand.getBoundingClientRect();
+  cards.forEach((c, i) => {
+    const img = pile.querySelector("img").cloneNode();
+    Object.assign(img.style, {
+      position: "fixed",
+      left: pr.left + "px",
+      top: pr.top + "px",
+      width: pr.width + "px",
+      height: pr.height + "px",
+      transition: "transform .4s ease,opacity .4s ease",
+      zIndex: 1500 + i,
+    });
+    document.body.appendChild(img);
+    setTimeout(() => {
+      const tx = handR.left + handR.width / 2 - pr.left - pr.width / 2;
+      const ty = handR.top + 10 - pr.top;
+      img.style.transform = `translate(${tx}px,${ty}px)`;
+    }, i * 150);
+    setTimeout(() => {
+      img.remove();
+      finished++;
+      if (finished === cards.length) done();
+    }, 400 + i * 150);
+  });
+  if (!cards.length) done();
+}
+function animateReshuffle(who) {
+  const src = who === "player" ? els.discardPile : els.aiDiscardPile;
+  const dst = who === "player" ? els.drawPile : els.aiDrawPile;
+  const s = src.querySelector("img");
+  if (!s) return;
+  const sr = src.getBoundingClientRect();
+  const dr = dst.getBoundingClientRect();
+  const img = s.cloneNode();
+  Object.assign(img.style, {
+    position: "fixed",
+    left: sr.left + "px",
+    top: sr.top + "px",
+    width: sr.width + "px",
+    height: sr.height + "px",
+    transition: "transform .5s ease",
+    zIndex: 1500,
+  });
+  document.body.appendChild(img);
+  requestAnimationFrame(() => {
+    const tx = dr.left - sr.left;
+    const ty = dr.top - sr.top;
+    img.style.transform = `translate(${tx}px,${ty}px)`;
+  });
+  setTimeout(() => img.remove(), 500);
+}
 function draw(who, n = 1) {
   const deck = who === "player" ? G.playerDeck : G.aiDeck,
     hand = who === "player" ? G.playerHand : G.aiHand,
     disc = who === "player" ? G.playerDiscard : G.aiDiscard;
+  const drawn = [];
   for (let i = 0; i < n; i++) {
     if (deck.length === 0 && disc.length) {
+      animateReshuffle(who);
       disc.forEach(resetCardState);
       deck.push(...shuffle(disc.splice(0)));
     }
@@ -634,12 +712,18 @@ function draw(who, n = 1) {
       const c = deck.shift();
       resetCardState(c);
       if (c.hp < 1) c.hp = 1;
-      hand.push(c);
+      drawn.push(c);
     }
   }
   if (who === "player") {
-    els.drawCount.textContent = G.playerDeck.length;
-    els.discardCount.textContent = G.playerDiscard.length;
+    animateDraw(drawn, () => {
+      hand.push(...drawn);
+      renderHand();
+      els.drawCount.textContent = G.playerDeck.length;
+      els.discardCount.textContent = G.playerDiscard.length;
+    });
+  } else {
+    hand.push(...drawn);
   }
 }
 function newTurn() {
@@ -804,6 +888,31 @@ function cancelTargeting() {
   updateTargetingUI();
   els.aBoard.classList.remove("face-can-attack");
   renderBoard();
+  stopTargetLine();
+}
+function startTargetLine(node) {
+  const r = node.getBoundingClientRect();
+  const ox = r.left + r.width / 2;
+  const oy = r.top + r.height / 2;
+  stopTargetLine();
+  targetLine = document.createElement("div");
+  targetLine.className = "target-line";
+  document.body.appendChild(targetLine);
+  targetMove = (e) => {
+    const dx = e.clientX - ox;
+    const dy = e.clientY - oy;
+    const len = Math.hypot(dx, dy);
+    const ang = Math.atan2(dy, dx) * (180 / Math.PI);
+    targetLine.style.width = len + "px";
+    targetLine.style.transform = `translate(${ox}px,${oy}px) rotate(${ang}deg)`;
+  };
+  document.addEventListener("mousemove", targetMove);
+}
+function stopTargetLine() {
+  targetMove && document.removeEventListener("mousemove", targetMove);
+  targetMove = null;
+  targetLine && targetLine.remove();
+  targetLine = null;
 }
 function selectAttacker(c) {
   if (G.current !== "player" || !c.canAttack || c.stance === "defense")
@@ -932,6 +1041,7 @@ function attackCard(attacker, target) {
   G.chosen = null;
   updateTargetingUI();
   els.aBoard.classList.remove("face-can-attack");
+  stopTargetLine();
 }
 function attackFace(attacker, face) {
   if (!attacker || !attacker.canAttack || attacker.stance === "defense")
@@ -960,6 +1070,7 @@ function attackFace(attacker, face) {
   updateTargetingUI();
   els.aBoard.classList.remove("face-can-attack");
   renderAll();
+  stopTargetLine();
 }
 function damageMinion(m, amt) {
   if (!m || typeof amt !== "number") return;
@@ -988,12 +1099,6 @@ function checkDeaths() {
     log("Sua criatura caiu.");
   }
   els.discardCount.textContent = G.playerDiscard.length;
-}
-      attackFace(a, "player");
-    }
-    setTimeout(next, 500);
-  }
-  setTimeout(next, 500);
 }
 function fireworks(win) {
   const b = document.createElement("div");
