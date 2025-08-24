@@ -337,7 +337,7 @@ function cardNode(c, owner) {
   d.className = `card ${owner === "player" ? "me" : "enemy"} ${c.stance === "defense" ? "defense" : ""}`;
   d.dataset.id = c.id;
   const costText = `${c.cost}${c.harvestCost ? `🌾${c.harvestCost}` : ""}`;
-  d.innerHTML = `<div class="bg bg-${c.deck || "default"}"></div><div class="head"><span class="cost">${costText}</span><div class="name">${c.name}</div>${c.stance ? `<span class="badge ${c.stance === "defense" ? "def" : "atk"}">${c.stance === "defense" ? "🛡️" : "⚔️"}</span>` : ""}</div><div class="tribe">${c.tribe}</div><div class="art">${c.emoji}</div><div class="text">${(c.kw || []).map((k) => `<span class='keyword' data-tip='${k === "Protetor" ? "Enquanto houver Protetor ou carta em Defesa do lado do defensor, ataques devem mirá-los." : k === "Furioso" ? "Pode atacar no turno em que é jogada." : ""}' >${k}</span>`).join(" ")} ${c.text || ""}</div><div class="stats"><span class="gem atk">⚔️ ${c.atk}</span><span class="gem hp ${c.hp <= 2 ? "low" : ""}">❤️ ${c.hp}</span></div>`;
+  d.innerHTML = `<div class="bg bg-${c.deck || "default"}"></div><div class="head"><span class="cost">${costText}</span><div class="name">${c.name}</div>${c.stance ? `<span class="badge ${c.stance === "defense" ? "def" : "atk"}">${c.stance === "defense" ? "🛡️" : "⚔️"}</span>` : ""}</div><div class="tribe">${c.tribe}</div><div class="art">${c.emoji}</div><div class="text">${(c.kw || []).map((k) => `<span class='keyword' data-tip='${k === "Protetor" ? "Enquanto houver Protetor ou carta em Defesa do lado do defensor, ataques devem mirá-los." : k === "Furioso" ? "Pode atacar no turno em que é jogada." : ""}' >${k}</span>`).join(" ")} ${c.text || ""}</div><div class="stats"><span class="gem atk">⚔️ ${c.atk}</span>${c.stance ? `<span class="stance-label ${c.stance}">${c.stance === 'defense' ? '🛡️' : '⚔️'}</span>` : ''}<span class="gem hp ${c.hp <= 2 ? "low" : ""}">❤️ ${c.hp}</span></div>`;
   return d;
 }
 const hasGuard = (b) =>
@@ -391,6 +391,20 @@ function renderHand() {
     d.style.opacity = cantPay || disable ? 0.9 : 1;
     d.style.cursor = cantPay || disable ? "not-allowed" : "pointer";
     els.pHand.appendChild(d);
+  });
+  stackHand();
+}
+function stackHand() {
+  const cards = $$("#playerHand .card");
+  const total = cards.length;
+  if (!total) return;
+  const spread = 150;
+  cards.forEach((c, i) => {
+    const offset = (i - (total - 1) / 2) * spread;
+    c.style.left = `calc(50% + ${offset}px - 88px)`;
+    c.style.zIndex = i + 1;
+    c.onmouseenter = () => (c.style.zIndex = 1000);
+    c.onmouseleave = () => (c.style.zIndex = i + 1);
   });
 }
 function renderBoard() {
