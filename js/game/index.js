@@ -23,6 +23,8 @@ const KW = {
     B: Keyword.BENCAO,
     CV: Keyword.CORVO,
     S: Keyword.SERPENTE,
+    A: Keyword.ABSORVER,
+    M: Keyword.MUTAVEL,
   },
   BC = {
     D1: "draw1",
@@ -313,6 +315,99 @@ const TEMPLATES = {
     ],
     ["Javali Voraz", "", "Animal", 5, 3, 4, "Furioso", "F"],
   ],
+  convergentes: [
+    [
+      "Neófito Convergente",
+      "🌀",
+      "Convergente",
+      2,
+      2,
+      1,
+      "Entra: copia uma palavra-chave de um aliado",
+      "A",
+    ],
+    ["Proteiforme da Aurora", "🌈", "Convergente", 3, 3, 3, "", "M"],
+    ["Guardião Quimérico", "🛡️🐺", "Convergente", 2, 6, 4, "", "P|M"],
+    ["Raider Metamorfo", "⚔️🌊", "Convergente", 4, 2, 3, "", "F|M"],
+    [
+      "Runa Voraz",
+      "🌀🪨",
+      "Convergente",
+      1,
+      4,
+      2,
+      "Ganha +1 ATK sempre que um aliado morre.",
+    ],
+    [
+      "Totem Absorvente",
+      "🪵🌀",
+      "Convergente",
+      0,
+      5,
+      3,
+      "Fim de turno: copia uma palavra-chave de um inimigo aleatório.",
+      "P",
+    ],
+    [
+      "Arauto da Aurora",
+      "✨👑",
+      "Convergente",
+      5,
+      5,
+      6,
+      "Se você copiou ≥3 palavras-chave na partida, aliados +1/+1.",
+    ],
+    [
+      "Sombra Rúnica",
+      "🌘🌀",
+      "Convergente",
+      3,
+      3,
+      3,
+      "Sempre que absorver, ganha +1/+1.",
+      "A",
+    ],
+    [
+      "Guerreiro Sincrético",
+      "⚔️🛡️",
+      "Convergente",
+      4,
+      4,
+      4,
+      "Entra: escolha Furioso ou Protetor; ganha essa palavra-chave.",
+    ],
+    ["Lince Metamórfico", "🐱🌈", "Convergente", 3, 2, 2, "", "F|M"],
+    [
+      "Capataz de Runas",
+      "🌀⚙️",
+      "Convergente",
+      2,
+      4,
+      3,
+      "Ao absorver, causa 1 de dano a todos os inimigos.",
+      "A",
+    ],
+    [
+      "Colosso Alquímico",
+      "🗿🌈",
+      "Convergente",
+      7,
+      7,
+      7,
+      "Entra: copia uma palavra-chave de cada aliado.",
+      "M",
+    ],
+    [
+      "Essência Convergente",
+      "💠",
+      "Convergente",
+      0,
+      0,
+      1,
+      "Entra com ATK/HP iguais ao nº de palavras-chave diferentes que você controla.",
+      "A",
+    ],
+  ],
 };
 const ALL_DECKS = Object.keys(TEMPLATES);
 const G = {
@@ -384,6 +479,7 @@ function renderPool() {
     ...TEMPLATES.animais,
     ...TEMPLATES.pescadores,
     ...TEMPLATES.floresta,
+    ...TEMPLATES.convergentes,
   ];
   if (!poolEl) return;
   poolEl.innerHTML = "";
@@ -497,6 +593,10 @@ function cardNode(c, owner) {
           ? "Enquanto houver Protetor ou carta em Defesa do lado do defensor, ataques devem mirá-los."
           : k === "Furioso"
           ? "Pode atacar no turno em que é jogada."
+          : k === "Absorver"
+          ? "Ao entrar, copia uma palavra-chave de um aliado."
+          : k === "Mutável"
+          ? "No fim do turno, troca ATK e HP."
           : ""
       }' >${k}</span>`
   );
@@ -820,7 +920,8 @@ function draw(who, n = 1) {
     els.discardCount.textContent = G.playerDiscard.length;
   }
 }
-function newTurn() {
+function newTurn(prev) {
+  if (prev) applyEndTurnEffects(prev);
   if (G.current === "player") {
     G.playerManaCap = clamp(G.playerManaCap + 1, 0, 10);
     G.playerMana = G.playerManaCap;
@@ -843,7 +944,7 @@ function endTurn() {
   G.current = "ai";
   G.chosen = null;
   updateTargetingUI();
-  newTurn();
+  newTurn("player");
   sfx("end");
   setTimeout(
     () =>
@@ -887,6 +988,7 @@ function summon(side, c, st = "attack") {
     `${side === "player" ? "Você" : "Inimigo"} jogou ${c.name} em modo ${st === "defense" ? "defesa" : "ataque"}.`,
   );
   triggerBattlecry(side, c);
+  if (c.kw.includes("Absorver")) absorbFromAlly(side, c);
   if (st === "defense") setTimeout(() => animateDefense(c.id), 30);
 }
 function triggerBattlecry(side, c) {
@@ -955,6 +1057,60 @@ function triggerBattlecry(side, c) {
         if (allies.length) log(`${c.name}: aliados ganharam +1 de ataque.`);
       }
       break;
+  }
+}
+
+function absorbFromAlly(side, c) {
+  const board = side === "player" ? G.playerBoard : G.aiBoard;
+  const allies = board.filter((x) => x.id !== c.id && x.kw && x.kw.length);
+  if (!allies.length) return;
+  const src = rand(allies);
+  const choices = src.kw.filter((k) => !c.kw.includes(k));
+  if (!choices.length) return;
+  const kw = rand(choices);
+  c.kw.push(kw);
+  particleOnCard(c.id, "magic");
+  fxTextOnCard(c.id, kw, "buff");
+  log(`${c.name} absorveu ${kw}.`);
+  if (c.name === "Sombra Rúnica") {
+    c.atk += 1;
+    c.hp += 1;
+  }
+  if (c.name === "Capataz de Runas") {
+    const foes = side === "player" ? G.aiBoard : G.playerBoard;
+    foes.forEach((t) => {
+      damageMinion(t, 1);
+      particleOnCard(t.id, "attack");
+      fxTextOnCard(t.id, "-1", "dmg");
+    });
+    checkDeaths();
+  }
+}
+
+function applyEndTurnEffects(side) {
+  const board = side === "player" ? G.playerBoard : G.aiBoard;
+  const foeBoard = side === "player" ? G.aiBoard : G.playerBoard;
+  for (const c of board) {
+    if (c.kw.includes("Mutável")) {
+      const atk = c.atk;
+      c.atk = c.hp;
+      c.hp = atk;
+      fxTextOnCard(c.id, "⇆", "buff");
+    }
+    if (c.name === "Totem Absorvente") {
+      const foes = foeBoard.filter((f) => f.kw && f.kw.length);
+      if (foes.length) {
+        const src = rand(foes);
+        const opts = src.kw.filter((k) => !c.kw.includes(k));
+        if (opts.length) {
+          const kw = rand(opts);
+          c.kw.push(kw);
+          particleOnCard(c.id, "magic");
+          fxTextOnCard(c.id, kw, "buff");
+          log(`${c.name} absorveu ${kw} de ${src.name}.`);
+        }
+      }
+    }
   }
 }
 function updateTargetingUI() {
