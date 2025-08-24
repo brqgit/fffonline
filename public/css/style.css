@@ -31,7 +31,7 @@ padding-bottom:8px}
 h1{margin:0 0 12px;
 font-size:clamp(22px,4vw,36px);
 letter-spacing:.5px}
-.wrap{max-width:1600px;margin:0 auto;padding:16px 24px;min-height:100vh;display:flex;flex-direction:column}
+.wrap{max-width:calc(7*var(--card-w) + 6*14px + 72px);margin:0 auto;padding:16px 24px;min-height:100vh;display:flex;flex-direction:column}
 .sub{color:var(--muted);
 margin-bottom:18px}
 .btn{cursor:pointer;
@@ -441,7 +441,8 @@ white-space:nowrap}
  width:var(--card-w);
  height:var(--card-h);
  border-radius:18px;
- position:relative}
+ position:relative;
+ flex:0 0 var(--card-w)}
 .pile img{
  display:block;
  width:100%;
