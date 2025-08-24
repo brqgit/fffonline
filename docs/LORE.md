@@ -23,6 +23,17 @@ Nas aldeias costeiras de Fjörnburg, os pescadores dominam mares tempestuosos. O
 ### Floresta
 Nas sombras das árvores milenares vive o povo da floresta. Unidades como o **Lobo da Mata** e a ágil **Raposa Ágil** caçam silenciosamente, enquanto criaturas místicas como o **Bisonte das Colinas** manifestam a força bruta da natureza. As novas cartas — **Lince da Sombra**, o atento **Corvo Observador**, o firme **Guardião Musgoso**, o ancestral **Cervo Rúnico** e o impetuoso **Javali Voraz** — simbolizam a simbiose entre fauna e magia vegetal, representando um reino que responde com vigor a qualquer invasão.
 
+### Convergentes da Aurora
+Quando os pilares que sustentam Fjörnburg foram arranhados pela guerra, fragmentos de mana,
+colheita e espíritos animais se entrelaçaram às raízes da grande árvore. Dessa confluência
+surgiram os Convergentes da Aurora — seres mutáveis que incorporam aço viking, presas
+selvagens, escamas marinhas e seiva ancestral. Nenhum povo reivindica sua origem; todos
+temem sua presença. Capazes de absorver runas, mimetizar habilidades e mudar de forma
+conforme o campo de batalha, eles marcham como uma força artificial e orgânica ao mesmo
+tempo. Alguns dizem que são o prenúncio de um novo ciclo, outros os veem como a ruptura
+final do equilíbrio. Quaisquer que sejam seus propósitos, os Convergentes veem todas as
+facções como alimento para sua evolução.
+
 ### Mitos e Criaturas Lendárias
 Em tavernas distantes e círculos xamânicos, sussurram-se histórias sobre entidades que jazem além do véu do mundo mortal. Fala-se de serpentes abissais que circundam o oceano, de krakens congelados que despertam com a aurora, e de avatares totêmicos que assumem a forma de corvos gigantes ou ursos rúnicos. Poucos afirmam ter presenciado tais criaturas; muitos acreditam serem apenas lendas que alimentam a magia e a fé. Ainda assim, runas antigas e rituais xamânicos sugerem que essas forças míticas aguardam o momento de retornar, seja para guiar os dignos, seja para devorar os imprudentes.
 
