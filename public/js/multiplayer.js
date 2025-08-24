@@ -1,4 +1,3 @@
-import NET from './net-client.js';
 document.addEventListener('DOMContentLoaded', () => {
   const startScreen = document.getElementById('start');
   const mpMenu = document.getElementById('multiplayerMenu');
@@ -14,7 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
   window.isMultiplayer = false;
   window.mpState = null;
   let playerNamed=false;
-  function ensureName(){if(!playerNamed){const n=prompt('Seu nome?')||'Jogador';window.playerName=n;playerNamed=true;NET.setName(n);}}
+  function ensureName(){if(!playerNamed){const n=prompt('Seu nome?')||'Jogador';window.playerName=n;playerNamed=true;window.NET&&NET.setName(n);}}
 
   function showDeckSelect() {
     mpMenu.style.display = 'none';
@@ -62,7 +61,9 @@ document.addEventListener('DOMContentLoaded', () => {
   if (hostBtn) {
     hostBtn.addEventListener('click', () => {
       ensureName();
-      NET.host();
+      if (window.NET) {
+        NET.host();
+      }
       statusEl.textContent = 'Criando sala...';
     });
   }
@@ -72,7 +73,9 @@ document.addEventListener('DOMContentLoaded', () => {
       const code = joinCodeInput.value.trim();
       if (code) {
         ensureName();
-        NET.join(code);
+        if (window.NET) {
+          NET.join(code);
+        }
         statusEl.textContent = 'Conectando...';
       }
     });
@@ -84,39 +87,42 @@ document.addEventListener('DOMContentLoaded', () => {
         roomList.style.display = 'block';
         roomList.textContent = 'Carregando...';
       }
-      NET.listRooms();
+      if (window.NET) {
+        NET.listRooms();
+      }
     });
   }
 
-  let reconTimer = null;
-  NET.onHosted((code) => {
+  if (window.NET) {
+    NET.onHosted((code) => {
       statusEl.textContent = `Sala criada. Código: ${code}`;
     });
 
-  NET.onJoined((code) => {
+    NET.onJoined((code) => {
       statusEl.textContent = `Entrou na sala ${code}`;
       showDeckSelect();
     });
 
-  NET.onGuestJoined(() => {
+    NET.onGuestJoined(() => {
       statusEl.textContent = 'Oponente conectado!';
       showDeckSelect();
     });
 
-  NET.onJoinError((msg) => {
+    NET.onJoinError((msg) => {
       statusEl.textContent = msg;
     });
 
-  NET.onOpponentLeft(() => {
+    NET.onOpponentLeft(() => {
       clearInterval(reconTimer);
       statusEl.textContent = 'Oponente saiu.';
     });
 
-  NET.onConnectionError(() => {
+    NET.onConnectionError(() => {
       statusEl.textContent = 'Falha na conexão.';
     });
 
-  NET.onOpponentDisconnected(() => {
+    let reconTimer = null;
+    NET.onOpponentDisconnected(() => {
       let t = 10;
       statusEl.textContent = `Oponente desconectado. Reconnectando em ${t}s`;
       clearInterval(reconTimer);
@@ -130,12 +136,12 @@ document.addEventListener('DOMContentLoaded', () => {
       }, 1000);
     });
 
-  NET.onOpponentReconnected(() => {
+    NET.onOpponentReconnected(() => {
       clearInterval(reconTimer);
       statusEl.textContent = 'Oponente reconectado.';
     });
 
-  NET.onRooms((rooms) => {
+    NET.onRooms((rooms) => {
       if (!roomList) return;
       if (!rooms.length) {
         roomList.textContent = 'Nenhuma sala disponível';
@@ -160,4 +166,5 @@ document.addEventListener('DOMContentLoaded', () => {
           roomList.appendChild(div);
         });
     });
+  }
 });
