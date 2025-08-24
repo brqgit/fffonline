@@ -440,15 +440,13 @@ white-space:nowrap}
  place-items:center;
  width:var(--card-w);
  height:var(--card-h);
- border-radius:10px;
- border:1px dashed #31408b;
- background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,0));
+ border-radius:18px;
  position:relative}
 .pile img{
  display:block;
  width:100%;
  height:100%;
- border-radius:10px;
+ border-radius:18px;
  object-fit:cover;
  padding:8px;
  background:linear-gradient(180deg,var(--card2),var(--card));
