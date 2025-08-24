@@ -349,20 +349,16 @@ window.addEventListener("unhandledrejection", function (e) {
 });
 
 function tiltify(card) {
+  const height = card.offsetHeight;
+  const width = card.offsetWidth;
   card.addEventListener("mousemove", (e) => {
-    const r = card.getBoundingClientRect();
-    const mx = ((e.clientX - r.left) / r.width) * 100,
-      my = ((e.clientY - r.top) / r.height) * 100;
-    card.style.setProperty("--mx", mx + "%");
-    card.style.setProperty("--my", my + "%");
-    card.style.setProperty("--rY", (mx - 50) / 8 + "deg");
-    card.style.setProperty("--rX", -(my - 50) / 8 + "deg");
-    card.classList.add("tilted");
+    if (card.classList.contains("chosen")) return;
+    const x = (e.offsetX / width - 0.5) * 12;
+    const y = (e.offsetY / height - 0.5) * -12;
+    card.style.transform = `perspective(600px) rotateX(${y}deg) rotateY(${x}deg)`;
   });
   card.addEventListener("mouseleave", () => {
-    card.classList.remove("tilted");
-    card.style.removeProperty("--rX");
-    card.style.removeProperty("--rY");
+    card.style.transform = "";
   });
 }
 function cardNode(c, owner) {
