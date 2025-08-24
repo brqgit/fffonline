@@ -348,21 +348,32 @@ window.addEventListener("unhandledrejection", function (e) {
   } catch (_) {}
 });
 
-function tiltify(card) {
+function tiltify(card, lift = false) {
+  const height = card.offsetHeight;
+  const width = card.offsetWidth;
+  let hovering = false;
+  if (lift) {
+    card.addEventListener("mouseenter", () => {
+      hovering = true;
+      card.style.zIndex = 1000;
+      card.style.transform = "translateY(-20px)";
+    });
+    card.addEventListener("mouseleave", () => {
+      hovering = false;
+      card.style.zIndex = card.dataset.z || "";
+      card.style.transform = "";
+    });
+  } else {
+    card.addEventListener("mouseleave", () => {
+      card.style.transform = "";
+    });
+  }
   card.addEventListener("mousemove", (e) => {
-    const r = card.getBoundingClientRect();
-    const mx = ((e.clientX - r.left) / r.width) * 100,
-      my = ((e.clientY - r.top) / r.height) * 100;
-    card.style.setProperty("--mx", mx + "%");
-    card.style.setProperty("--my", my + "%");
-    card.style.setProperty("--rY", (mx - 50) / 8 + "deg");
-    card.style.setProperty("--rX", -(my - 50) / 8 + "deg");
-    card.classList.add("tilted");
-  });
-  card.addEventListener("mouseleave", () => {
-    card.classList.remove("tilted");
-    card.style.removeProperty("--rX");
-    card.style.removeProperty("--rY");
+    if (card.classList.contains("chosen")) return;
+    const x = (e.offsetX / width - 0.5) * 12;
+    const y = (e.offsetY / height - 0.5) * -12;
+    const ty = hovering ? -20 : 0;
+    card.style.transform = `translateY(${ty}px) perspective(600px) rotateX(${y}deg) rotateY(${x}deg)`;
   });
 }
 function cardNode(c, owner) {
@@ -418,8 +429,8 @@ function renderHand() {
   els.pHand.innerHTML = "";
   G.playerHand.forEach((c) => {
     const d = cardNode(c, "player");
-    tiltify(d);
     d.classList.add("handcard");
+    tiltify(d, true);
     d.addEventListener("click", (e) => {
       const blocked =
         c.cost > G.playerMana ||
@@ -451,12 +462,14 @@ function stackHand() {
   const total = cards.length;
   if (!total) return;
   const spread = 150;
+  const width = cards[0].offsetWidth;
+  const overlap = width - spread;
+  els.pHand.style.setProperty("--hover-shift", `${overlap}px`);
   cards.forEach((c, i) => {
     const offset = (i - (total - 1) / 2) * spread;
-    c.style.left = `calc(50% + ${offset}px - 88px)`;
+    c.style.setProperty("--x", `${offset}px`);
+    c.dataset.z = String(i + 1);
     c.style.zIndex = i + 1;
-    c.onmouseenter = () => (c.style.zIndex = 1000);
-    c.onmouseleave = () => (c.style.zIndex = i + 1);
   });
 }
 function renderBoard() {
