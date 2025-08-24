@@ -31,8 +31,39 @@ const KW = {
     BR1: "buffRandom1",
     BA1: "buffAlliesAtk1",
   };
+function deriveClassSub(name) {
+  const n = name.toLowerCase();
+  if (n.includes("berserker")) return { classe: "tank", subclasse: "Berserker" };
+  if (n.includes("guardião do véu") || n.includes("véu"))
+    return { classe: "control", subclasse: "Guardião do Véu" };
+  if (n.includes("guardião")) return { classe: "tank", subclasse: "Guardião" };
+  if (n.includes("uivante")) return { classe: "tank", subclasse: "Uivante" };
+  if (n.includes("caçador")) return { classe: "dps", subclasse: "Caçador" };
+  if (n.includes("runomante")) return { classe: "dps", subclasse: "Runomante" };
+  if (n.includes("serpente")) return { classe: "dps", subclasse: "Serpente" };
+  if (n.includes("curandeir")) return { classe: "support", subclasse: "Curandeiro" };
+  if (n.includes("totêmico") || n.includes("totemico"))
+    return { classe: "support", subclasse: "Totêmico" };
+  if (n.includes("sacerdote") || n.includes("tecelão"))
+    return { classe: "support", subclasse: "Tecelão" };
+  if (n.includes("xamã")) return { classe: "control", subclasse: "Xamã" };
+  if (n.includes("corvo")) return { classe: "control", subclasse: "Corvo" };
+  if (n.includes("guerreiro"))
+    return { classe: "dps", subclasse: "Guerreiro" };
+  if (n.includes("raider")) return { classe: "dps", subclasse: "Raider" };
+  if (n.includes("batalhador"))
+    return { classe: "dps", subclasse: "Batalhador" };
+  if (n.includes("mago") || n.includes("mistico"))
+    return { classe: "support", subclasse: "Mago" };
+  if (n.includes("sombras") || n.includes("encapuzado"))
+    return { classe: "control", subclasse: "Sombras" };
+  if (n.includes("navegador"))
+    return { classe: "support", subclasse: "Navegador" };
+  return { classe: "", subclasse: "" };
+}
 const makeCard = (a) => {
   const [n, e, t, atk, hp, cost, tx, k = 0, b = 0, harvest = 0] = a;
+  const cls = deriveClassSub(n || "");
   return {
     name: n,
     emoji: e,
@@ -44,6 +75,8 @@ const makeCard = (a) => {
     text: tx,
     kw: k ? k.split("|").map((x) => KW[x]) : [],
     battlecry: b ? BC[b] : void 0,
+    classe: cls.classe,
+    subclasse: cls.subclasse,
     id: uid(),
   };
 };
@@ -337,8 +370,27 @@ function cardNode(c, owner) {
   d.className = `card ${owner === "player" ? "me" : "enemy"} ${c.stance === "defense" ? "defense" : ""}`;
   d.dataset.id = c.id;
   const costText = `${c.cost}${c.harvestCost ? `🌾${c.harvestCost}` : ""}`;
-  d.innerHTML = `<div class="bg bg-${c.deck || "default"}"></div><div class="head"><span class="cost">${costText}</span><div class="name">${c.name}</div>${c.stance ? `<span class="badge ${c.stance === "defense" ? "def" : "atk"}">${c.stance === "defense" ? "🛡️" : "⚔️"}</span>` : ""}</div><div class="tribe">${c.tribe}</div><div class="art">${c.emoji}</div><div class="text">${(c.kw || []).map((k) => `<span class='keyword' data-tip='${k === "Protetor" ? "Enquanto houver Protetor ou carta em Defesa do lado do defensor, ataques devem mirá-los." : k === "Furioso" ? "Pode atacar no turno em que é jogada." : ""}' >${k}</span>`).join(" ")} ${c.text || ""}</div><div class="stats"><span class="gem atk">⚔️ ${c.atk}</span>${c.stance ? `<span class="stance-label ${c.stance}">${c.stance === 'defense' ? '🛡️' : '⚔️'}</span>` : ''}<span class="gem hp ${c.hp <= 2 ? "low" : ""}">❤️ ${c.hp}</span></div>`;
+  const kwTags = (c.kw || []).map(
+    (k) =>
+      `<span class='keyword' data-tip='${
+        k === "Protetor"
+          ? "Enquanto houver Protetor ou carta em Defesa do lado do defensor, ataques devem mirá-los."
+          : k === "Furioso"
+          ? "Pode atacar no turno em que é jogada."
+          : ""
+      }' >${k}</span>`
+  );
+  if (c.subclasse && c.classe) {
+    kwTags.push(`<span class='class-tag ${c.classe}'>${c.subclasse}</span>`);
+  }
+  d.innerHTML = `<div class="bg bg-${c.deck || "default"}"></div><div class="head"><span class="cost">${costText}</span><div class="name">${c.name}</div>${c.stance ? `<span class="badge ${c.stance === "defense" ? "def" : "atk"}">${c.stance === "defense" ? "🛡️" : "⚔️"}</span>` : ""}</div><div class="tribe">${c.tribe}</div><div class="art">${c.emoji}</div><div class="text">${kwTags.join(" ")} ${c.text || ""}</div><div class="stats"><span class="gem atk">⚔️ ${c.atk}</span>${c.stance ? `<span class="stance-label ${c.stance}">${c.stance === 'defense' ? '🛡️' : '⚔️'}</span>` : ''}<span class="gem hp ${c.hp <= 2 ? "low" : ""}">❤️ ${c.hp}</span></div>`;
   return d;
+}
+function resetCardState(c) {
+  if (!c) return;
+  c.stance = null;
+  c.canAttack = false;
+  delete c.summonTurn;
 }
 const hasGuard = (b) =>
   b.some((x) => x.kw.includes("Protetor") || x.stance === "defense");
@@ -575,10 +627,12 @@ function draw(who, n = 1) {
     disc = who === "player" ? G.playerDiscard : G.aiDiscard;
   for (let i = 0; i < n; i++) {
     if (deck.length === 0 && disc.length) {
+      disc.forEach(resetCardState);
       deck.push(...shuffle(disc.splice(0)));
     }
     if (deck.length) {
       const c = deck.shift();
+      resetCardState(c);
       if (c.hp < 1) c.hp = 1;
       hand.push(c);
     }
@@ -914,14 +968,20 @@ function damageMinion(m, amt) {
 }
 function checkDeaths() {
   const deadA = G.aiBoard.filter((c) => c.hp <= 0);
-  deadA.forEach((c) => particleOnCard(c.id, "explosion"));
+  deadA.forEach((c) => {
+    particleOnCard(c.id, "explosion");
+    resetCardState(c);
+  });
   if (deadA.length) {
     G.aiBoard = G.aiBoard.filter((c) => c.hp > 0);
     G.aiDiscard.push(...deadA);
     log("Uma criatura inimiga caiu.");
   }
   const deadP = G.playerBoard.filter((c) => c.hp <= 0);
-  deadP.forEach((c) => particleOnCard(c.id, "explosion"));
+  deadP.forEach((c) => {
+    particleOnCard(c.id, "explosion");
+    resetCardState(c);
+  });
   if (deadP.length) {
     G.playerBoard = G.playerBoard.filter((c) => c.hp > 0);
     G.playerDiscard.push(...deadP);
