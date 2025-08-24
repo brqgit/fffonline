@@ -386,6 +386,12 @@ function cardNode(c, owner) {
   d.innerHTML = `<div class="bg bg-${c.deck || "default"}"></div><div class="head"><span class="cost">${costText}</span><div class="name">${c.name}</div>${c.stance ? `<span class="badge ${c.stance === "defense" ? "def" : "atk"}">${c.stance === "defense" ? "🛡️" : "⚔️"}</span>` : ""}</div><div class="tribe">${c.tribe}</div><div class="art">${c.emoji}</div><div class="text">${kwTags.join(" ")} ${c.text || ""}</div><div class="stats"><span class="gem atk">⚔️ ${c.atk}</span>${c.stance ? `<span class="stance-label ${c.stance}">${c.stance === 'defense' ? '🛡️' : '⚔️'}</span>` : ''}<span class="gem hp ${c.hp <= 2 ? "low" : ""}">❤️ ${c.hp}</span></div>`;
   return d;
 }
+function resetCardState(c) {
+  if (!c) return;
+  c.stance = null;
+  c.canAttack = false;
+  delete c.summonTurn;
+}
 const hasGuard = (b) =>
   b.some((x) => x.kw.includes("Protetor") || x.stance === "defense");
 function updateMeters() {
@@ -621,10 +627,12 @@ function draw(who, n = 1) {
     disc = who === "player" ? G.playerDiscard : G.aiDiscard;
   for (let i = 0; i < n; i++) {
     if (deck.length === 0 && disc.length) {
+      disc.forEach(resetCardState);
       deck.push(...shuffle(disc.splice(0)));
     }
     if (deck.length) {
       const c = deck.shift();
+      resetCardState(c);
       if (c.hp < 1) c.hp = 1;
       hand.push(c);
     }
@@ -960,14 +968,20 @@ function damageMinion(m, amt) {
 }
 function checkDeaths() {
   const deadA = G.aiBoard.filter((c) => c.hp <= 0);
-  deadA.forEach((c) => particleOnCard(c.id, "explosion"));
+  deadA.forEach((c) => {
+    particleOnCard(c.id, "explosion");
+    resetCardState(c);
+  });
   if (deadA.length) {
     G.aiBoard = G.aiBoard.filter((c) => c.hp > 0);
     G.aiDiscard.push(...deadA);
     log("Uma criatura inimiga caiu.");
   }
   const deadP = G.playerBoard.filter((c) => c.hp <= 0);
-  deadP.forEach((c) => particleOnCard(c.id, "explosion"));
+  deadP.forEach((c) => {
+    particleOnCard(c.id, "explosion");
+    resetCardState(c);
+  });
   if (deadP.length) {
     G.playerBoard = G.playerBoard.filter((c) => c.hp > 0);
     G.playerDiscard.push(...deadP);

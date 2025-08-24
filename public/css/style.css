@@ -10,8 +10,8 @@
  --card2:#1a2454;
  --text:#e6e9ff;
  --muted:#a7b0d9;
- --card-w:176px;
- --card-h:240px;
+ --card-w:220px;
+ --card-h:300px;
  --cb-vikings:url('/img/decks/farm-vikings/card-backs/fv-cb-default.webp');
  --cb-pescadores:url('/img/decks/fJord-fishers/card-backs/jf-cb-default.webp');
  --cb-floresta:url('/img/decks/forest-beasts/card-backs/fb-cb-default.webp');
@@ -97,7 +97,7 @@ margin:6px 0 2px}
  background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,0));
  border-radius:16px;
  padding:20px 12px;
- height:280px;
+ height:calc(var(--card-h) + 40px);
  border:1px dashed #31408b;
  position:relative;
  overflow:visible;
@@ -106,16 +106,16 @@ width:calc(5*var(--card-w) + 4*14px + 24px)}
 #aiBoard,#playerBoard{margin:0 auto}
 .row{display:flex;gap:14px;align-items:flex-start;flex:1;justify-content:center}
 .row .board{flex:0 0 auto}
-.hand{position:relative;height:220px;margin:20px 0 0;flex:0 0 auto;overflow:visible}
+.hand{position:relative;height:calc(var(--card-h) - 20px);margin:20px 0 0;flex:0 0 auto;overflow:visible}
 .hand .card{position:absolute;top:0;width:var(--card-w);transition:transform .2s,box-shadow .2s}
 .hand .card::before{opacity:0}
-.hand .card:hover{transform:translateY(-24px) scale(1.06)}
-.hand .card.chosen{transform:translateY(-80px) scale(1.3);box-shadow:0 0 12px var(--accent),0 16px 30px rgba(0,0,0,.45)}
+.hand .card:hover{transform:translateY(calc(var(--card-h) * -0.1)) scale(1.06)}
+.hand .card.chosen{transform:translateY(calc(var(--card-h) * -0.333)) scale(1.3);box-shadow:0 0 12px var(--accent),0 16px 30px rgba(0,0,0,.45)}
 .hand .card.chosen::before{animation:foilHue 1.2s linear infinite}
 .hand .card.chosen::after{opacity:.3}
 @keyframes foilHue{from{filter:hue-rotate(0deg);}to{filter:hue-rotate(360deg);}}
 @keyframes stanceHolo{from{filter:hue-rotate(0deg) drop-shadow(0 0 6px rgba(0,255,255,.6));}to{filter:hue-rotate(360deg) drop-shadow(0 0 6px rgba(0,255,255,.6));}}
-.card{width:100%;max-width:var(--card-w);aspect-ratio:176/240;
+.card{width:100%;max-width:var(--card-w);aspect-ratio:220/300;
  min-height:auto;
  background:linear-gradient(180deg,var(--card2),var(--card));
  border-radius:18px;
@@ -163,9 +163,9 @@ justify-content:center}
 .art{display:flex;
 align-items:center;
 justify-content:center;
-min-height:88px;
+min-height:110px;
 height:auto;
-font-size:48px;
+font-size:60px;
 position:relative}
 .art::after{content:"";position:absolute;inset:0;background:linear-gradient(115deg,rgba(255,255,255,.25),rgba(255,255,255,0) 60%);mix-blend-mode:screen;pointer-events:none;opacity:.2}
 .text{font-size:12px;color:#d9e3ff;background:#0e1435;border:1px solid #25306a;border-radius:10px;padding:4px;margin:0;max-width:100%;word-break:break-word;box-sizing:border-box;white-space:normal;overflow:hidden;height:auto;display:flex;align-items:center;flex-wrap:wrap;gap:6px}
@@ -550,18 +550,18 @@ border-radius:10px;
 padding:8px 10px}
 .filters .fbtn.active{outline:2px solid var(--accent)}
 .ency-grid{display:grid;
-grid-template-columns:repeat(auto-fill,minmax(176px,1fr));
+grid-template-columns:repeat(auto-fill,minmax(var(--card-w),1fr));
 gap:16px;
 overflow:auto;
 padding:12px;
 border:1px dashed #31408b;
 border-radius:12px;
 background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,0))}
-.ency-card{width:176px;
-min-height:240px;
+.ency-card{width:var(--card-w);
+min-height:var(--card-h);
 overflow:visible}
-.ency-card .art{min-height:88px;
-font-size:48px}
+.ency-card .art{min-height:110px;
+font-size:60px}
 .ency-card .name{-webkit-line-clamp:2}
 .ency-card:hover{transform:translateY(-6px) scale(1.03);
 box-shadow:0 16px 30px rgba(0,0,0,.45),0 0 0 2px rgba(124,196,255,.15) inset}
@@ -666,20 +666,20 @@ display:flex;
 gap:8px}
 @media (max-width:720px){.board{grid-template-columns:repeat(5,minmax(0,1fr));
 padding:16px 10px;
-min-height:180px}
-.card{width:150px}
-.cost{width:20px;
-height:20px}
-.name{font-size:13px}
-.tribe{font-size:11px}
+min-height:calc(var(--card-h)*0.75)}
+.card{width:calc(var(--card-w)*0.85)}
+.cost{width:25px;
+height:25px}
+.name{font-size:16px}
+.tribe{font-size:14px}
 }
 @media (max-width:480px){.hud{grid-template-columns:1fr;
 gap:8px}
 .center-hud{flex-wrap:wrap;
 justify-content:space-between}
 }
-#playerBoard .card,#aiBoard .card{min-height:220px}
-#playerBoard .card .art,#aiBoard .card .art{min-height:88px;font-size:48px}
+#playerBoard .card,#aiBoard .card{min-height:calc(var(--card-h) - 20px)}
+#playerBoard .card .art,#aiBoard .card .art{min-height:110px;font-size:60px}
 .card.blocked .cost{background:radial-gradient(circle at 30% 30%,#ffc2c2,#ff4d6d);
 color:#24040a}
 
