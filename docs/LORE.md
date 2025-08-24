@@ -1,0 +1,27 @@
+# Lore
+
+## Mundo de Fjörnburg
+A história de **FFF Online** se passa em Fjörnburg, uma terra gelada onde fazendas, fiordes e florestas ancestrais coexistem. O equilíbrio do mundo é mantido por duas forças: a **Mana**, energia arcana dos runes, e a **Colheita**, a força vital que surge do cultivo e da abundância natural. Cada carta representa um herói, criatura ou aldeão que canaliza essas energias em batalha.
+
+### Mecânicas Fundamentais
+- **Pontos de Vida**: cada comandante inicia com 30 de vida; quando chegam a zero, a partida termina.
+- **Mana e Colheita**: a cada turno o suprimento de mana aumenta, permitindo invocar unidades mais poderosas. Algumas cartas exigem Colheita adicional, simbolizando recursos e provisões.
+- **Palavras-chave**: habilidades como **Protetor**, que obriga inimigos a atacarem a unidade; **Furioso**, que permite atacar no mesmo turno; e outras como Percepção, Cura, Bênção, Corvo e Serpente definem o estilo de cada carta.
+- **Climas de Batalha**: o tabuleiro conta com zonas de Mão, Campo e Descarte. As batalhas alternam turnos entre jogador e IA, enquanto efeitos de "Entra" disparam ao invocar as cartas.
+
+## Facções e Decks
+
+### Vikings
+Filhos dos campos nevados, os Vikings combinam trabalho árduo e táticas de guerra. Cartas como **Lavrador de Lança** e **Escudeiro Rural** protegem as aldeias, enquanto líderes como o **Chefe da Colheita** inspiram os camponeses. As novas adições — **Camponês Vigilante**, **Batedor da Aldeia** e o sábio **Patriarca da Fazenda** — reforçam a temática de comunidade, proteção e força coletivizada.
+
+### Animais
+As feras do norte defendem seus territórios selvagens. O **Urso Pardo** ergue-se como barreira, o **Lobo Cinzento** avança com ferocidade e a **Coruja Sábia** fornece visão estratégica. Entre os recém-chegados, o **Lobo Alfa** lidera matilhas, enquanto o **Texugo Ártico** e o **Falcão das Montanhas** mostram que a fauna possui tanto garra quanto astúcia. Este deck valoriza ataques rápidos e instintos primitivos.
+
+### Pescadores
+Nas aldeias costeiras de Fjörnburg, os pescadores dominam mares tempestuosos. O **Grumete do Fiorde** inicia a jornada nas redes, e o **Arpoador Nórdico** protege os companheiros com golpes certeiros. Com a chegada de figuras como o **Curandeiro do Mar** e o inspirador **Bardo do Porto**, o deck explora estratégias de suporte e domínio das ondas, transformando recursos em vitórias inesperadas.
+
+### Floresta
+Nas sombras das árvores milenares vive o povo da floresta. Unidades como o **Lobo da Mata** e a ágil **Raposa Ágil** caçam silenciosamente, enquanto criaturas místicas como o **Bisonte das Colinas** manifestam a força bruta da natureza. As novas cartas — **Lince da Sombra**, **Guardião Musgoso** e o **Cervo Rúnico** — simbolizam a simbiose entre fauna e magia vegetal, representando um reino que responde com vigor a qualquer invasão.
+
+## Conclusão
+A Lore de Fjörnburg reflete um mundo onde cultura humana e selvageria natural se chocam sob a aurora boreal. Cada deck oferece uma perspectiva distinta desse universo, permitindo que jogadores mergulhem em histórias de honra, sobrevivência e equilíbrio entre civilização e natureza.
