@@ -542,19 +542,21 @@ function previewCard(orig, c) {
           clone.remove();
         },
         () => {
-          const rb = orig.getBoundingClientRect();
-          clone.style.left = rb.left + "px";
-          clone.style.top = rb.top + "px";
-          clone.addEventListener(
-            "transitionend",
-            () => {
-              clone.remove();
-              orig.style.visibility = "";
-            },
-            { once: true },
-          );
+          clone.remove();
+          orig.style.visibility = "";
         },
       );
+      const cancel = document.createElement("button");
+      cancel.type = "button";
+      cancel.className = "btn-ghost cancel-btn";
+      cancel.textContent = "Cancelar";
+      clone.appendChild(cancel);
+      cancel.addEventListener("click", () => {
+        clone.classList.remove("chosen");
+        clone.remove();
+        orig.style.visibility = "";
+        closeStanceChooser();
+      });
     },
     { once: true },
   );
@@ -1056,6 +1058,12 @@ function checkDeaths() {
   }
   els.discardCount.textContent = G.playerDiscard.length;
 }
+      attackFace(a, "player");
+    }
+    setTimeout(next, 500);
+  }
+  setTimeout(next, 500);
+}
 function fireworks(win) {
   const b = document.createElement("div");
   b.className = "boom";
@@ -1214,12 +1222,12 @@ document.addEventListener("DOMContentLoaded", tryStartMenuMusicImmediate);
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "visible") tryStartMenuMusicImmediate();
 });
-  window.addEventListener(
-    "pointerdown",
-    () => {
-      initAudio();
-      ensureRunning();
-      startMenuMusic("menu");
-    },
-    { once: true }
-  );
+window.addEventListener(
+  "pointerdown",
+  () => {
+    initAudio();
+    ensureRunning();
+    startMenuMusic("menu");
+  },
+  { once: true },
+);

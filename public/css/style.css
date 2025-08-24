@@ -111,6 +111,7 @@ width:calc(5*var(--card-w) + 4*14px + 24px)}
 .hand .card{position:absolute;top:0;width:var(--card-w);transition:transform .2s,box-shadow .2s,left .2s;--x:0px;--push:0px;left:calc(50% + var(--x) + var(--push) - var(--card-w)/2)}
 .hand .card:hover~.card{--push:var(--hover-shift)}
 .hand .card.chosen{transform:translateY(calc(var(--card-h) * -0.333));box-shadow:0 0 12px var(--accent),0 16px 30px rgba(0,0,0,.45)}
+.card-preview .cancel-btn{position:absolute;top:50%;left:calc(100% + 8px);transform:translateY(-50%)}
 @keyframes stanceHolo{from{filter:hue-rotate(0deg) drop-shadow(0 0 6px rgba(0,255,255,.6));}to{filter:hue-rotate(360deg) drop-shadow(0 0 6px rgba(0,255,255,.6));}}
 @keyframes sparkle{0%{filter:hue-rotate(0deg) brightness(1);}50%{filter:hue-rotate(180deg) brightness(1.05);}100%{filter:hue-rotate(360deg) brightness(1);}}
 .card{width:100%;max-width:var(--card-w);aspect-ratio:220/300;
