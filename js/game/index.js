@@ -314,8 +314,7 @@ const TEMPLATES = {
     ["Javali Voraz", "", "Animal", 5, 3, 4, "Furioso", "F"],
   ],
 };
-const HUMAN = ["vikings", "pescadores"],
-  BEAST = ["animais", "floresta"];
+const ALL_DECKS = Object.keys(TEMPLATES);
 const G = {
   playerHP: 30,
   aiHP: 30,
@@ -339,7 +338,7 @@ const G = {
   aiDiscard: [],
   chosen: null,
   playerDeckChoice: "vikings",
-  aiDeckChoice: "animais",
+  aiDeckChoice: rand(ALL_DECKS),
   customDeck: null,
 };
 const els = {
@@ -752,14 +751,16 @@ export function startGame() {
   };
   G.playerDeck =
     G.playerDeckChoice === "custom" && G.customDeck
-      ? shuffle(G.customDeck.slice())
+      ? G.customDeck.slice()
       : TEMPLATES[G.playerDeckChoice].map(makeCard);
+  shuffle(G.playerDeck);
   G.playerDeck.forEach((c) => {
     sanitize(c);
     c.owner = "player";
     c.deck = G.playerDeckChoice === "custom" ? "custom" : G.playerDeckChoice;
   });
   G.aiDeck = TEMPLATES[G.aiDeckChoice].map(makeCard);
+  shuffle(G.aiDeck);
   G.aiDeck.forEach((c) => {
     sanitize(c);
     c.owner = "ai";
@@ -1281,11 +1282,9 @@ $$(".deckbtn").forEach((btn) => {
   btn.addEventListener("click", () => {
     const pick = btn.dataset.deck;
     G.playerDeckChoice = pick;
-    if (HUMAN.includes(pick)) {
-      G.aiDeckChoice = rand(BEAST);
-    } else {
-      G.aiDeckChoice = rand(HUMAN);
-    }
+    G.aiDeckChoice = rand(
+      ALL_DECKS.filter((d) => d !== pick),
+    );
     startMenuMusic(pick);
     $$(".deckbtn").forEach((b) => (b.style.outline = "none"));
     btn.style.outline = "2px solid var(--accent)";
