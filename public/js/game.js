@@ -373,7 +373,16 @@ els.playAgainBtn.addEventListener('click',()=>{if(window.isMultiplayer){showMult
 function handleMove(move){switch(move.type){case 'summon':{summon('ai',move.card,move.stance,true);applyBattlecryEffects('ai',move.effects||[]);G.aiMana-=move.card.cost;renderAll();break}case 'attack':{const a=G.aiBoard.find(x=>x.id===move.attackerId);const t=G.playerBoard.find(x=>x.id===move.targetId);if(a&&t)attackCard(a,t);break}case 'attackFace':{const a=G.aiBoard.find(x=>x.id===move.attackerId);if(a)attackFace(a,'player');break}}}
 function handleTurn(turn){if(turn==='end'){G.current='player';G.chosen=null;updateTargetingUI();newTurn()}}
 if(window.NET){NET.onOpponentDeckConfirmed(d=>{G.aiDeckChoice=d;if(window.mpState==='waitingDeck'){els.startGame.textContent='Iniciar';els.startGame.disabled=false;window.mpState='readyStart'}else{window.opponentConfirmed=true}});NET.onStartGame(()=>{els.start.style.display='none';els.wrap.style.display='block';initAudio();ensureRunning();stopMenuMusic();startGame(NET.isHost()?'player':'ai');window.mpState=null;window.opponentConfirmed=false});NET.onOpponentName(n=>{window.opponentName=n;updateOpponentLabel()})}
-if(window.NET){NET.onMove(handleMove);NET.onTurn(handleTurn);NET.onEmoji(e=>showEmoji('opponent',e));NET.onOpponentLeft(()=>{log('Oponente desconectou.');if(window.isMultiplayer&&els.wrap.style.display==='block')endGame(true);});NET.onOpponentResigned(()=>endGame(true));NET.onRematch(()=>{showMultiplayerDeckSelect();els.endOverlay.classList.remove('show')})}
+if(window.NET){
+NET.onMove(handleMove);
+NET.onTurn(handleTurn);
+NET.onEmoji(e=>showEmoji('opponent',e));
+NET.onOpponentDisconnected(()=>{if(window.showReconnect)window.showReconnect('Oponente desconectou. Aguardando reconexão...');});
+NET.onOpponentReconnected(()=>{if(window.hideReconnect)window.hideReconnect();});
+NET.onOpponentLeft(()=>{if(window.hideReconnect)window.hideReconnect();log('Oponente desconectou.');if(window.isMultiplayer&&els.wrap.style.display==='block')endGame(true);});
+NET.onOpponentResigned(()=>endGame(true));
+NET.onRematch(()=>{showMultiplayerDeckSelect();els.endOverlay.classList.remove('show')});
+}
 document.addEventListener('DOMContentLoaded',tryStartMenuMusicImmediate);
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')tryStartMenuMusicImmediate()});
 document.addEventListener('pointerdown',()=>{tryStartMenuMusicImmediate()},{once:true});

@@ -720,3 +720,8 @@ color:#24040a}
 height:auto;
 display:block}
 .holo-logo{animation:logoBounce 2s ease-in-out infinite;filter:drop-shadow(0 0 6px rgba(0,255,255,.6))}
+
+/* Reconnect overlay */
+.reconnect-overlay{position:fixed;inset:0;display:none;place-items:center;background:radial-gradient(800px 400px at 50% 50%,rgba(255,255,255,.06),rgba(0,0,0,.8));z-index:2000}
+.reconnect-overlay.show{display:grid}
+.reconnect-box{background:linear-gradient(180deg,#121a44,#0c1230);border:1px solid #2b3a86;border-radius:16px;box-shadow:0 20px 50px rgba(0,0,0,.5);padding:22px 26px;display:flex;flex-direction:column;gap:12px;align-items:center;text-align:center}
