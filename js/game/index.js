@@ -130,6 +130,51 @@ const TEMPLATES = {
       "",
       "BA1",
     ],
+    ["Camponês Vigilante", "", "Viking", 2, 4, 3, "Protetor", "P"],
+    [
+      "Herbalista do Vilarejo",
+      "",
+      "Viking",
+      1,
+      3,
+      2,
+      "Entra: cura 2",
+      "",
+      "H2",
+    ],
+    [
+      "Batedor da Aldeia",
+      "",
+      "Viking",
+      3,
+      2,
+      2,
+      "Entra: dano 1 aleatório",
+      "",
+      "P1",
+    ],
+    [
+      "Ancião do Trigo",
+      "",
+      "Viking",
+      2,
+      2,
+      3,
+      "Entra: +1/+1 aleatório",
+      "",
+      "BR1",
+    ],
+    [
+      "Patriarca da Fazenda",
+      "",
+      "Viking",
+      4,
+      5,
+      5,
+      "Aliados +1 ATK",
+      "",
+      "BA1",
+    ],
   ],
   animais: [
     ["Urso Pardo", "🐻", "Animal", 6, 6, 5, "Protetor", "P"],
@@ -142,6 +187,21 @@ const TEMPLATES = {
     ["Águia do Norte", "🦅", "Animal", 5, 3, 4, "Veloz"],
     ["Urso Polar", "🐻‍❄️", "Animal", 7, 7, 6, "Gigante"],
     ["Serpente do Mar", "🐍", "Animal", 8, 7, 7, "Colosso"],
+    ["Lobo Alfa", "", "Animal", 5, 4, 4, "Furioso", "F"],
+    ["Lince Ártico", "", "Animal", 3, 3, 3, "Veloz"],
+    [
+      "Falcão das Montanhas",
+      "",
+      "Animal",
+      2,
+      3,
+      3,
+      "Entra: compre 1",
+      "",
+      "D1",
+    ],
+    ["Caribu Selvagem", "", "Animal", 4, 5, 4, "Protetor", "P"],
+    ["Texugo Ártico", "", "Animal", 3, 2, 2, "Furioso", "F"],
   ],
   pescadores: [
     ["Grumete do Fiorde", "👦🎣", "Viking", 1, 1, 1, "Aprendiz"],
@@ -192,6 +252,41 @@ const TEMPLATES = {
       "BA1",
     ],
     ["Remador Ágil", "🚣", "Viking", 4, 2, 3, "Furioso", "F"],
+    [
+      "Curandeiro do Mar",
+      "",
+      "Viking",
+      1,
+      4,
+      3,
+      "Entra: cura 2",
+      "",
+      "H2",
+    ],
+    ["Bardo do Porto", "", "Viking", 2, 3, 3, "Aliados +1 ATK", "", "BA1"],
+    [
+      "Caçador de Tesouros",
+      "",
+      "Viking",
+      2,
+      2,
+      2,
+      "Entra: compre 1",
+      "",
+      "D1",
+    ],
+    ["Escudeiro do Convés", "", "Viking", 2, 5, 4, "Protetor", "P"],
+    [
+      "Guarda do Cais",
+      "",
+      "Viking",
+      3,
+      2,
+      3,
+      "Entra: dano 1 aleatório",
+      "",
+      "P1",
+    ],
   ],
   floresta: [
     ["Urso Negro", "🐻", "Animal", 5, 5, 5, "Protetor", "P"],
@@ -202,6 +297,21 @@ const TEMPLATES = {
     ["Raposa Ágil", "🦊", "Animal", 3, 3, 3, "Veloz"],
     ["Bisonte das Colinas", "🐂", "Animal", 6, 6, 6, "Imponente"],
     ["Serpente do Bosque", "🐍", "Animal", 5, 4, 4, "Silenciosa"],
+    ["Lince da Sombra", "", "Animal", 4, 2, 3, "Furioso", "F"],
+    ["Corvo Observador", "", "Animal", 1, 2, 2, "Entra: compre 1", "", "D1"],
+    ["Guardião Musgoso", "", "Animal", 3, 5, 4, "Protetor", "P"],
+    [
+      "Cervo Rúnico",
+      "",
+      "Animal",
+      3,
+      3,
+      3,
+      "Entra: +1/+1 aleatório",
+      "",
+      "BR1",
+    ],
+    ["Javali Voraz", "", "Animal", 5, 3, 4, "Furioso", "F"],
   ],
 };
 const HUMAN = ["vikings", "pescadores"],
@@ -542,21 +652,19 @@ function previewCard(orig, c) {
           clone.remove();
         },
         () => {
-          clone.remove();
-          orig.style.visibility = "";
+          const r2 = orig.getBoundingClientRect();
+          clone.style.left = r2.left + "px";
+          clone.style.top = r2.top + "px";
+          clone.addEventListener(
+            "transitionend",
+            () => {
+              clone.remove();
+              orig.style.visibility = "";
+            },
+            { once: true },
+          );
         },
       );
-      const cancel = document.createElement("button");
-      cancel.type = "button";
-      cancel.className = "btn-ghost cancel-btn";
-      cancel.textContent = "Cancelar";
-      clone.appendChild(cancel);
-      cancel.addEventListener("click", () => {
-        clone.classList.remove("chosen");
-        clone.remove();
-        orig.style.visibility = "";
-        closeStanceChooser();
-      });
     },
     { once: true },
   );
