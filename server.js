@@ -16,25 +16,6 @@ const VALID_DECKS = new Set(['vikings', 'animais', 'pescadores', 'floresta', 'cu
 // Informações sobre salas em memória
 const rooms = new Map();
 
-const ROOM_INACTIVE_TIMEOUT = 10 * 60 * 1000; // 10 minutos
-const CLEANUP_INTERVAL = 60 * 1000;
-
-function touchRoom(room) {
-  const info = rooms.get(room);
-  if (info) info.lastActivity = Date.now();
-}
-
-function cleanupRooms() {
-  const now = Date.now();
-  for (const [code, info] of rooms) {
-    if (info.players <= 0 && now - info.lastActivity > ROOM_INACTIVE_TIMEOUT) {
-      rooms.delete(code);
-    }
-  }
-}
-
-setInterval(cleanupRooms, CLEANUP_INTERVAL);
-
 app.use(express.static(path.join(__dirname, 'public')));
 
 
@@ -46,7 +27,7 @@ io.on('connection', (socket) => {
     } while (rooms.has(room));
     socket.join(room);
     socket.data.room = room;
-    rooms.set(room, { host: socket.id, guest: null, players: 1, hostTimer: null, guestTimer: null, hostName: socket.data.name || null, guestName: null, lastActivity: Date.now() });
+    rooms.set(room, { host: socket.id, guest: null, players: 1, hostTimer: null, guestTimer: null, hostName: socket.data.name || null, guestName: null });
     socket.emit('hosted', room);
   });
 
@@ -69,7 +50,6 @@ io.on('connection', (socket) => {
     info.guest = socket.id;
     info.guestName = socket.data.name || null;
     info.players++;
-    touchRoom(room);
     socket.emit('joined', room);
     if (info.hostName) socket.emit('opponentName', info.hostName);
     if (info.host) io.to(info.host).emit('opponentName', socket.data.name || '');
@@ -94,7 +74,6 @@ io.on('connection', (socket) => {
     }
 
     socket.data.deckChosen = deckId;
-    touchRoom(room);
     socket.to(room).emit('opponentDeckConfirmed', deckId);
   });
 
@@ -103,7 +82,6 @@ io.on('connection', (socket) => {
     if (!room) return;
 
     socket.data.startReady = true;
-    touchRoom(room);
 
     const clients = io.sockets.adapter.rooms.get(room);
     if (!clients || clients.size !== 2) return;
@@ -121,7 +99,6 @@ io.on('connection', (socket) => {
   socket.on('move', (move) => {
     const room = socket.data.room;
     if (room) {
-      touchRoom(room);
       socket.to(room).emit('move', move);
     }
   });
@@ -129,7 +106,6 @@ io.on('connection', (socket) => {
   socket.on('turn', (turn) => {
     const room = socket.data.room;
     if (room) {
-      touchRoom(room);
       socket.to(room).emit('turn', turn);
     }
   });
@@ -137,7 +113,6 @@ io.on('connection', (socket) => {
   socket.on('emoji', (emoji) => {
     const room = socket.data.room;
     if (room) {
-      touchRoom(room);
       socket.to(room).emit('emoji', emoji);
     }
   });
@@ -146,7 +121,6 @@ io.on('connection', (socket) => {
     const room = socket.data.room;
     if (!room) return;
     socket.data.rematch = true;
-    touchRoom(room);
     const clients = io.sockets.adapter.rooms.get(room);
     if (!clients || clients.size !== 2) return;
     const ready = [...clients].every((id) => {
@@ -182,14 +156,12 @@ io.on('connection', (socket) => {
     }
     socket.join(room);
     socket.data.room = room;
-    touchRoom(room);
     socket.to(room).emit('opponentReconnected');
   });
 
   socket.on('resign', () => {
     const room = socket.data.room;
     if (!room) return;
-    touchRoom(room);
     socket.to(room).emit('opponentResigned');
     rooms.delete(room);
     socket.data.room = null;
@@ -215,16 +187,13 @@ io.on('connection', (socket) => {
         info.guestTimer = null;
       }
       info.players--;
-      info.lastActivity = Date.now();
       io.to(room).emit('opponentLeft');
       if (!info.host || info.players <= 0) {
         rooms.delete(room);
       }
-      cleanupRooms();
     }, 10000);
 
     if (role === 'host') info.hostTimer = timer; else info.guestTimer = timer;
-    socket.data.room = null;
     socket.to(room).emit('opponentDisconnected');
   });
 
@@ -236,7 +205,6 @@ io.on('connection', (socket) => {
     if (!info) return;
     if (info.host === socket.id) info.hostName = name;
     else if (info.guest === socket.id) info.guestName = name;
-    touchRoom(room);
     socket.to(room).emit('opponentName', name);
   });
 });
