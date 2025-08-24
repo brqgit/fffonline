@@ -23,5 +23,8 @@ Nas aldeias costeiras de Fjörnburg, os pescadores dominam mares tempestuosos. O
 ### Floresta
 Nas sombras das árvores milenares vive o povo da floresta. Unidades como o **Lobo da Mata** e a ágil **Raposa Ágil** caçam silenciosamente, enquanto criaturas místicas como o **Bisonte das Colinas** manifestam a força bruta da natureza. As novas cartas — **Lince da Sombra**, o atento **Corvo Observador**, o firme **Guardião Musgoso**, o ancestral **Cervo Rúnico** e o impetuoso **Javali Voraz** — simbolizam a simbiose entre fauna e magia vegetal, representando um reino que responde com vigor a qualquer invasão.
 
+### Mitos e Criaturas Lendárias
+Em tavernas distantes e círculos xamânicos, sussurram-se histórias sobre entidades que jazem além do véu do mundo mortal. Fala-se de serpentes abissais que circundam o oceano, de krakens congelados que despertam com a aurora, e de avatares totêmicos que assumem a forma de corvos gigantes ou ursos rúnicos. Poucos afirmam ter presenciado tais criaturas; muitos acreditam serem apenas lendas que alimentam a magia e a fé. Ainda assim, runas antigas e rituais xamânicos sugerem que essas forças míticas aguardam o momento de retornar, seja para guiar os dignos, seja para devorar os imprudentes.
+
 ## Conclusão
 A Lore de Fjörnburg reflete um mundo onde cultura humana e selvageria natural se chocam sob a aurora boreal. Cada deck oferece uma perspectiva distinta desse universo, permitindo que jogadores mergulhem em histórias de honra, sobrevivência e equilíbrio entre civilização e natureza.
