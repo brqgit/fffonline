@@ -34,28 +34,29 @@ const els={pHP:$('#playerHP'),pHP2:$('#playerHP2'),aHP:$('#aiHP'),aHP2:$('#aiHP2
 els.startGame.disabled=true;
 const DECK_TITLES={vikings:'Fazendeiros Vikings',animais:'Bestas do Norte',pescadores:'Pescadores do Fiorde',floresta:'Feras da Floresta',custom:'Custom'};
 const DECK_ASSETS={
-  vikings:{folder:'farm-vikings',back:'fv'},
-  pescadores:{folder:'fJord-fishers',back:'jf'},
-  floresta:{folder:'forest-beasts',back:'fb'},
-  animais:{folder:'north-beasts',back:'nb'}
+  vikings:{folder:'farm-vikings',back:'fv',dbExt:'png',cbExt:'webp'},
+  pescadores:{folder:'fJord-fishers',back:'jf',dbExt:'webp',cbExt:'webp'},
+  floresta:{folder:'forest-beasts',back:'fb',dbExt:'webp',cbExt:'webp'},
+  animais:{folder:'north-beasts',back:'nb',dbExt:'webp',cbExt:'webp'}
 };
 const IMG_CACHE={};
 function preloadAssets(){
-  const list=[];
   for(const [key,info] of Object.entries(DECK_ASSETS)){
-    // Preload both deck-back and card-back images (try webp then png)
-    const dbBase=`/img/decks/${info.folder}/deck-backs/${info.back}-db-default`;
-    list.push(dbBase+`.webp`);
-    list.push(dbBase+`.png`);
-    const cbBase=`/img/decks/${info.folder}/card-backs/${info.back}-cb-default`;
-    list.push(cbBase+`.webp`);
-    list.push(cbBase+`.png`);
+    const dbSrc=`/img/decks/${info.folder}/deck-backs/${info.back}-db-default.${info.dbExt}`;
+    const dbImg=new Image();
+    dbImg.src=dbSrc;
+    IMG_CACHE[dbSrc]=dbImg;
+    const cbSrc=`/img/decks/${info.folder}/card-backs/${info.back}-cb-default.${info.cbExt}`;
+    const cbImg=new Image();
+    cbImg.src=cbSrc;
+    IMG_CACHE[cbSrc]=cbImg;
     (DECK_IMAGES[key]||[]).forEach(fn=>{
-      const base=`/img/decks/${info.folder}/characters/${fn.replace(/\.[^.]+$/,'')}.png`;
-      list.push(base);
+      const src=`/img/decks/${info.folder}/characters/${fn.replace(/\.[^.]+$/,'')}.png`;
+      const img=new Image();
+      img.src=src;
+      IMG_CACHE[src]=img;
     });
   }
-  list.forEach(src=>{const img=new Image();img.src=src;IMG_CACHE[src]=img;});
 }
 preloadAssets();
 // Return local icon path candidates for decks that provide artwork
@@ -76,11 +77,11 @@ function setDeckBacks(){
     const info=DECK_ASSETS[deck];
     if(!info)return;
     // Use deck-back art for both the draw and discard piles
-    const base=`/img/decks/${info.folder}/deck-backs/${info.back}-db-default`;
+    const src=`/img/decks/${info.folder}/deck-backs/${info.back}-db-default.${info.dbExt}`;
     const drawImg=document.querySelector(`#${drawId} img`);
     const discImg=document.querySelector(`#${discId} img`);
-    drawImg&&setSrcFallback(drawImg,[base+`.webp`,base+`.png`]);
-    discImg&&setSrcFallback(discImg,[base+`.webp`,base+`.png`]);
+    if(drawImg) drawImg.src=src;
+    if(discImg) discImg.src=src;
   };
   apply(G.playerDeckChoice,'drawPile','discardPile');
   apply(G.aiDeckChoice,'aiDrawPile','aiDiscardPile');
