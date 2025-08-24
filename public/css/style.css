@@ -17,7 +17,9 @@
  --cb-floresta:url('/img/decks/forest-beasts/card-backs/fb-cb-default.webp');
  --cb-animais:url('/img/decks/north-beasts/card-backs/nb-cb-default.webp');
  --body-bg:url('/img/ui/backgrounds/fff-bg-01.webp');
- --start-bg:url('/img/ui/backgrounds/fff-bg-01.webp')}
+ --start-bg:url('/img/ui/backgrounds/fff-bg-01.webp');
+ --shine:.75;
+ --sparkle-speed:18s}
 *{box-sizing:border-box}
 html,body{height:100%;overflow:auto}
 body{margin:0;
@@ -108,13 +110,10 @@ width:calc(5*var(--card-w) + 4*14px + 24px)}
 .row .board{flex:0 0 auto}
 .hand{position:relative;height:calc(var(--card-h) - 20px);margin:20px 0 0;flex:0 0 auto;overflow:visible}
 .hand .card{position:absolute;top:0;width:var(--card-w);transition:transform .2s,box-shadow .2s}
-.hand .card::before{opacity:0}
 .hand .card:hover{transform:translateY(calc(var(--card-h) * -0.1)) scale(1.06)}
 .hand .card.chosen{transform:translateY(calc(var(--card-h) * -0.333)) scale(1.3);box-shadow:0 0 12px var(--accent),0 16px 30px rgba(0,0,0,.45)}
-.hand .card.chosen::before{animation:foilHue 1.2s linear infinite}
-.hand .card.chosen::after{opacity:.3}
-@keyframes foilHue{from{filter:hue-rotate(0deg);}to{filter:hue-rotate(360deg);}}
 @keyframes stanceHolo{from{filter:hue-rotate(0deg) drop-shadow(0 0 6px rgba(0,255,255,.6));}to{filter:hue-rotate(360deg) drop-shadow(0 0 6px rgba(0,255,255,.6));}}
+@keyframes sparkle{0%{filter:hue-rotate(0deg) brightness(1);}50%{filter:hue-rotate(180deg) brightness(1.05);}100%{filter:hue-rotate(360deg) brightness(1);}}
 .card{width:100%;max-width:var(--card-w);aspect-ratio:220/300;
  min-height:auto;
  background:linear-gradient(180deg,var(--card2),var(--card));
@@ -130,8 +129,8 @@ width:calc(5*var(--card-w) + 4*14px + 24px)}
  transition:transform .18s ease,box-shadow .18s ease;
  overflow:visible;
 .transform-style:preserve-3d;
- --mx:50%;
- --my:50%;
+ --mx:.5;
+ --my:.5;
  --rX:0deg;
  --rY:0deg}
 .card .head-bar{background:linear-gradient(180deg,rgba(0,0,0,.6),rgba(0,0,0,.2));padding:2px 4px;border-radius:6px;display:flex;flex-direction:column;gap:2px}
@@ -215,24 +214,20 @@ z-index:1}
 #playerBoard .card:hover{transform:translateY(-6px) scale(1.03);
  box-shadow:0 16px 30px rgba(0,0,0,.45),0 0 0 2px rgba(124,196,255,.15) inset}
 .card.tilted{transform:rotateX(var(--rX)) rotateY(var(--rY))}
-.card::before{content:"";
-position:absolute;
-inset:-1px;
-border-radius:inherit;
-background:conic-gradient(from 0deg at var(--mx) var(--my), #7cc4ff66, #ffd16666, #a5b4fc66, #4ade8066, #fb718566, #7cc4ff66);
-filter:blur(10px) saturate(1.05);
-mix-blend-mode:color-dodge;
-opacity:0;
-transition:opacity .2s ease}
-.card::after{content:"";
-position:absolute;
-inset:0;
-border-radius:inherit;
-background:radial-gradient(180px 180px at var(--mx) var(--my), rgba(255,255,255,.18), transparent 40%);
-opacity:0;
-transition:opacity .2s ease}
-.card.tilted::before{opacity:.5}
-.card.tilted::after{opacity:.4}
+.card::before,.ency-card::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;mix-blend-mode:screen;opacity:0;
+background:radial-gradient(120% 60% at calc(50% + (var(--mx) - .5)*40%) calc(10% + (var(--my) - .5)*40%),rgba(255,255,255,calc(.35*var(--shine))) 6%,rgba(255,255,255,calc(.12*var(--shine))) 20%,rgba(255,255,255,0) 45%),
+repeating-linear-gradient(calc(200deg + (var(--mx) - .5)*60deg),rgba(255,80,80,.16) 0%,rgba(255,200,70,.16) 10%,rgba(80,255,80,.16) 20%,rgba(80,200,255,.16) 30%,rgba(180,80,255,.16) 40%,rgba(255,80,80,.16) 50%),
+radial-gradient(1px 1px at 8% 12%,rgba(255,255,255,.12) 98%,transparent 100%),
+radial-gradient(1px 1px at 22% 48%,rgba(255,255,255,.10) 98%,transparent 100%),
+radial-gradient(1px 1px at 66% 22%,rgba(255,255,255,.07) 98%,transparent 100%),
+radial-gradient(1px 1px at 42% 76%,rgba(255,255,255,.12) 98%,transparent 100%),
+radial-gradient(1px 1px at 78% 62%,rgba(255,255,255,.09) 98%,transparent 100%);
+background-size:140% 120%,300% 300%,100% 100%;
+background-position:center top,calc(50% + (var(--mx) - .5)*40%) calc(50% + (var(--my) - .5)*40%),0 0;
+animation:sparkle var(--sparkle-speed) linear infinite;transition:opacity .2s ease}
+.card::after,.ency-card::after{content:"";position:absolute;inset:0;border-radius:inherit;box-shadow:0 0 0 2px rgba(255,255,255,.06) inset,0 0 22px rgba(120,200,255,.25) inset;mix-blend-mode:screen;pointer-events:none;opacity:0;transition:opacity .2s ease}
+.card.tilted::before,.ency-card.tilted::before,.hand .card.chosen::before{opacity:.9}
+.card.tilted::after,.ency-card.tilted::after,.hand .card.chosen::after{opacity:.4}
 .card.attack-lunge{animation:lunge .35s ease}
 .card.hit-shake{animation:shakeHit .35s ease}
 .card.shield-flash{animation:shieldFlash .6s ease}
@@ -575,24 +570,6 @@ box-shadow:0 16px 30px rgba(0,0,0,.45),0 0 0 2px rgba(124,196,255,.15) inset}
 z-index:3;
 box-shadow:0 16px 30px rgba(0,0,0,.45),0 0 0 2px rgba(124,196,255,.15) inset}
 .ency-card.tilted{transform:rotateX(var(--rX)) rotateY(var(--rY)) scale(1.06)}
-.ency-card::before{content:"";
-position:absolute;
-inset:-1px;
-border-radius:inherit;
-background:conic-gradient(from 0deg at var(--mx) var(--my), #7cc4ff66, #ffd16666, #a5b4fc66, #4ade8066, #fb718566, #7cc4ff66);
-filter:blur(10px) saturate(1.05);
-mix-blend-mode:color-dodge;
-opacity:0;
-transition:opacity .2s ease}
-.ency-card::after{content:"";
-position:absolute;
-inset:0;
-border-radius:inherit;
-background:radial-gradient(160px 160px at var(--mx) var(--my), rgba(255,255,255,.18), transparent 40%);
-opacity:0;
-transition:opacity .2s ease}
-.ency-card.tilted::before{opacity:.25}
-.ency-card.tilted::after{opacity:.2}
 .ency-card .head{display:grid;
 grid-template-columns:auto 1fr;
 gap:8px;
