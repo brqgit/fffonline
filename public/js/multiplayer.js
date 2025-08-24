@@ -115,6 +115,7 @@ document.addEventListener('DOMContentLoaded', () => {
     NET.onOpponentLeft(() => {
       clearInterval(reconTimer);
       statusEl.textContent = 'Oponente saiu.';
+      if (window.hideReconnect) window.hideReconnect();
     });
 
     NET.onConnectionError(() => {
@@ -123,13 +124,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let reconTimer = null;
     NET.onOpponentDisconnected(() => {
-      let t = 10;
-      statusEl.textContent = `Oponente desconectado. Reconnectando em ${t}s`;
+      let t = 15;
+      statusEl.textContent = `Oponente desconectado. Aguardando reconexão: ${t}s`;
+      if (window.showReconnect) window.showReconnect('Oponente desconectou. Aguardando reconexão...');
       clearInterval(reconTimer);
       reconTimer = setInterval(() => {
         t -= 1;
         if (t > 0) {
-          statusEl.textContent = `Oponente desconectado. Reconnectando em ${t}s`;
+          statusEl.textContent = `Oponente desconectado. Aguardando reconexão: ${t}s`;
         } else {
           clearInterval(reconTimer);
         }
@@ -139,6 +141,7 @@ document.addEventListener('DOMContentLoaded', () => {
     NET.onOpponentReconnected(() => {
       clearInterval(reconTimer);
       statusEl.textContent = 'Oponente reconectado.';
+      if (window.hideReconnect) window.hideReconnect();
     });
 
     NET.onRooms((rooms) => {

@@ -9,12 +9,21 @@ import {
   sfx,
 } from "../audio/index.js";
 import { aiTurn } from "../ai/index.js";
+import { Keyword } from "./card.js";
 
 const rand = (a) => a[Math.floor(Math.random() * a.length)];
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const uid = () => Math.random().toString(36).slice(2);
 
-const KW = { P: "Protetor", F: "Furioso" },
+const KW = {
+    P: Keyword.PROTETOR,
+    F: Keyword.FURIOSO,
+    PE: Keyword.PERCEPCAO,
+    C: Keyword.CURA,
+    B: Keyword.BENCAO,
+    CV: Keyword.CORVO,
+    S: Keyword.SERPENTE,
+  },
   BC = {
     D1: "draw1",
     H2: "heal2",
@@ -22,8 +31,39 @@ const KW = { P: "Protetor", F: "Furioso" },
     BR1: "buffRandom1",
     BA1: "buffAlliesAtk1",
   };
+function deriveClassSub(name) {
+  const n = name.toLowerCase();
+  if (n.includes("berserker")) return { classe: "tank", subclasse: "Berserker" };
+  if (n.includes("guardião do véu") || n.includes("véu"))
+    return { classe: "control", subclasse: "Guardião do Véu" };
+  if (n.includes("guardião")) return { classe: "tank", subclasse: "Guardião" };
+  if (n.includes("uivante")) return { classe: "tank", subclasse: "Uivante" };
+  if (n.includes("caçador")) return { classe: "dps", subclasse: "Caçador" };
+  if (n.includes("runomante")) return { classe: "dps", subclasse: "Runomante" };
+  if (n.includes("serpente")) return { classe: "dps", subclasse: "Serpente" };
+  if (n.includes("curandeir")) return { classe: "support", subclasse: "Curandeiro" };
+  if (n.includes("totêmico") || n.includes("totemico"))
+    return { classe: "support", subclasse: "Totêmico" };
+  if (n.includes("sacerdote") || n.includes("tecelão"))
+    return { classe: "support", subclasse: "Tecelão" };
+  if (n.includes("xamã")) return { classe: "control", subclasse: "Xamã" };
+  if (n.includes("corvo")) return { classe: "control", subclasse: "Corvo" };
+  if (n.includes("guerreiro"))
+    return { classe: "dps", subclasse: "Guerreiro" };
+  if (n.includes("raider")) return { classe: "dps", subclasse: "Raider" };
+  if (n.includes("batalhador"))
+    return { classe: "dps", subclasse: "Batalhador" };
+  if (n.includes("mago") || n.includes("mistico"))
+    return { classe: "support", subclasse: "Mago" };
+  if (n.includes("sombras") || n.includes("encapuzado"))
+    return { classe: "control", subclasse: "Sombras" };
+  if (n.includes("navegador"))
+    return { classe: "support", subclasse: "Navegador" };
+  return { classe: "", subclasse: "" };
+}
 const makeCard = (a) => {
-  const [n, e, t, atk, hp, cost, tx, k = 0, b = 0] = a;
+  const [n, e, t, atk, hp, cost, tx, k = 0, b = 0, harvest = 0] = a;
+  const cls = deriveClassSub(n || "");
   return {
     name: n,
     emoji: e,
@@ -31,9 +71,12 @@ const makeCard = (a) => {
     atk,
     hp,
     cost,
+    harvestCost: harvest,
     text: tx,
     kw: k ? k.split("|").map((x) => KW[x]) : [],
     battlecry: b ? BC[b] : void 0,
+    classe: cls.classe,
+    subclasse: cls.subclasse,
     id: uid(),
   };
 };
@@ -169,8 +212,12 @@ const G = {
   turn: 1,
   playerMana: 0,
   playerManaCap: 0,
+  playerHarvest: 0,
+  playerHarvestCap: 0,
   aiMana: 0,
   aiManaCap: 0,
+  aiHarvest: 0,
+  aiHarvestCap: 0,
   current: "player",
   playerDeck: [],
   aiDeck: [],
@@ -234,7 +281,7 @@ function renderPool() {
   all.forEach((raw) => {
     const row = document.createElement("div");
     row.className = "pitem";
-    row.innerHTML = `<span class="c">${raw[5]}</span><div>${raw[1]} ${raw[0]}</div><button class="add">+</button>`;
+    row.innerHTML = `<span class="c">${raw[5]}${raw[9] ? "🌾" + raw[9] : ""}</span><div>${raw[1]} ${raw[0]}</div><button class="add">+</button>`;
     row.querySelector(".add").onclick = () => {
       if (!G.customDeck) G.customDeck = [];
       if (G.customDeck.length >= 20) return;
@@ -254,7 +301,7 @@ function renderChosen() {
     const item = document.createElement("div");
     item.className = "chitem";
     item.dataset.idx = i;
-    item.innerHTML = `<div>${c.emoji} ${c.name} <small>(${c.cost})</small></div><button class="rm">remover</button>`;
+    item.innerHTML = `<div>${c.emoji} ${c.name} <small>(${c.cost}${c.harvestCost ? "🌾" + c.harvestCost : ""})</small></div><button class="rm">remover</button>`;
     item.querySelector(".rm").onclick = () => {
       const idx = Number(item.dataset.idx);
       if (idx >= 0) {
@@ -322,8 +369,28 @@ function cardNode(c, owner) {
   const d = document.createElement("div");
   d.className = `card ${owner === "player" ? "me" : "enemy"} ${c.stance === "defense" ? "defense" : ""}`;
   d.dataset.id = c.id;
-  d.innerHTML = `<div class=\"bg bg-${c.deck || "default"}\"></div><div class=\"head\"><span class=\"cost\">${c.cost}</span><div class=\"name\">${c.name}</div>${c.stance ? `<span class=\"badge ${c.stance === "defense" ? "def" : "atk"}\">${c.stance === "defense" ? "DEFESA" : "ATAQUE"}</span>` : ""}</div><div class=\"tribe\">${c.tribe}</div><div class=\"art\">${c.emoji}</div><div class=\"text\">${(c.kw || []).map((k) => `<span class='keyword' data-tip='${k === "Protetor" ? "Enquanto houver Protetor ou carta em Defesa do lado do defensor, ataques devem mirá-los." : k === "Furioso" ? "Pode atacar no turno em que é jogada." : ""}' >${k}</span>`).join(" ")} ${c.text || ""}</div><div class=\"stats\"><span class=\"gem atk\">⚔️ ${c.atk}</span><span class=\"gem hp ${c.hp <= 2 ? "low" : ""}\">❤️ ${c.hp}</span></div>`;
+  const costText = `${c.cost}${c.harvestCost ? `🌾${c.harvestCost}` : ""}`;
+  const kwTags = (c.kw || []).map(
+    (k) =>
+      `<span class='keyword' data-tip='${
+        k === "Protetor"
+          ? "Enquanto houver Protetor ou carta em Defesa do lado do defensor, ataques devem mirá-los."
+          : k === "Furioso"
+          ? "Pode atacar no turno em que é jogada."
+          : ""
+      }' >${k}</span>`
+  );
+  if (c.subclasse && c.classe) {
+    kwTags.push(`<span class='class-tag ${c.classe}'>${c.subclasse}</span>`);
+  }
+  d.innerHTML = `<div class="bg bg-${c.deck || "default"}"></div><div class="head"><span class="cost">${costText}</span><div class="name">${c.name}</div>${c.stance ? `<span class="badge ${c.stance === "defense" ? "def" : "atk"}">${c.stance === "defense" ? "🛡️" : "⚔️"}</span>` : ""}</div><div class="tribe">${c.tribe}</div><div class="art">${c.emoji}</div><div class="text">${kwTags.join(" ")} ${c.text || ""}</div><div class="stats"><span class="gem atk">⚔️ ${c.atk}</span>${c.stance ? `<span class="stance-label ${c.stance}">${c.stance === 'defense' ? '🛡️' : '⚔️'}</span>` : ''}<span class="gem hp ${c.hp <= 2 ? "low" : ""}">❤️ ${c.hp}</span></div>`;
   return d;
+}
+function resetCardState(c) {
+  if (!c) return;
+  c.stance = null;
+  c.canAttack = false;
+  delete c.summonTurn;
 }
 const hasGuard = (b) =>
   b.some((x) => x.kw.includes("Protetor") || x.stance === "defense");
@@ -339,7 +406,7 @@ function renderAll() {
   els.pHP2.textContent = G.playerHP;
   els.aHP.textContent = G.aiHP;
   els.aHP2.textContent = G.aiHP;
-  els.mana.textContent = `${G.playerMana}/${G.playerManaCap}`;
+  els.mana.textContent = `${G.playerMana}/${G.playerManaCap} | 🌾 ${G.playerHarvest}/${G.playerHarvestCap}`;
   els.endBtn.disabled = G.current !== "player";
   els.drawCount.textContent = G.playerDeck.length;
   els.discardCount.textContent = G.playerDiscard.length;
@@ -356,6 +423,7 @@ function renderHand() {
     d.addEventListener("click", (e) => {
       const blocked =
         c.cost > G.playerMana ||
+        c.harvestCost > G.playerHarvest ||
         G.current !== "player" ||
         G.playerBoard.length >= 5;
       if (blocked) {
@@ -369,12 +437,26 @@ function renderHand() {
         flyToBoard(d, () => playFromHand(c.id, st)),
       );
     });
-    const cantPay = c.cost > G.playerMana;
+    const cantPay = c.cost > G.playerMana || c.harvestCost > G.playerHarvest;
     const disable = G.current !== "player" || G.playerBoard.length >= 5;
     d.classList.toggle("blocked", cantPay);
     d.style.opacity = cantPay || disable ? 0.9 : 1;
     d.style.cursor = cantPay || disable ? "not-allowed" : "pointer";
     els.pHand.appendChild(d);
+  });
+  stackHand();
+}
+function stackHand() {
+  const cards = $$("#playerHand .card");
+  const total = cards.length;
+  if (!total) return;
+  const spread = 150;
+  cards.forEach((c, i) => {
+    const offset = (i - (total - 1) / 2) * spread;
+    c.style.left = `calc(50% + ${offset}px - 88px)`;
+    c.style.zIndex = i + 1;
+    c.onmouseenter = () => (c.style.zIndex = 1000);
+    c.onmouseleave = () => (c.style.zIndex = i + 1);
   });
 }
 function renderBoard() {
@@ -517,8 +599,12 @@ export function startGame() {
   G.current = "player";
   G.playerMana = 0;
   G.playerManaCap = 0;
+  G.playerHarvest = 0;
+  G.playerHarvestCap = 0;
   G.aiMana = 0;
   G.aiManaCap = 0;
+  G.aiHarvest = 0;
+  G.aiHarvestCap = 0;
   draw("player", 3);
   draw("ai", 3);
   newTurn();
@@ -541,10 +627,12 @@ function draw(who, n = 1) {
     disc = who === "player" ? G.playerDiscard : G.aiDiscard;
   for (let i = 0; i < n; i++) {
     if (deck.length === 0 && disc.length) {
+      disc.forEach(resetCardState);
       deck.push(...shuffle(disc.splice(0)));
     }
     if (deck.length) {
       const c = deck.shift();
+      resetCardState(c);
       if (c.hp < 1) c.hp = 1;
       hand.push(c);
     }
@@ -558,11 +646,15 @@ function newTurn() {
   if (G.current === "player") {
     G.playerManaCap = clamp(G.playerManaCap + 1, 0, 10);
     G.playerMana = G.playerManaCap;
+    G.playerHarvestCap = clamp(G.playerHarvestCap + 1, 0, 10);
+    G.playerHarvest = G.playerHarvestCap;
     draw("player", 1);
     G.playerBoard.forEach((c) => (c.canAttack = true));
   } else {
     G.aiManaCap = clamp(G.aiManaCap + 1, 0, 10);
     G.aiMana = G.aiManaCap;
+    G.aiHarvestCap = clamp(G.aiHarvestCap + 1, 0, 10);
+    G.aiHarvest = G.aiHarvestCap;
     draw("ai", 1);
     G.aiBoard.forEach((c) => (c.canAttack = true));
   }
@@ -595,10 +687,16 @@ function playFromHand(id, st) {
   const i = G.playerHand.findIndex((c) => c.id === id);
   if (i < 0) return;
   const c = G.playerHand[i];
-  if (c.cost > G.playerMana || G.playerBoard.length >= 5) return;
+  if (
+    c.cost > G.playerMana ||
+    c.harvestCost > G.playerHarvest ||
+    G.playerBoard.length >= 5
+  )
+    return;
   G.playerHand.splice(i, 1);
   summon("player", c, st);
   G.playerMana -= c.cost;
+  G.playerHarvest -= c.harvestCost;
   renderAll();
   sfx(st === "defense" ? "defense" : "play");
 }
@@ -627,6 +725,11 @@ function triggerBattlecry(side, c) {
           const t = rand(allies);
           t.hp = Math.min(t.hp + 2, 20);
           fxTextOnCard(t.id, "+2", "heal");
+          const n = nodeById(t.id);
+          if (n) {
+            const r = n.getBoundingClientRect();
+            screenParticle("healing", r.left + r.width / 2, r.top + r.height / 2);
+          }
           log(`${c.name}: curou 2 em ${t.name}.`);
         }
       }
@@ -637,6 +740,7 @@ function triggerBattlecry(side, c) {
         if (foes.length) {
           const t = rand(foes);
           damageMinion(t, 1);
+          particleOnCard(t.id, "attack");
           fxTextOnCard(t.id, "-1", "dmg");
           log(`${c.name}: 1 de dano em ${t.name}.`);
           checkDeaths();
@@ -655,6 +759,7 @@ function triggerBattlecry(side, c) {
           t.atk += 1;
           t.hp += 1;
           fxTextOnCard(t.id, "+1/+1", "buff");
+          particleOnCard(t.id, "magic");
           log(`${c.name}: deu +1/+1 em ${t.name}.`);
         }
       }
@@ -667,6 +772,7 @@ function triggerBattlecry(side, c) {
         allies.forEach((x) => {
           x.atk += 1;
           fxTextOnCard(x.id, "+1 ATK", "buff");
+          particleOnCard(x.id, "magic");
         });
         if (allies.length) log(`${c.name}: aliados ganharam +1 de ataque.`);
       }
@@ -753,6 +859,26 @@ function screenSlash(x, y, ang) {
   document.body.appendChild(fx);
   setTimeout(() => fx.remove(), 380);
 }
+function screenParticle(name, x, y) {
+  const fx = document.createElement("div");
+  fx.className = "fx fx-" + name;
+  fx.style.left = x + "px";
+  fx.style.top = y + "px";
+  document.body.appendChild(fx);
+  setTimeout(() => fx.remove(), 600);
+}
+function particleOnCard(cid, name) {
+  const n = nodeById(cid);
+  if (!n) return;
+  const r = n.getBoundingClientRect();
+  screenParticle(name, r.left + r.width / 2, r.top + r.height / 2);
+}
+function particleOnFace(side, name) {
+  const el = side === "ai" ? els.aHP2 : els.pHP2;
+  if (!el) return;
+  const r = el.getBoundingClientRect();
+  screenParticle(name, r.left + r.width / 2, r.top + r.height / 2);
+}
 function fxTextOnCard(cid, text, cls) {
   const n = document.querySelector(`.card[data-id="${cid}"]`);
   if (!n) return;
@@ -778,6 +904,7 @@ function attackCard(attacker, target) {
   }
   animateAttack(attacker.id, target.id);
   if (target.stance === "defense") animateDefense(target.id);
+  particleOnCard(target.id, "attack");
   const pre = target.hp,
     overflow = Math.max(0, attacker.atk - pre);
   damageMinion(target, attacker.atk);
@@ -816,6 +943,7 @@ function attackFace(attacker, face) {
     screenSlash(ar.right, ar.top + ar.height / 2, 10);
   }
   animateAttack(attacker.id, null);
+  particleOnFace(face, "attack");
   const dmg = attacker.atk;
   attacker.canAttack = false;
   if (face === "ai") {
@@ -840,12 +968,20 @@ function damageMinion(m, amt) {
 }
 function checkDeaths() {
   const deadA = G.aiBoard.filter((c) => c.hp <= 0);
+  deadA.forEach((c) => {
+    particleOnCard(c.id, "explosion");
+    resetCardState(c);
+  });
   if (deadA.length) {
     G.aiBoard = G.aiBoard.filter((c) => c.hp > 0);
     G.aiDiscard.push(...deadA);
     log("Uma criatura inimiga caiu.");
   }
   const deadP = G.playerBoard.filter((c) => c.hp <= 0);
+  deadP.forEach((c) => {
+    particleOnCard(c.id, "explosion");
+    resetCardState(c);
+  });
   if (deadP.length) {
     G.playerBoard = G.playerBoard.filter((c) => c.hp > 0);
     G.playerDiscard.push(...deadP);
@@ -908,7 +1044,7 @@ function renderEncy(filter = "all", locked = false) {
   cards.forEach((c) => {
     const d = document.createElement("div");
     d.className = `card ency-card bg-${c.deck}`;
-    d.innerHTML = `<div class='bg bg-${c.deck}'></div><div class='head'><span class='cost'>${c.cost}</span><div class='name'>${c.name}</div></div><div class='mini'>${c.tribe} • ⚔️ ${c.atk} / ❤️ ${c.hp}</div><div class='art'>${c.emoji}</div><div class='details'><div>${(c.kw || []).map((k) => `<span class='chip' data-type='keyword' data-tip='${k === "Protetor" ? "Enquanto houver Protetor ou carta em Defesa do lado do defensor, ataques devem mirá-los." : k === "Furioso" ? "Pode atacar no turno em que é jogada." : ""}' >${k}</span>`).join(" ")}</div><div style='margin-top:6px'>${c.text || ""}</div></div>`;
+    d.innerHTML = `<div class='bg bg-${c.deck}'></div><div class='head'><span class='cost'>${c.cost}${c.harvestCost ? `🌾${c.harvestCost}` : ""}</span><div class='name'>${c.name}</div></div><div class='mini'>${c.tribe} • ⚔️ ${c.atk} / ❤️ ${c.hp}</div><div class='art'>${c.emoji}</div><div class='details'><div>${(c.kw || []).map((k) => `<span class='chip' data-type='keyword' data-tip='${k === "Protetor" ? "Enquanto houver Protetor ou carta em Defesa do lado do defensor, ataques devem mirá-los." : k === "Furioso" ? "Pode atacar no turno em que é jogada." : ""}' >${k}</span>`).join(" ")}</div><div style='margin-top:6px'>${c.text || ""}</div></div>`;
     tiltify(d);
     els.encyGrid.appendChild(d);
   });

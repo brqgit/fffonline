@@ -1,12 +1,12 @@
 export function aiTurn(ctx) {
   const { G, summon, renderAll, legalTarget, attackCard, attackFace, rand, newTurn } = ctx;
   const playable = G.aiHand
-    .filter((c) => c.cost <= G.aiMana)
+    .filter((c) => c.cost <= G.aiMana && c.harvestCost <= G.aiHarvest)
     .sort((a, b) => b.cost - a.cost);
   while (playable.length && G.aiBoard.length < 5 && G.aiMana > 0) {
     const c = playable.shift();
     const i = G.aiHand.findIndex((x) => x.id === c.id);
-    if (i > -1 && c.cost <= G.aiMana) {
+    if (i > -1 && c.cost <= G.aiMana && c.harvestCost <= G.aiHarvest) {
       G.aiHand.splice(i, 1);
       const stance =
         c.hp >= c.atk + 1
@@ -18,6 +18,7 @@ export function aiTurn(ctx) {
             : "attack";
       summon("ai", c, stance);
       G.aiMana -= c.cost;
+      G.aiHarvest -= c.harvestCost;
     }
   }
   renderAll();

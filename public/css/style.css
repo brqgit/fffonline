@@ -1,21 +1,23 @@
 :root{--bg:#0b1020;
---panel:#101833;
---panel2:#0f1430;
---accent:#7cc4ff;
---accent2:#ffd166;
---good:#4ade80;
---bad:#fb7185;
---mid:#a5b4fc;
---card:#141d3f;
---card2:#1a2454;
---text:#e6e9ff;
---muted:#a7b0d9;
---cb-vikings:url('/img/decks/farm-vikings/card-backs/fv-cb-default.webp');
---cb-pescadores:url('/img/decks/fJord-fishers/card-backs/jf-cb-default.webp');
---cb-floresta:url('/img/decks/forest-beasts/card-backs/fb-cb-default.webp');
---cb-animais:url('/img/decks/north-beasts/card-backs/nb-cb-default.webp');
---body-bg:url('/img/ui/backgrounds/fff-bg-01.webp');
---start-bg:url('/img/ui/backgrounds/fff-bg-01.webp')}
+ --panel:#101833;
+ --panel2:#0f1430;
+ --accent:#7cc4ff;
+ --accent2:#ffd166;
+ --good:#4ade80;
+ --bad:#fb7185;
+ --mid:#a5b4fc;
+ --card:#141d3f;
+ --card2:#1a2454;
+ --text:#e6e9ff;
+ --muted:#a7b0d9;
+ --card-w:220px;
+ --card-h:300px;
+ --cb-vikings:url('/img/decks/farm-vikings/card-backs/fv-cb-default.webp');
+ --cb-pescadores:url('/img/decks/fJord-fishers/card-backs/jf-cb-default.webp');
+ --cb-floresta:url('/img/decks/forest-beasts/card-backs/fb-cb-default.webp');
+ --cb-animais:url('/img/decks/north-beasts/card-backs/nb-cb-default.webp');
+ --body-bg:url('/img/ui/backgrounds/fff-bg-01.webp');
+ --start-bg:url('/img/ui/backgrounds/fff-bg-01.webp')}
 *{box-sizing:border-box}
 html,body{height:100%;overflow:auto}
 body{margin:0;
@@ -25,11 +27,11 @@ background-size:cover,auto;
 background-repeat:no-repeat,no-repeat;
 background-position:center,0 0;
 color:var(--text);
-padding-bottom:36px}
+padding-bottom:8px}
 h1{margin:0 0 12px;
 font-size:clamp(22px,4vw,36px);
 letter-spacing:.5px}
-.wrap{max-width:1600px;margin:0 auto;padding:16px 24px;min-height:100vh;display:flex;flex-direction:column}
+.wrap{max-width:calc(7*var(--card-w) + 6*14px + 72px);margin:0 auto;padding:16px 24px;min-height:100vh;display:flex;flex-direction:column}
 .sub{color:var(--muted);
 margin-bottom:18px}
 .btn{cursor:pointer;
@@ -90,29 +92,30 @@ text-transform:uppercase;
 letter-spacing:.8px;
 margin:6px 0 2px}
 .board{display:grid;
- grid-template-columns:repeat(5,176px);
+ grid-template-columns:repeat(5,var(--card-w));
  gap:14px;
  background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,0));
  border-radius:16px;
  padding:20px 12px;
- height:280px;
+ height:calc(var(--card-h) + 40px);
  border:1px dashed #31408b;
  position:relative;
  overflow:visible;
  margin:12px 0;
-width:calc(5*176px + 4*14px + 24px)}
+width:calc(5*var(--card-w) + 4*14px + 24px)}
 #aiBoard,#playerBoard{margin:0 auto}
 .row{display:flex;gap:14px;align-items:flex-start;flex:1;justify-content:center}
 .row .board{flex:0 0 auto}
-.hand{position:relative;height:220px;margin:12px 0;flex:0 0 auto;overflow:visible}
-.hand .card{position:absolute;top:0;left:50%;transform-origin:bottom center;width:176px;--rot:0;transform:rotate(calc(var(--rot)*1deg));transition:transform .2s,box-shadow .2s}
+.hand{position:relative;height:calc(var(--card-h) - 20px);margin:20px 0 0;flex:0 0 auto;overflow:visible}
+.hand .card{position:absolute;top:0;width:var(--card-w);transition:transform .2s,box-shadow .2s}
 .hand .card::before{opacity:0}
-.hand .card:hover{transform:translateY(-24px) scale(1.06) rotate(calc(var(--rot)*1deg))}
-.hand .card.chosen{transform:translateY(-80px) scale(1.3) rotate(calc(var(--rot)*1deg));box-shadow:0 0 12px var(--accent),0 16px 30px rgba(0,0,0,.45)}
+.hand .card:hover{transform:translateY(calc(var(--card-h) * -0.1)) scale(1.06)}
+.hand .card.chosen{transform:translateY(calc(var(--card-h) * -0.333)) scale(1.3);box-shadow:0 0 12px var(--accent),0 16px 30px rgba(0,0,0,.45)}
 .hand .card.chosen::before{animation:foilHue 1.2s linear infinite}
 .hand .card.chosen::after{opacity:.3}
 @keyframes foilHue{from{filter:hue-rotate(0deg);}to{filter:hue-rotate(360deg);}}
-.card{width:100%;max-width:176px;aspect-ratio:176/240;
+@keyframes stanceHolo{from{filter:hue-rotate(0deg) drop-shadow(0 0 6px rgba(0,255,255,.6));}to{filter:hue-rotate(360deg) drop-shadow(0 0 6px rgba(0,255,255,.6));}}
+.card{width:100%;max-width:var(--card-w);aspect-ratio:220/300;
  min-height:auto;
  background:linear-gradient(180deg,var(--card2),var(--card));
  border-radius:18px;
@@ -143,31 +146,33 @@ width:calc(5*176px + 4*14px + 24px)}
 .mana-dot.floresta{background-position:75% 0}
 .mana-dot.custom{background-position:100% 0}
 .mana-num{font-weight:900}
-.badge{font-size:10px;
+.badge{font-size:16px;
 padding:3px 6px;
 border-radius:999px;
-border:1px solid rgba(255,255,255,.14)}
+border:1px solid rgba(255,255,255,.14);
+display:flex;
+align-items:center;
+justify-content:center}
 .badge.atk{background:linear-gradient(180deg,#1f2a64,#15204a)}
 .badge.def{background:linear-gradient(180deg,#2a5f3a,#1e462b)}
- .stance-label{position:relative;padding:3px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.14);font-size:10px;font-weight:700;overflow:hidden;color:#fff}
- .stance-label.attack{background:linear-gradient(180deg,#1f2a64,#15204a)}
- .stance-label.defense{background:linear-gradient(180deg,#2a5f3a,#1e462b)}
- .stance-label::before{content:"";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:16px;opacity:.3}
- .stance-label.attack::before{content:"⚔️"}
- .stance-label.defense::before{content:"🛡️"}
+.stance-label.attack,.stance-label.defense{animation:stanceHolo 2s linear infinite;filter:drop-shadow(0 0 6px rgba(0,255,255,.6))}
+.stance-label{padding:3px 6px;border-radius:999px;border:1px solid rgba(255,255,255,.14);font-size:16px;display:flex;align-items:center;justify-content:center;color:#fff}
+.stance-label.attack{background:linear-gradient(180deg,#1f2a64,#15204a)}
+.stance-label.defense{background:linear-gradient(180deg,#2a5f3a,#1e462b)}
 /* tribe text removed */
 .art{display:flex;
-align-items:center;
+align-items:flex-end;
 justify-content:center;
-min-height:88px;
+min-height:110px;
 height:auto;
-font-size:48px;
-position:relative}
+font-size:60px;
+position:relative;
+padding-bottom:4px}
 .art::after{content:"";position:absolute;inset:0;background:linear-gradient(115deg,rgba(255,255,255,.25),rgba(255,255,255,0) 60%);mix-blend-mode:screen;pointer-events:none;opacity:.2}
-.text{font-size:12px;color:#d9e3ff;background:#0e1435;border:1px solid #25306a;border-radius:10px;padding:4px;margin:0;max-width:100%;word-break:break-word;box-sizing:border-box;white-space:normal;overflow:hidden;height:auto}
-.text::after{content:"";display:block;clear:both}
+.text{font-size:12px;color:#d9e3ff;background:#0e1435;border:1px solid #25306a;border-radius:10px;padding:4px;margin:0;max-width:100%;word-break:break-word;box-sizing:border-box;white-space:normal;overflow:hidden;height:auto;display:flex;align-items:center;flex-wrap:wrap;gap:6px}
+.text::after{content:""}
 .stats{display:flex;justify-content:space-between;align-items:center;margin:0;min-height:26px;align-self:end;gap:4px}
-.stats .stance-label{flex:1;margin:0 4px;text-align:center}
+.stats .stance-label{margin:0 4px;text-align:center}
 
 .gem{padding:6px 10px;
 border-radius:999px;
@@ -185,9 +190,8 @@ background:linear-gradient(180deg,#6342b6,#3b1f7e);
 padding:2px 6px;
 border-radius:999px;
 font-size:11px;
-margin-right:6px;
 border:1px solid rgba(255,255,255,.12)}
-.class-tag{display:inline-block;float:right;margin-left:auto;padding:2px 6px;border-radius:999px;font-size:11px;border:1px solid rgba(255,255,255,.12);color:#fff}
+.class-tag{display:inline-block;margin-left:auto;padding:2px 6px;border-radius:999px;font-size:11px;border:1px solid rgba(255,255,255,.12);color:#fff}
 .class-tag.tank{background:#2a5f3a}
 .class-tag.dps{background:#5f2a2a}
 .class-tag.support{background:#2a4a5f}
@@ -209,8 +213,8 @@ transition:transform .15s ease}
 .card>*:not(.bg){position:relative;
 z-index:1}
 #playerBoard .card:hover{transform:translateY(-6px) scale(1.03);
-box-shadow:0 16px 30px rgba(0,0,0,.45),0 0 0 2px rgba(124,196,255,.15) inset}
-.card.tilted{transform:rotateX(var(--rX)) rotateY(var(--rY)) scale(1.03)}
+ box-shadow:0 16px 30px rgba(0,0,0,.45),0 0 0 2px rgba(124,196,255,.15) inset}
+.card.tilted{transform:rotateX(var(--rX)) rotateY(var(--rY))}
 .card::before{content:"";
 position:absolute;
 inset:-1px;
@@ -265,6 +269,12 @@ transform:scaleX(0) rotate(var(--ang,0deg))}
 100%{opacity:0;
 transform:scaleX(1) rotate(var(--ang,0deg))}
 }
+.fx.fx-healing{width:96px;height:96px;image-rendering:pixelated;background:url("../img/particles/Regen.png") no-repeat 0 0/480px 192px;opacity:0;animation:healPop .6s ease-out forwards,healFrames .6s steps(10) forwards}
+.fx.fx-attack{width:64px;height:64px;background:url("../img/particles/attack.png") no-repeat center/contain;filter:invert(1) sepia(1) saturate(5) hue-rotate(0deg);opacity:0;animation:healPop .6s ease-out forwards}
+.fx.fx-magic{width:64px;height:64px;background:url("../img/particles/magic.png") no-repeat center/contain;filter:invert(1) sepia(1) saturate(5) hue-rotate(200deg);opacity:0;animation:healPop .6s ease-out forwards}
+.fx.fx-explosion{width:64px;height:64px;background:url("../img/particles/explosion.png") no-repeat center/contain;filter:invert(1) sepia(1) saturate(5) hue-rotate(20deg);opacity:0;animation:healPop .6s ease-out forwards}
+@keyframes healPop{0%{opacity:0;transform:translate(-50%,-50%) scale(.5)}50%{opacity:1}100%{opacity:0;transform:translate(-50%,-80%) scale(1)}}
+@keyframes healFrames{0%{background-position:0 0}10%{background-position:-96px 0}20%{background-position:-192px 0}30%{background-position:-288px 0}40%{background-position:-384px 0}50%{background-position:0 -96px}60%{background-position:-96px -96px}70%{background-position:-192px -96px}80%{background-position:-288px -96px}90%,100%{background-position:-384px -96px}}
 .fx-float{position:fixed;
 z-index:1300;
 left:0;
@@ -428,13 +438,18 @@ white-space:nowrap}
 @media (max-width:720px){.log-wrap{width:200px}}
 .pile{display:grid;
  place-items:center;
- width:176px;
- height:240px;
- border-radius:10px;
- border:1px dashed #31408b;
- background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,0));
- position:relative}
-.pile img{width:100%;height:100%;border-radius:10px;object-fit:cover}
+ width:var(--card-w);
+ height:var(--card-h);
+ border-radius:18px;
+ position:relative;
+ flex:0 0 var(--card-w)}
+.pile img{
+ display:block;
+ width:100%;
+ height:100%;
+ border-radius:18px;
+ object-fit:cover;
+}
 .pile .count{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
 font-weight:800;
 background:#0e1435;
@@ -541,18 +556,18 @@ border-radius:10px;
 padding:8px 10px}
 .filters .fbtn.active{outline:2px solid var(--accent)}
 .ency-grid{display:grid;
-grid-template-columns:repeat(auto-fill,minmax(176px,1fr));
+grid-template-columns:repeat(auto-fill,minmax(var(--card-w),1fr));
 gap:16px;
 overflow:auto;
 padding:12px;
 border:1px dashed #31408b;
 border-radius:12px;
 background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,0))}
-.ency-card{width:176px;
-min-height:240px;
+.ency-card{width:var(--card-w);
+min-height:var(--card-h);
 overflow:visible}
-.ency-card .art{min-height:88px;
-font-size:48px}
+.ency-card .art{min-height:110px;
+font-size:60px}
 .ency-card .name{-webkit-line-clamp:2}
 .ency-card:hover{transform:translateY(-6px) scale(1.03);
 box-shadow:0 16px 30px rgba(0,0,0,.45),0 0 0 2px rgba(124,196,255,.15) inset}
@@ -657,20 +672,20 @@ display:flex;
 gap:8px}
 @media (max-width:720px){.board{grid-template-columns:repeat(5,minmax(0,1fr));
 padding:16px 10px;
-min-height:180px}
-.card{width:150px}
-.cost{width:20px;
-height:20px}
-.name{font-size:13px}
-.tribe{font-size:11px}
+min-height:calc(var(--card-h)*0.75)}
+.card{width:calc(var(--card-w)*0.85)}
+.cost{width:25px;
+height:25px}
+.name{font-size:16px}
+.tribe{font-size:14px}
 }
 @media (max-width:480px){.hud{grid-template-columns:1fr;
 gap:8px}
 .center-hud{flex-wrap:wrap;
 justify-content:space-between}
 }
-#playerBoard .card,#aiBoard .card{min-height:220px}
-#playerBoard .card .art,#aiBoard .card .art{min-height:88px;font-size:48px}
+#playerBoard .card,#aiBoard .card{min-height:calc(var(--card-h) - 20px)}
+#playerBoard .card .art,#aiBoard .card .art{min-height:110px;font-size:60px}
 .card.blocked .cost{background:radial-gradient(circle at 30% 30%,#ffc2c2,#ff4d6d);
 color:#24040a}
 
@@ -699,7 +714,7 @@ color:#24040a}
 .card-icon{width:96px;height:96px;background-repeat:no-repeat;background-position:center;image-rendering:pixelated;background-color:transparent;background-size:contain}
 
 /* 3D projection / hologram for Vikings deck */
-.card .projection{position:absolute;top:50%;left:50%;width:96px;height:96px;transform:translate(-50%,-50%);animation:holoBounce 2s ease-in-out infinite;pointer-events:none}
+.card .projection{position:absolute;top:60%;left:50%;width:96px;height:96px;transform:translate(-50%,-50%);animation:holoBounce 2s ease-in-out infinite;pointer-events:none}
 .card .projection img,.card .projection canvas{width:100%;height:100%;display:block;filter:drop-shadow(0 0 6px rgba(0,255,255,.6))}
 .card-popup{position:fixed;padding:4px 6px;background:rgba(0,0,0,.8);color:#fff;border-radius:4px;font-size:12px;z-index:2000;pointer-events:none;transform:translate(-50%,-100%)}
 @keyframes holoBounce{0%,100%{transform:translate(-50%,-50%) translateY(0)}50%{transform:translate(-50%,-50%) translateY(-6px)}}
@@ -712,3 +727,8 @@ color:#24040a}
 height:auto;
 display:block}
 .holo-logo{animation:logoBounce 2s ease-in-out infinite;filter:drop-shadow(0 0 6px rgba(0,255,255,.6))}
+
+/* Reconnect overlay */
+.reconnect-overlay{position:fixed;inset:0;display:none;place-items:center;background:radial-gradient(800px 400px at 50% 50%,rgba(255,255,255,.06),rgba(0,0,0,.8));z-index:2000}
+.reconnect-overlay.show{display:grid}
+.reconnect-box{background:linear-gradient(180deg,#121a44,#0c1230);border:1px solid #2b3a86;border-radius:16px;box-shadow:0 20px 50px rgba(0,0,0,.5);padding:22px 26px;display:flex;flex-direction:column;gap:12px;align-items:center;text-align:center}

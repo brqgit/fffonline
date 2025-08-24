@@ -191,7 +191,7 @@ io.on('connection', (socket) => {
       if (!info.host || info.players <= 0) {
         rooms.delete(room);
       }
-    }, 10000);
+    }, 15000);
 
     if (role === 'host') info.hostTimer = timer; else info.guestTimer = timer;
     socket.to(room).emit('opponentDisconnected');
