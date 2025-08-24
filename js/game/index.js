@@ -131,7 +131,6 @@ const TEMPLATES = {
       "Aliados +1 ATK",
       "",
       "BA1",
-      2,
     ],
   ],
   animais: [
@@ -203,7 +202,7 @@ const TEMPLATES = {
     ["Cervo Vermelho", "🦌", "Animal", 4, 5, 4, "Resistente"],
     ["Coruja Sábia", "🦉", "Animal", 1, 2, 1, "Entra: compre 1", "", "D1"],
     ["Raposa Ágil", "🦊", "Animal", 3, 3, 3, "Veloz"],
-    ["Bisonte das Colinas", "🐂", "Animal", 6, 6, 6, "Imponente", "", "", 1],
+    ["Bisonte das Colinas", "🐂", "Animal", 6, 6, 6, "Imponente"],
     ["Serpente do Bosque", "🐍", "Animal", 5, 4, 4, "Silenciosa"],
   ],
 };
@@ -530,22 +529,10 @@ function renderBoard() {
 function showCardAction(card, node) {
   const modal = document.createElement("div");
   modal.className = "card-modal";
-  const r = node.getBoundingClientRect();
   const clone = node.cloneNode(true);
   tiltify(clone);
-  Object.assign(clone.style, {
-    position: "fixed",
-    left: r.left + "px",
-    top: r.top + "px",
-    width: r.width + "px",
-    height: r.height + "px",
-    zIndex: 1000,
-    transition: "transform .3s ease",
-  });
-  modal.appendChild(clone);
   const actions = document.createElement("div");
   actions.className = "actions";
-  actions.style.opacity = "0";
   const bA = document.createElement("button");
   bA.className = "btn";
   bA.textContent = "⚔️ Ataque";
@@ -556,32 +543,14 @@ function showCardAction(card, node) {
   bC.className = "btn-ghost";
   bC.textContent = "Cancelar";
   actions.append(bA, bD, bC);
-  modal.appendChild(actions);
+  modal.append(clone, actions);
   document.body.appendChild(modal);
   node.classList.add("no-tilt");
   node.style.visibility = "hidden";
-  const cx = window.innerWidth / 2 - r.left - r.width / 2;
-  const cy = window.innerHeight / 2 - r.top - r.height / 2;
-  requestAnimationFrame(() => {
-    clone.style.transform = `translate(${cx}px,${cy}px)`;
-  });
-  clone.addEventListener(
-    "transitionend",
-    () => (actions.style.opacity = "1"),
-    { once: true }
-  );
   const cleanup = () => {
-    actions.style.opacity = "0";
-    clone.style.transform = "";
-    clone.addEventListener(
-      "transitionend",
-      () => {
-        modal.remove();
-        node.style.visibility = "";
-        node.classList.remove("no-tilt");
-      },
-      { once: true }
-    );
+    modal.remove();
+    node.style.visibility = "";
+    node.classList.remove("no-tilt");
   };
   bC.onclick = cleanup;
   bA.onclick = () => {
@@ -628,13 +597,13 @@ export function startGame() {
   G.playerDeck =
     G.playerDeckChoice === "custom" && G.customDeck
       ? shuffle(G.customDeck.slice())
-      : shuffle(TEMPLATES[G.playerDeckChoice].map(makeCard));
+      : TEMPLATES[G.playerDeckChoice].map(makeCard);
   G.playerDeck.forEach((c) => {
     sanitize(c);
     c.owner = "player";
     c.deck = G.playerDeckChoice === "custom" ? "custom" : G.playerDeckChoice;
   });
-  G.aiDeck = shuffle(TEMPLATES[G.aiDeckChoice].map(makeCard));
+  G.aiDeck = TEMPLATES[G.aiDeckChoice].map(makeCard);
   G.aiDeck.forEach((c) => {
     sanitize(c);
     c.owner = "ai";
