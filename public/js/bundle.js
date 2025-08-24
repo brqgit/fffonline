@@ -1,15 +1,357 @@
-import { $, $$, log } from "../ui/index.js";
-import {
-  initAudio,
-  ensureRunning,
-  startMenuMusic,
-  stopMenuMusic,
-  tryStartMenuMusicImmediate,
-  toggleMute,
-  sfx,
-} from "../audio/index.js";
-import { aiTurn } from "../ai/index.js";
-import { Keyword } from "./card.js";
+const $ = (s) => document.querySelector(s);
+const $$ = (s) => Array.from(document.querySelectorAll(s));
+function log(t) {
+  const logBox = document.querySelector("#log");
+  if (!logBox) return;
+  const d = document.createElement("div");
+  d.textContent = t;
+  logBox.prepend(d);
+}
+
+const AudioCtx = window.AudioContext || window.webkitAudioContext;
+let actx = null,
+  master = null,
+  muted = false;
+function initAudio() {
+  if (!AudioCtx) return;
+  if (!actx) {
+    actx = new AudioCtx();
+    master = actx.createGain();
+    master.gain.value = 0.18;
+    master.connect(actx.destination);
+  }
+}
+function ensureRunning() {
+  if (actx && actx.state === "suspended") actx.resume();
+}
+function tone(f = 440, d = 0.1, t = "sine", v = 1, w = 0) {
+  if (!actx || muted) return;
+  ensureRunning();
+  const o = actx.createOscillator(),
+    g = actx.createGain();
+  o.type = t;
+  o.frequency.setValueAtTime(f, actx.currentTime + w);
+  g.gain.setValueAtTime(0.0001, actx.currentTime + w);
+  g.gain.exponentialRampToValueAtTime(
+    Math.max(0.0002, v),
+    actx.currentTime + w + 0.01,
+  );
+  g.gain.exponentialRampToValueAtTime(0.0001, actx.currentTime + w + d);
+  o.connect(g);
+  g.connect(master);
+  o.start(actx.currentTime + w);
+  o.stop(actx.currentTime + w + d + 0.02);
+}
+function sfx(n) {
+  if (!actx || muted) return;
+  (
+    ({
+      start: () => {
+        tone(520, 0.08, "triangle", 0.7, 0);
+        tone(780, 0.09, "triangle", 0.6, 0.08);
+      },
+      play: () => {
+        tone(420, 0.07, "sine", 0.7, 0);
+        tone(560, 0.08, "sine", 0.6, 0.06);
+      },
+      defense: () => {
+        tone(280, 0.09, "square", 0.6, 0);
+        tone(200, 0.12, "sine", 0.5, 0.08);
+      },
+      attack: () => {
+        tone(300, 0.06, "sawtooth", 0.7, 0);
+        tone(220, 0.06, "sawtooth", 0.6, 0.05);
+      },
+      hit: () => {
+        tone(160, 0.07, "square", 0.6, 0);
+      },
+      overflow: () => {
+        tone(600, 0.1, "triangle", 0.6, 0);
+      },
+      death: () => {
+        tone(420, 0.08, "sawtooth", 0.6, 0);
+        tone(260, 0.12, "sawtooth", 0.55, 0.06);
+      },
+      end: () => {
+        tone(600, 0.06, "triangle", 0.6, 0);
+        tone(400, 0.06, "triangle", 0.5, 0.05);
+      },
+      crit: () => {
+        tone(120, 0.08, "square", 0.75, 0);
+        tone(90, 0.12, "square", 0.7, 0.06);
+      },
+      error: () => {
+        tone(140, 0.05, "square", 0.6, 0);
+        tone(140, 0.05, "square", 0.6, 0.06);
+      },
+    })[n] || (() => {})
+  )();
+}
+// --- MENU MUSIC (procedural, deck-themed) ---
+let musicGain = null,
+  musicLoopId = null,
+  musicOn = false,
+  musicPreset = "menu";
+const MUSIC = {
+  menu: {
+    bpm: 84,
+    leadBase: 196,
+    bassBase: 98,
+    leadWave: "triangle",
+    bassWave: "sine",
+    scale: [0, 3, 5, 7, 5, 3, 0, -5],
+  },
+  vikings: {
+    bpm: 76,
+    leadBase: 174.61,
+    bassBase: 87.31,
+    leadWave: "sawtooth",
+    bassWave: "sine",
+    scale: [0, 3, 5, 7, 10, 7, 5, 3],
+  },
+  animais: {
+    bpm: 90,
+    leadBase: 220,
+    bassBase: 110,
+    leadWave: "square",
+    bassWave: "sine",
+    scale: [0, 2, 5, 7, 9, 7, 5, 2],
+  },
+  pescadores: {
+    bpm: 96,
+    leadBase: 196,
+    bassBase: 98,
+    leadWave: "triangle",
+    bassWave: "triangle",
+    scale: [0, 2, 4, 7, 9, 7, 4, 2],
+  },
+  floresta: {
+    bpm: 68,
+    leadBase: 207.65,
+    bassBase: 103.83,
+    leadWave: "sine",
+    bassWave: "sine",
+    scale: [0, 3, 5, 10, 5, 3, 0, -2],
+  },
+  combat: {
+    bpm: 118,
+    leadBase: 220,
+    bassBase: 110,
+    leadWave: "sawtooth",
+    bassWave: "square",
+    scale: [0, 2, 3, 5, 7, 8, 7, 5],
+    perc: true,
+    ac: 4,
+  },
+};
+function startMenuMusic(preset) {
+  if (!AudioCtx || muted) return;
+  initAudio();
+  ensureRunning();
+  if (preset && preset !== musicPreset && musicOn) {
+    stopMenuMusic();
+  }
+  musicPreset = preset || musicPreset || "menu";
+  if (musicOn) return;
+  musicOn = true;
+  const P = MUSIC[musicPreset] || MUSIC.menu;
+  musicGain = actx.createGain();
+  musicGain.gain.value = 0.0001;
+  musicGain.connect(master);
+  const tgt = musicPreset === "combat" ? 0.22 : 0.18;
+  musicGain.gain.exponentialRampToValueAtTime(tgt, actx.currentTime + 0.4);
+  const beat = 60 / P.bpm,
+    steps = P.scale.length;
+  const schedule = () => {
+    if (!musicOn || !musicGain) return;
+    let t = actx.currentTime;
+    for (let i = 0; i < steps; i++) {
+      const f = P.leadBase * Math.pow(2, P.scale[i] / 12),
+        o = actx.createOscillator(),
+        g = actx.createGain();
+      o.type = P.leadWave;
+      o.frequency.setValueAtTime(f, t + i * beat);
+      g.gain.setValueAtTime(0.0001, t + i * beat);
+      g.gain.exponentialRampToValueAtTime(
+        musicPreset === "combat" ? 0.13 : 0.11,
+        t + i * beat + 0.01,
+      );
+      g.gain.exponentialRampToValueAtTime(0.0001, t + i * beat + beat * 0.92);
+      o.connect(g);
+      g.connect(musicGain);
+      o.start(t + i * beat);
+      o.stop(t + i * beat + beat);
+    }
+    for (let i = 0; i < steps; i += 2) {
+      const o = actx.createOscillator(),
+        g = actx.createGain();
+      o.type = P.bassWave;
+      o.frequency.setValueAtTime(P.bassBase, t + i * beat);
+      g.gain.setValueAtTime(0.0001, t + i * beat);
+      g.gain.exponentialRampToValueAtTime(
+        musicPreset === "combat" ? 0.1 : 0.09,
+        t + i * beat + 0.01,
+      );
+      g.gain.exponentialRampToValueAtTime(0.0001, t + i * beat + beat * 0.96);
+      o.connect(g);
+      g.connect(musicGain);
+      o.start(t + i * beat);
+      o.stop(t + i * beat + beat);
+    }
+    if (P.perc) {
+      for (let i = 0; i < steps; i++) {
+        const h = actx.createOscillator(),
+          hg = actx.createGain();
+        h.type = "square";
+        h.frequency.setValueAtTime(1600, t + i * beat);
+        hg.gain.setValueAtTime(0.0001, t + i * beat);
+        hg.gain.exponentialRampToValueAtTime(0.07, t + i * beat + 0.005);
+        hg.gain.exponentialRampToValueAtTime(
+          0.0001,
+          t + i * beat + beat * 0.2,
+        );
+        h.connect(hg);
+        hg.connect(musicGain);
+        h.start(t + i * beat);
+        h.stop(t + i * beat + beat * 0.2);
+        if (P.ac && i % P.ac === 0) {
+          const k = actx.createOscillator(),
+            kg = actx.createGain();
+          k.type = "sine";
+          k.frequency.setValueAtTime(120, t + i * beat);
+          kg.gain.setValueAtTime(0.0001, t + i * beat);
+          kg.gain.exponentialRampToValueAtTime(0.12, t + i * beat + 0.01);
+          kg.gain.exponentialRampToValueAtTime(
+            0.0001,
+            t + i * beat + beat * 0.3,
+          );
+          k.connect(kg);
+          kg.connect(musicGain);
+          k.start(t + i * beat);
+          k.stop(t + i * beat + beat * 0.3);
+        }
+      }
+    }
+  };
+  schedule();
+  const loopMs = beat * steps * 1000;
+  musicLoopId = setInterval(schedule, loopMs - 25);
+}
+function stopMenuMusic() {
+  if (!musicOn) return;
+  musicOn = false;
+  if (musicLoopId) {
+    clearInterval(musicLoopId);
+    musicLoopId = null;
+  }
+  if (musicGain) {
+    try {
+      musicGain.gain.exponentialRampToValueAtTime(
+        0.0001,
+        actx.currentTime + 0.25,
+      );
+    } catch (e) {}
+    setTimeout(() => {
+      try {
+        musicGain.disconnect();
+      } catch (e) {}
+      musicGain = null;
+    }, 300);
+  }
+}
+function tryStartMenuMusicImmediate() {
+  if (!AudioCtx) return;
+  initAudio();
+  try {
+    ensureRunning();
+  } catch (e) {}
+  try {
+    startMenuMusic("menu");
+  } catch (e) {}
+  if (actx && actx.state !== "running") {
+    try {
+      actx
+        .resume()
+        .then(() => startMenuMusic("menu"))
+        .catch(() => {});
+    } catch (e) {}
+  }
+  if (!musicOn) {
+    let tries = 0;
+    const t = setInterval(() => {
+      tries++;
+      if (musicOn || tries > 8) {
+        clearInterval(t);
+        return;
+      }
+      try {
+        initAudio();
+        ensureRunning();
+        startMenuMusic("menu");
+      } catch (e) {}
+    }, 800);
+  }
+}
+
+function toggleMute(btn) {
+  muted = !muted;
+  if (master) master.gain.value = muted ? 0 : 0.18;
+  if (musicGain) musicGain.gain.value = muted ? 0 : 0.18;
+  if (btn) btn.textContent = muted ? "🔇 Mudo" : "🔊 Som";
+}
+
+function aiTurn(ctx) {
+  const { G, summon, renderAll, legalTarget, attackCard, attackFace, rand, newTurn } = ctx;
+  const playable = G.aiHand
+    .filter((c) => c.cost <= G.aiMana && c.harvestCost <= G.aiHarvest)
+    .sort((a, b) => b.cost - a.cost);
+  while (playable.length && G.aiBoard.length < 5 && G.aiMana > 0) {
+    const c = playable.shift();
+    const i = G.aiHand.findIndex((x) => x.id === c.id);
+    if (i > -1 && c.cost <= G.aiMana && c.harvestCost <= G.aiHarvest) {
+      G.aiHand.splice(i, 1);
+      const stance =
+        c.hp >= c.atk + 1
+          ? Math.random() < 0.7
+            ? "defense"
+            : "attack"
+          : Math.random() < 0.3
+            ? "defense"
+            : "attack";
+      summon("ai", c, stance);
+      G.aiMana -= c.cost;
+      G.aiHarvest -= c.harvestCost;
+    }
+  }
+  renderAll();
+  const attackers = G.aiBoard.filter((c) => c.canAttack && c.stance !== "defense");
+  function next() {
+    if (!attackers.length) {
+      G.current = "player";
+      newTurn();
+      return;
+    }
+    const a = attackers.shift();
+    const legal = G.playerBoard.filter((x) => legalTarget("player", x));
+    if (legal.length) {
+      attackCard(a, rand(legal));
+    } else {
+      attackFace(a, "player");
+    }
+    setTimeout(next, 500);
+  }
+  setTimeout(next, 500);
+}
+
+const Keyword = Object.freeze({
+  FURIOSO: 'Furioso',
+  PROTETOR: 'Protetor',
+  PERCEPCAO: 'Percepção',
+  CURA: 'Cura',
+  BENCAO: 'Bênção',
+  CORVO: 'Corvo',
+  SERPENTE: 'Serpente',
+});
 
 const rand = (a) => a[Math.floor(Math.random() * a.length)];
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -231,74 +573,10 @@ const els = {
   menuBtn: $("#menuBtn"),
 };
 // deck builder DOM (may be null if builder UI not present)
-const poolEl = $("#pool"),
-  chosenEl = $("#chosen"),
-  countEl = $("#countDeck"),
-  curveEl = $("#curve");
-// safe builder functions (no-ops if UI not present)
-function renderPool() {
-  const all = [
-    ...TEMPLATES.vikings,
-    ...TEMPLATES.animais,
-    ...TEMPLATES.pescadores,
-    ...TEMPLATES.floresta,
-  ];
-  if (!poolEl) return;
-  poolEl.innerHTML = "";
-  all.forEach((raw) => {
-    const row = document.createElement("div");
-    row.className = "pitem";
-    row.innerHTML = `<span class="c">${raw[5]}${raw[9] ? "🌾" + raw[9] : ""}</span><div>${raw[1]} ${raw[0]}</div><button class="add">+</button>`;
-    row.querySelector(".add").onclick = () => {
-      if (!G.customDeck) G.customDeck = [];
-      if (G.customDeck.length >= 20) return;
-      const c = makeCard(raw);
-      G.customDeck.push(c);
-      renderChosen();
-      updateCurve();
-    };
-    poolEl.appendChild(row);
-  });
-}
-function renderChosen() {
-  if (!chosenEl || !countEl) return;
-  chosenEl.innerHTML = "";
-  const list = G.customDeck || [];
-  list.forEach((c, i) => {
-    const item = document.createElement("div");
-    item.className = "chitem";
-    item.dataset.idx = i;
-    item.innerHTML = `<div>${c.emoji} ${c.name} <small>(${c.cost}${c.harvestCost ? "🌾" + c.harvestCost : ""})</small></div><button class="rm">remover</button>`;
-    item.querySelector(".rm").onclick = () => {
-      const idx = Number(item.dataset.idx);
-      if (idx >= 0) {
-        G.customDeck.splice(idx, 1);
-        renderChosen();
-        updateCurve();
-      }
-    };
-    chosenEl.appendChild(item);
-  });
-  countEl.textContent = String(list.length);
-}
-function updateCurve() {
-  if (!curveEl) return;
-  const list = G.customDeck || [];
-  const buckets = new Array(8).fill(0);
-  list.forEach((c) => {
-    buckets[Math.min(c.cost, 7)]++;
-  });
-  curveEl.innerHTML = "";
-  const max = Math.max(1, Math.max(...buckets));
-  buckets.forEach((v) => {
-    const bar = document.createElement("div");
-    bar.className = "barc";
-    const i = document.createElement("i");
-    i.style.width = (v / max) * 100 + "%";
-    bar.appendChild(i);
-    curveEl.appendChild(bar);
-  });
-}
+$("#pool");
+  $("#chosen");
+  $("#countDeck");
+  $("#curve");
 // --- Global error capture ---
 window.addEventListener("error", function (e) {
   console.error("JS Error:", e.message, e.filename + ":" + e.lineno);
@@ -515,7 +793,7 @@ function flyToBoard(node, onEnd) {
     onEnd && onEnd();
   }, 450);
 }
-export function startGame() {
+function startGame() {
   const sanitize = (c) => {
     if (c.hp < 1) c.hp = 1;
     if (c.atk < 0) c.atk = 0;
@@ -844,8 +1122,8 @@ function attackCard(attacker, target) {
   const a = nodeById(attacker.id),
     t = nodeById(target.id);
   if (a && t) {
-    const ar = a.getBoundingClientRect(),
-      tr = t.getBoundingClientRect();
+    const ar = a.getBoundingClientRect();
+      t.getBoundingClientRect();
     screenSlash(ar.right, ar.top + ar.height / 2, 15);
   }
   animateAttack(attacker.id, target.id);
@@ -1096,3 +1374,44 @@ window.addEventListener(
   },
   { once: true },
 );
+
+var audio = /*#__PURE__*/Object.freeze({
+  __proto__: null,
+  ensureRunning: ensureRunning,
+  initAudio: initAudio,
+  sfx: sfx,
+  startMenuMusic: startMenuMusic,
+  stopMenuMusic: stopMenuMusic,
+  toggleMute: toggleMute,
+  tone: tone,
+  tryStartMenuMusicImmediate: tryStartMenuMusicImmediate
+});
+
+// Basic game rule placeholder
+function applyRule(state, rule) {
+  return state;
+}
+
+var rules = /*#__PURE__*/Object.freeze({
+  __proto__: null,
+  applyRule: applyRule
+});
+
+var render = /*#__PURE__*/Object.freeze({
+  __proto__: null,
+  $: $,
+  $$: $$,
+  log: log
+});
+
+// Placeholder for networking functions.
+function send() {
+  // TODO: implement network calls
+}
+
+var network = /*#__PURE__*/Object.freeze({
+  __proto__: null,
+  send: send
+});
+
+window.FFF = { startGame, audio, rules, render, network };
