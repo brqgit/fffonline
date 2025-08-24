@@ -542,21 +542,19 @@ function previewCard(orig, c) {
           clone.remove();
         },
         () => {
-          clone.remove();
-          orig.style.visibility = "";
+          const r2 = orig.getBoundingClientRect();
+          clone.style.left = r2.left + "px";
+          clone.style.top = r2.top + "px";
+          clone.addEventListener(
+            "transitionend",
+            () => {
+              clone.remove();
+              orig.style.visibility = "";
+            },
+            { once: true },
+          );
         },
       );
-      const cancel = document.createElement("button");
-      cancel.type = "button";
-      cancel.className = "btn-ghost cancel-btn";
-      cancel.textContent = "Cancelar";
-      clone.appendChild(cancel);
-      cancel.addEventListener("click", () => {
-        clone.classList.remove("chosen");
-        clone.remove();
-        orig.style.visibility = "";
-        closeStanceChooser();
-      });
     },
     { once: true },
   );
