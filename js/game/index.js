@@ -444,9 +444,7 @@ function renderHand() {
         return;
       }
       e.stopPropagation();
-      openStanceChooser(d, (st) =>
-        flyToBoard(d, () => playFromHand(c.id, st)),
-      );
+      previewCard(d, c);
     });
     const cantPay = c.cost > G.playerMana || c.harvestCost > G.playerHarvest;
     const disable = G.current !== "player" || G.playerBoard.length >= 5;
@@ -515,15 +513,60 @@ function renderBoard() {
   }
   updateFaceAttackZone();
 }
-function openStanceChooser(anchor, cb) {
-  closeStanceChooser();
-  const r = anchor.getBoundingClientRect(),
-    box = document.createElement("div");
-  box.className = "stance-chooser";
-  Object.assign(box.style, {
-    left: Math.max(8, r.left + r.width / 2 - 120) + "px",
-    top: Math.max(8, r.top - 48) + "px",
+function previewCard(orig, c) {
+  const r = orig.getBoundingClientRect(),
+    clone = orig.cloneNode(true);
+  orig.style.visibility = "hidden";
+  clone.classList.add("card-preview");
+  Object.assign(clone.style, {
+    position: "fixed",
+    left: r.left + "px",
+    top: r.top + "px",
+    margin: "0",
+    zIndex: 1000,
+    transition: "left .3s ease, top .3s ease",
   });
+  document.body.appendChild(clone);
+  requestAnimationFrame(() => {
+    clone.style.left = window.innerWidth / 2 - r.width / 2 + "px";
+    clone.style.top = window.innerHeight / 2 - r.height / 2 + "px";
+  });
+  clone.addEventListener(
+    "transitionend",
+    function handler() {
+      clone.removeEventListener("transitionend", handler);
+      openStanceChooser(
+        clone,
+        (st) => {
+          flyToBoard(clone, () => playFromHand(c.id, st));
+          clone.remove();
+        },
+        () => {
+          clone.remove();
+          orig.style.visibility = "";
+        },
+      );
+      const cancel = document.createElement("button");
+      cancel.type = "button";
+      cancel.className = "btn-ghost cancel-btn";
+      cancel.textContent = "Cancelar";
+      clone.appendChild(cancel);
+      cancel.addEventListener("click", () => {
+        clone.classList.remove("chosen");
+        clone.remove();
+        orig.style.visibility = "";
+        closeStanceChooser();
+      });
+    },
+    { once: true },
+  );
+}
+
+function openStanceChooser(anchor, cb, onCancel) {
+  closeStanceChooser();
+  anchor.classList.add("chosen");
+  const box = document.createElement("div");
+  box.className = "stance-chooser";
   const bA = document.createElement("button");
   bA.className = "btn";
   bA.textContent = "⚔️ Ataque";
@@ -531,20 +574,30 @@ function openStanceChooser(anchor, cb) {
   bD.className = "btn";
   bD.textContent = "🛡️ Defesa";
   bA.onclick = () => {
+    anchor.classList.remove("chosen");
     closeStanceChooser();
     cb("attack");
   };
   bD.onclick = () => {
+    anchor.classList.remove("chosen");
     closeStanceChooser();
     cb("defense");
   };
   box.append(bA, bD);
-  document.body.appendChild(box);
+  anchor.appendChild(box);
+  Object.assign(box.style, {
+    position: "absolute",
+    left: "50%",
+    bottom: "100%",
+    transform: "translate(-50%, -8px)",
+  });
   setTimeout(() => {
     const h = (ev) => {
-      if (ev.target.closest(".stance-chooser")) return;
+      if (ev.target.closest(".stance-chooser") || ev.target === anchor) return;
       window.removeEventListener("click", h, true);
+      anchor.classList.remove("chosen");
       closeStanceChooser();
+      onCancel && onCancel();
     };
     window.addEventListener("click", h, true);
     bA.focus();
@@ -553,6 +606,9 @@ function openStanceChooser(anchor, cb) {
 const closeStanceChooser = () => {
   const old = document.querySelector(".stance-chooser");
   old && old.remove();
+  document
+    .querySelectorAll(".hand .card.chosen")
+    .forEach((c) => c.classList.remove("chosen"));
 };
 function flyToBoard(node, onEnd) {
   const r = node.getBoundingClientRect(),
