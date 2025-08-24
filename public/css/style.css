@@ -1,21 +1,23 @@
 :root{--bg:#0b1020;
---panel:#101833;
---panel2:#0f1430;
---accent:#7cc4ff;
---accent2:#ffd166;
---good:#4ade80;
---bad:#fb7185;
---mid:#a5b4fc;
---card:#141d3f;
---card2:#1a2454;
---text:#e6e9ff;
---muted:#a7b0d9;
---cb-vikings:url('/img/decks/farm-vikings/card-backs/fv-cb-default.webp');
---cb-pescadores:url('/img/decks/fJord-fishers/card-backs/jf-cb-default.webp');
---cb-floresta:url('/img/decks/forest-beasts/card-backs/fb-cb-default.webp');
---cb-animais:url('/img/decks/north-beasts/card-backs/nb-cb-default.webp');
---body-bg:url('/img/ui/backgrounds/fff-bg-01.webp');
---start-bg:url('/img/ui/backgrounds/fff-bg-01.webp')}
+ --panel:#101833;
+ --panel2:#0f1430;
+ --accent:#7cc4ff;
+ --accent2:#ffd166;
+ --good:#4ade80;
+ --bad:#fb7185;
+ --mid:#a5b4fc;
+ --card:#141d3f;
+ --card2:#1a2454;
+ --text:#e6e9ff;
+ --muted:#a7b0d9;
+ --card-w:176px;
+ --card-h:240px;
+ --cb-vikings:url('/img/decks/farm-vikings/card-backs/fv-cb-default.webp');
+ --cb-pescadores:url('/img/decks/fJord-fishers/card-backs/jf-cb-default.webp');
+ --cb-floresta:url('/img/decks/forest-beasts/card-backs/fb-cb-default.webp');
+ --cb-animais:url('/img/decks/north-beasts/card-backs/nb-cb-default.webp');
+ --body-bg:url('/img/ui/backgrounds/fff-bg-01.webp');
+ --start-bg:url('/img/ui/backgrounds/fff-bg-01.webp')}
 *{box-sizing:border-box}
 html,body{height:100%;overflow:auto}
 body{margin:0;
@@ -90,7 +92,7 @@ text-transform:uppercase;
 letter-spacing:.8px;
 margin:6px 0 2px}
 .board{display:grid;
- grid-template-columns:repeat(5,176px);
+ grid-template-columns:repeat(5,var(--card-w));
  gap:14px;
  background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,0));
  border-radius:16px;
@@ -100,12 +102,12 @@ margin:6px 0 2px}
  position:relative;
  overflow:visible;
  margin:12px 0;
-width:calc(5*176px + 4*14px + 24px)}
+width:calc(5*var(--card-w) + 4*14px + 24px)}
 #aiBoard,#playerBoard{margin:0 auto}
 .row{display:flex;gap:14px;align-items:flex-start;flex:1;justify-content:center}
 .row .board{flex:0 0 auto}
 .hand{position:relative;height:220px;margin:20px 0 0;flex:0 0 auto;overflow:visible}
-.hand .card{position:absolute;top:0;width:176px;transition:transform .2s,box-shadow .2s}
+.hand .card{position:absolute;top:0;width:var(--card-w);transition:transform .2s,box-shadow .2s}
 .hand .card::before{opacity:0}
 .hand .card:hover{transform:translateY(-24px) scale(1.06)}
 .hand .card.chosen{transform:translateY(-80px) scale(1.3);box-shadow:0 0 12px var(--accent),0 16px 30px rgba(0,0,0,.45)}
@@ -113,7 +115,7 @@ width:calc(5*176px + 4*14px + 24px)}
 .hand .card.chosen::after{opacity:.3}
 @keyframes foilHue{from{filter:hue-rotate(0deg);}to{filter:hue-rotate(360deg);}}
 @keyframes stanceHolo{from{filter:hue-rotate(0deg) drop-shadow(0 0 6px rgba(0,255,255,.6));}to{filter:hue-rotate(360deg) drop-shadow(0 0 6px rgba(0,255,255,.6));}}
-.card{width:100%;max-width:176px;aspect-ratio:176/240;
+.card{width:100%;max-width:var(--card-w);aspect-ratio:176/240;
  min-height:auto;
  background:linear-gradient(180deg,var(--card2),var(--card));
  border-radius:18px;
@@ -166,8 +168,8 @@ height:auto;
 font-size:48px;
 position:relative}
 .art::after{content:"";position:absolute;inset:0;background:linear-gradient(115deg,rgba(255,255,255,.25),rgba(255,255,255,0) 60%);mix-blend-mode:screen;pointer-events:none;opacity:.2}
-.text{font-size:12px;color:#d9e3ff;background:#0e1435;border:1px solid #25306a;border-radius:10px;padding:4px;margin:0;max-width:100%;word-break:break-word;box-sizing:border-box;white-space:normal;overflow:hidden;height:auto}
-.text::after{content:"";display:block;clear:both}
+.text{font-size:12px;color:#d9e3ff;background:#0e1435;border:1px solid #25306a;border-radius:10px;padding:4px;margin:0;max-width:100%;word-break:break-word;box-sizing:border-box;white-space:normal;overflow:hidden;height:auto;display:flex;align-items:center;flex-wrap:wrap;gap:6px}
+.text::after{content:""}
 .stats{display:flex;justify-content:space-between;align-items:center;margin:0;min-height:26px;align-self:end;gap:4px}
 .stats .stance-label{margin:0 4px;text-align:center}
 
@@ -187,9 +189,8 @@ background:linear-gradient(180deg,#6342b6,#3b1f7e);
 padding:2px 6px;
 border-radius:999px;
 font-size:11px;
-margin-right:6px;
 border:1px solid rgba(255,255,255,.12)}
-.class-tag{display:inline-block;float:right;margin-left:auto;padding:2px 6px;border-radius:999px;font-size:11px;border:1px solid rgba(255,255,255,.12);color:#fff}
+.class-tag{display:inline-block;margin-left:auto;padding:2px 6px;border-radius:999px;font-size:11px;border:1px solid rgba(255,255,255,.12);color:#fff}
 .class-tag.tank{background:#2a5f3a}
 .class-tag.dps{background:#5f2a2a}
 .class-tag.support{background:#2a4a5f}
@@ -211,8 +212,8 @@ transition:transform .15s ease}
 .card>*:not(.bg){position:relative;
 z-index:1}
 #playerBoard .card:hover{transform:translateY(-6px) scale(1.03);
-box-shadow:0 16px 30px rgba(0,0,0,.45),0 0 0 2px rgba(124,196,255,.15) inset}
-.card.tilted{transform:rotateX(var(--rX)) rotateY(var(--rY)) scale(1.03)}
+ box-shadow:0 16px 30px rgba(0,0,0,.45),0 0 0 2px rgba(124,196,255,.15) inset}
+.card.tilted{transform:rotateX(var(--rX)) rotateY(var(--rY))}
 .card::before{content:"";
 position:absolute;
 inset:-1px;
@@ -436,8 +437,8 @@ white-space:nowrap}
 @media (max-width:720px){.log-wrap{width:200px}}
 .pile{display:grid;
  place-items:center;
- width:176px;
- height:240px;
+ width:var(--card-w);
+ height:var(--card-h);
  border-radius:10px;
  border:1px dashed #31408b;
  background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,0));

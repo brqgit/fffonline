@@ -32,6 +32,12 @@ function deriveClassSub(name){
   if(n.includes('sacerdote')||n.includes('tecelão')) return {classe:'support', subclasse:'Tecelão'};
   if(n.includes('xamã')) return {classe:'control', subclasse:'Xamã'};
   if(n.includes('corvo')) return {classe:'control', subclasse:'Corvo'};
+  if(n.includes('guerreiro')) return {classe:'dps', subclasse:'Guerreiro'};
+  if(n.includes('raider')) return {classe:'dps', subclasse:'Raider'};
+  if(n.includes('batalhador')) return {classe:'dps', subclasse:'Batalhador'};
+  if(n.includes('mago')||n.includes('mistico')) return {classe:'support', subclasse:'Mago'};
+  if(n.includes('sombras')||n.includes('encapuzado')) return {classe:'control', subclasse:'Sombras'};
+  if(n.includes('navegador')) return {classe:'support', subclasse:'Navegador'};
   return {classe:'', subclasse:''};
 }
 const makeCard=a=>{const[n,e,t,atk,hp,cost,tx,k=0,b=0,i]=a;let name=n;if(!name&&typeof i==='string')name=normalizeCardName(i);const cls=deriveClassSub(name);return{name,emoji:e,tribe:t,atk,hp,cost,text:tx,kw:k?k.split('|').map(x=>KW[x]):[],battlecry:b?BC[b]:void 0,icon:i,classe:cls.classe,subclasse:cls.subclasse,id:uid()}};

@@ -48,6 +48,17 @@ function deriveClassSub(name) {
     return { classe: "support", subclasse: "Tecelão" };
   if (n.includes("xamã")) return { classe: "control", subclasse: "Xamã" };
   if (n.includes("corvo")) return { classe: "control", subclasse: "Corvo" };
+  if (n.includes("guerreiro"))
+    return { classe: "dps", subclasse: "Guerreiro" };
+  if (n.includes("raider")) return { classe: "dps", subclasse: "Raider" };
+  if (n.includes("batalhador"))
+    return { classe: "dps", subclasse: "Batalhador" };
+  if (n.includes("mago") || n.includes("mistico"))
+    return { classe: "support", subclasse: "Mago" };
+  if (n.includes("sombras") || n.includes("encapuzado"))
+    return { classe: "control", subclasse: "Sombras" };
+  if (n.includes("navegador"))
+    return { classe: "support", subclasse: "Navegador" };
   return { classe: "", subclasse: "" };
 }
 const makeCard = (a) => {
