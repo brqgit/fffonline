@@ -17,8 +17,24 @@ const KW={P:'Protetor',F:'Furioso'},
       BC={D1:'draw1',H2:'heal2',P1:'ping1',BR1:'buffRandom1',BA1:'buffAlliesAtk1',M1:'mana1',SM:'sacMana'},
       BC_NAMES={draw1:'Percepção',heal2:'Cura',ping1:'Golpe',buffRandom1:'Benção',buffAlliesAtk1:'Comando',mana1:'Canalizar',sacMana:'Sacrifício'},
       BC_TIPS={draw1:'Compra 1 carta ao entrar',heal2:'Cura 2 de um aliado ao entrar',ping1:'Causa 1 de dano aleatório ao entrar',buffRandom1:'Concede +1/+1 a um aliado aleatório ao entrar',buffAlliesAtk1:'Aliados ganham +1 ATK',mana1:'Ganha 1 de mana ao entrar',sacMana:'Sacrifica um aliado e ganha mana igual ao custo'};
-const normalizeCardName=f=>f.replace(/\.[^.]+$/,'').replace(/^\d+[_-]?/,'').replace(/[-_]+/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
-const makeCard=a=>{const[n,e,t,atk,hp,cost,tx,k=0,b=0,i]=a;let name=n;if(!name&&typeof i==='string')name=normalizeCardName(i);return{name,emoji:e,tribe:t,atk,hp,cost,text:tx,kw:k?k.split('|').map(x=>KW[x]):[],battlecry:b?BC[b]:void 0,icon:i,id:uid()}};
+const normalizeCardName=f=>f.replace(/\.[^.]+$/,'').replace(/^nb[_-]?/i,'').replace(/^\d+[_-]?/,'').replace(/[-_]+/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
+function deriveClassSub(name){
+  const n=name.toLowerCase();
+  if(n.includes('berserker')) return {classe:'tank', subclasse:'Berserker'};
+  if(n.includes('guardião do véu')||n.includes('véu')) return {classe:'control', subclasse:'Guardião do Véu'};
+  if(n.includes('guardião')) return {classe:'tank', subclasse:'Guardião'};
+  if(n.includes('uivante')) return {classe:'tank', subclasse:'Uivante'};
+  if(n.includes('caçador')) return {classe:'dps', subclasse:'Caçador'};
+  if(n.includes('runomante')) return {classe:'dps', subclasse:'Runomante'};
+  if(n.includes('serpente')) return {classe:'dps', subclasse:'Serpente'};
+  if(n.includes('curandeir')) return {classe:'support', subclasse:'Curandeiro'};
+  if(n.includes('totêmico')||n.includes('totemico')) return {classe:'support', subclasse:'Totêmico'};
+  if(n.includes('sacerdote')||n.includes('tecelão')) return {classe:'support', subclasse:'Tecelão'};
+  if(n.includes('xamã')) return {classe:'control', subclasse:'Xamã'};
+  if(n.includes('corvo')) return {classe:'control', subclasse:'Corvo'};
+  return {classe:'', subclasse:''};
+}
+const makeCard=a=>{const[n,e,t,atk,hp,cost,tx,k=0,b=0,i]=a;let name=n;if(!name&&typeof i==='string')name=normalizeCardName(i);const cls=deriveClassSub(name);return{name,emoji:e,tribe:t,atk,hp,cost,text:tx,kw:k?k.split('|').map(x=>KW[x]):[],battlecry:b?BC[b]:void 0,icon:i,classe:cls.classe,subclasse:cls.subclasse,id:uid()}};
 const DECK_IMAGES={
   vikings:['1_Guerreiro_Loiro','2_Guerreiro_Esqueleto','3_Guerreiro_Rubro','4_Mago_Elder','5_Raider_Mascara','6_Guerreiro_Machado','7_Sombras_Encapuzado','8_Guerreiro_Espada','9_Raider_Mascara_Sombra','10_Mago_Elder_Sombra'],
   pescadores:['1_Fogueira_Viking','2_Mistico_Encapuzado','3_Drakkar','4_Guerreiro_do_Escudo','5_Estandarte_do_Cla','6_Guerreiro_das_Runas','7_Guardiao_do_Machado','8_Batalhador_Duplo','9_Navegador','10_Batalhador'],
@@ -26,7 +42,7 @@ const DECK_IMAGES={
   animais:['nb-alce-bravo','nb-coelho-escudeiro','nb-coruja-ancia','nb-coruja-sabia','nb-esquilo-viking','nb-guerreiro-cervo','nb-morcego-noturno','nb-raposa-espadachim','nb-urso-guardiao']
 };
 function deriveStatsFromName(name){const n=name.toLowerCase();let atk=3,hp=3,kw='',bc='',text='';if(/guard/i.test(n)){atk=2;hp=5;kw='P';text='Protetor'}else if(/mago|mistico/.test(n)){atk=2;hp=3;bc='H2';text='Entra: cura 2'}else if(/guerreiro|batalhador|raider|lobo|raposa/.test(n)){atk=4;hp=2;kw='F';text='Furioso'}else if(/fogueira|estandarte/.test(n)){atk=1;hp=1;bc='BR1';text='Entra: +1/+1 aleatório'}else if(/coruja/.test(n)){atk=1;hp=2;bc='D1';text='Entra: compre 1'}else if(/serpente/.test(n)){atk=5;hp=4}else if(/alce|urso|bode|cervo/.test(n)){atk=4;hp=5;kw='P';text='Protetor'}return{atk,hp,kw,bc,text};}
-function buildDeck(key){const tribe=key==='vikings'||key==='pescadores'?'Viking':'Animal';return (DECK_IMAGES[key]||[]).map(fn=>{const name=normalizeCardName(fn);const s=deriveStatsFromName(fn);const cost=Math.max(1,Math.round((s.atk+s.hp)/2));return [name,'',tribe,s.atk,s.hp,cost,s.text,s.kw,s.bc,fn];});}
+function buildDeck(key){const tribe=key==='vikings'||key==='pescadores'?'Viking':'Animal';return (DECK_IMAGES[key]||[]).map(fn=>{const name=normalizeCardName(fn);const s=deriveStatsFromName(name);const cost=Math.max(1,Math.round((s.atk+s.hp)/2));return [name,'',tribe,s.atk,s.hp,cost,s.text,s.kw,s.bc,fn];});}
 const TEMPLATES={vikings:buildDeck('vikings'),animais:buildDeck('animais'),pescadores:buildDeck('pescadores'),floresta:buildDeck('floresta')};
 const HUMAN=['vikings','pescadores'],BEAST=['animais','floresta'];
 const G={playerHP:30,aiHP:30,turn:0,playerMana:0,playerManaCap:0,aiMana:0,aiManaCap:0,current:'player',playerDeck:[],aiDeck:[],playerHand:[],aiHand:[],playerBoard:[],aiBoard:[],playerDiscard:[],aiDiscard:[],chosen:null,playerDeckChoice:'vikings',aiDeckChoice:'animais',customDeck:null};
@@ -87,22 +103,6 @@ function setDeckBacks(){
   apply(G.aiDeckChoice,'aiDrawPile','aiDiscardPile');
 }
 
-function determineClass(c){
-  const n=c.name.toLowerCase();
-  if(n.includes('berserker')) return {name:'Berserker',group:'tank'};
-  if(n.includes('guardião do véu')||n.includes('véu')) return {name:'Guardião do Véu',group:'control'};
-  if(n.includes('guardião')) return {name:'Guardião',group:'tank'};
-  if(n.includes('uivante')) return {name:'Uivante',group:'tank'};
-  if(n.includes('caçador')) return {name:'Caçador',group:'dps'};
-  if(n.includes('runomante')) return {name:'Runomante',group:'dps'};
-  if(n.includes('serpente')) return {name:'Serpente',group:'dps'};
-  if(n.includes('curandeir')) return {name:'Curandeiro',group:'support'};
-  if(n.includes('totêmico')||n.includes('totemico')) return {name:'Totêmico',group:'support'};
-  if(n.includes('sacerdote')||n.includes('tecelão')) return {name:'Tecelão',group:'support'};
-  if(n.includes('xamã')) return {name:'Xamã',group:'control'};
-  if(n.includes('corvo')) return {name:'Corvo',group:'control'};
-  return null;
-}
 // deck builder DOM (may be null if builder UI not present)
 const poolEl=$('#pool'), chosenEl=$('#chosen'), countEl=$('#countDeck'), curveEl=$('#curve');
 // safe builder functions (no-ops if UI not present)
@@ -151,7 +151,7 @@ function cardNode(c,owner,onBoard=false){
     const n=BC_NAMES[c.battlecry], tip=BC_TIPS[c.battlecry];
     if(n)kwTags.push(`<span class='keyword' data-tip='${tip}' title='${tip}'>${n}</span>`);
   }
-  const cls=determineClass(c);if(cls)kwTags.push(`<span class='class-tag ${cls.group}'>${cls.name}</span>`);
+  if(c.subclasse&&c.classe)kwTags.push(`<span class='class-tag ${c.classe}'>${c.subclasse}</span>`);
   const text=c.text||'';
   const tip=text&&!kwTags.some(s=>s.includes('>'+text.trim()+'<'))?text:'';
   d.innerHTML=`<div class="bg bg-${c.deck||'default'}"></div>
