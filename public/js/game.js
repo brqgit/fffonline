@@ -49,7 +49,35 @@ const DECK_IMAGES={
 };
 function deriveStatsFromName(name){const n=name.toLowerCase();let atk=3,hp=3,kw='',bc='',text='';if(/guard/i.test(n)){atk=2;hp=5;kw='P';text='Protetor'}else if(/mago|mistico/.test(n)){atk=2;hp=3;bc='H2';text='Entra: cura 2'}else if(/guerreiro|batalhador|raider|lobo|raposa/.test(n)){atk=4;hp=2;kw='F';text='Furioso'}else if(/fogueira|estandarte/.test(n)){atk=1;hp=1;bc='BR1';text='Entra: +1/+1 aleatório'}else if(/coruja/.test(n)){atk=1;hp=2;bc='D1';text='Entra: compre 1'}else if(/serpente/.test(n)){atk=5;hp=4}else if(/alce|urso|bode|cervo/.test(n)){atk=4;hp=5;kw='P';text='Protetor'}return{atk,hp,kw,bc,text};}
 function buildDeck(key){const tribe=key==='vikings'||key==='pescadores'?'Viking':'Animal';return (DECK_IMAGES[key]||[]).map(fn=>{const name=normalizeCardName(fn);const s=deriveStatsFromName(name);const cost=Math.max(1,Math.round((s.atk+s.hp)/2));return [name,'',tribe,s.atk,s.hp,cost,s.text,s.kw,s.bc,fn];});}
-const TEMPLATES={vikings:buildDeck('vikings'),animais:buildDeck('animais'),pescadores:buildDeck('pescadores'),floresta:buildDeck('floresta')};
+const TEMPLATES={
+vikings:[...buildDeck('vikings'),
+  ["Camponês Vigilante","","Viking",2,4,3,"Protetor","P","",""],
+  ["Herbalista do Vilarejo","","Viking",1,3,2,"Entra: cura 2","","H2",""],
+  ["Batedor da Aldeia","","Viking",3,2,2,"Entra: dano 1 aleatório","","P1",""],
+  ["Ancião do Trigo","","Viking",2,2,3,"Entra: +1/+1 aleatório","","BR1",""],
+  ["Patriarca da Fazenda","","Viking",4,5,5,"Aliados +1 ATK","","BA1",""],
+],
+animais:[...buildDeck('animais'),
+  ["Lobo Alfa","","Animal",5,4,4,"Furioso","F","",""],
+  ["Lince Ártico","","Animal",3,3,3,"Veloz","","",""],
+  ["Falcão das Montanhas","","Animal",2,3,3,"Entra: compre 1","","D1",""],
+  ["Caribu Selvagem","","Animal",4,5,4,"Protetor","P","",""],
+  ["Texugo Ártico","","Animal",3,2,2,"Furioso","F","",""],
+],
+pescadores:[...buildDeck('pescadores'),
+  ["Curandeiro do Mar","","Viking",1,4,3,"Entra: cura 2","","H2",""],
+  ["Bardo do Porto","","Viking",2,3,3,"Aliados +1 ATK","","BA1",""],
+  ["Caçador de Tesouros","","Viking",2,2,2,"Entra: compre 1","","D1",""],
+  ["Escudeiro do Convés","","Viking",2,5,4,"Protetor","P","",""],
+  ["Guarda do Cais","","Viking",3,2,3,"Entra: dano 1 aleatório","","P1",""],
+],
+floresta:[...buildDeck('floresta'),
+  ["Lince da Sombra","","Animal",4,2,3,"Furioso","F","",""],
+  ["Corvo Observador","","Animal",1,2,2,"Entra: compre 1","","D1",""],
+  ["Guardião Musgoso","","Animal",3,5,4,"Protetor","P","",""],
+  ["Cervo Rúnico","","Animal",3,3,3,"Entra: +1/+1 aleatório","","BR1",""],
+  ["Javali Voraz","","Animal",5,3,4,"Furioso","F","",""],
+]};
 const HUMAN=['vikings','pescadores'],BEAST=['animais','floresta'];
 const G={playerHP:30,aiHP:30,turn:0,playerMana:0,playerManaCap:0,aiMana:0,aiManaCap:0,current:'player',playerDeck:[],aiDeck:[],playerHand:[],aiHand:[],playerBoard:[],aiBoard:[],playerDiscard:[],aiDiscard:[],chosen:null,playerDeckChoice:'vikings',aiDeckChoice:'animais',customDeck:null};
 const els={pHP:$('#playerHP'),pHP2:$('#playerHP2'),aHP:$('#aiHP'),aHP2:$('#aiHP2'),opponentLabel:$('#opponentLabel'),mana:$('#mana'),pHand:$('#playerHand'),pBoard:$('#playerBoard'),aBoard:$('#aiBoard'),endBtn:$('#endTurnBtn'),muteBtn:$('#muteBtn'),aAva:$('#aiAvatar'),drawCount:$('#drawCount'),discardCount:$('#discardCount'),barPHP:$('#barPlayerHP'),barAHP:$('#barAiHP'),barMana:$('#barMana'),wrap:$('#gameWrap'),start:$('#start'),openEncy:$('#openEncy'),ency:$('#ency'),encyGrid:$('#encyGrid'),encyFilters:$('#encyFilters'),closeEncy:$('#closeEncy'),startGame:$('#startGame'),endOverlay:$('#endOverlay'),endMsg:$('#endMsg'),endSub:$('#endSub'),playAgainBtn:$('#playAgainBtn'),rematchBtn:$('#rematchBtn'),menuBtn:$('#menuBtn'),openMenuBtn:$('#openMenuBtn'),gameMenu:$('#gameMenu'),closeMenuBtn:$('#closeMenuBtn'),resignBtn:$('#resignBtn'),restartBtn:$('#restartBtn'),mainMenuBtn:$('#mainMenuBtn'),turnIndicator:$('#turnIndicator'),emojiBar:$('#emojiBar'),playerEmoji:$('#playerEmoji'),opponentEmoji:$('#opponentEmoji'),deckBuilder:$('#deckBuilder'),saveDeck:$('#saveDeck')};
