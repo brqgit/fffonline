@@ -161,12 +161,13 @@ justify-content:center}
 .stance-label.defense{background:linear-gradient(180deg,#2a5f3a,#1e462b)}
 /* tribe text removed */
 .art{display:flex;
-align-items:center;
+align-items:flex-end;
 justify-content:center;
 min-height:110px;
 height:auto;
 font-size:60px;
-position:relative}
+position:relative;
+padding-bottom:4px}
 .art::after{content:"";position:absolute;inset:0;background:linear-gradient(115deg,rgba(255,255,255,.25),rgba(255,255,255,0) 60%);mix-blend-mode:screen;pointer-events:none;opacity:.2}
 .text{font-size:12px;color:#d9e3ff;background:#0e1435;border:1px solid #25306a;border-radius:10px;padding:4px;margin:0;max-width:100%;word-break:break-word;box-sizing:border-box;white-space:normal;overflow:hidden;height:auto;display:flex;align-items:center;flex-wrap:wrap;gap:6px}
 .text::after{content:""}
@@ -443,7 +444,17 @@ white-space:nowrap}
  border:1px dashed #31408b;
  background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,0));
  position:relative}
-.pile img{width:100%;height:100%;border-radius:10px;object-fit:cover}
+.pile img{
+ display:block;
+ width:100%;
+ height:100%;
+ border-radius:10px;
+ object-fit:cover;
+ padding:8px;
+ background:linear-gradient(180deg,var(--card2),var(--card));
+ border:1px solid #28336b;
+ box-shadow:0 10px 20px rgba(0,0,0,.35),inset 0 0 0 1px rgba(255,255,255,.06)
+}
 .pile .count{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
 font-weight:800;
 background:#0e1435;
@@ -708,7 +719,7 @@ color:#24040a}
 .card-icon{width:96px;height:96px;background-repeat:no-repeat;background-position:center;image-rendering:pixelated;background-color:transparent;background-size:contain}
 
 /* 3D projection / hologram for Vikings deck */
-.card .projection{position:absolute;top:50%;left:50%;width:96px;height:96px;transform:translate(-50%,-50%);animation:holoBounce 2s ease-in-out infinite;pointer-events:none}
+.card .projection{position:absolute;top:60%;left:50%;width:96px;height:96px;transform:translate(-50%,-50%);animation:holoBounce 2s ease-in-out infinite;pointer-events:none}
 .card .projection img,.card .projection canvas{width:100%;height:100%;display:block;filter:drop-shadow(0 0 6px rgba(0,255,255,.6))}
 .card-popup{position:fixed;padding:4px 6px;background:rgba(0,0,0,.8);color:#fff;border-radius:4px;font-size:12px;z-index:2000;pointer-events:none;transform:translate(-50%,-100%)}
 @keyframes holoBounce{0%,100%{transform:translate(-50%,-50%) translateY(0)}50%{transform:translate(-50%,-50%) translateY(-6px)}}
