@@ -112,6 +112,7 @@ width:calc(5*var(--card-w) + 4*14px + 24px)}
 .hand .card:hover~.card{--push:var(--hover-shift)}
 .hand .card.chosen{transform:translateY(calc(var(--card-h) * -0.333)) scale(1.3);box-shadow:0 0 12px var(--accent),0 16px 30px rgba(0,0,0,.45)}
 @keyframes stanceHolo{from{filter:hue-rotate(0deg) drop-shadow(0 0 6px rgba(0,255,255,.6));}to{filter:hue-rotate(360deg) drop-shadow(0 0 6px rgba(0,255,255,.6));}}
+@keyframes sparkle{0%{filter:hue-rotate(0deg) brightness(1);}50%{filter:hue-rotate(180deg) brightness(1.05);}100%{filter:hue-rotate(360deg) brightness(1);}}
 .card{width:100%;max-width:var(--card-w);aspect-ratio:220/300;
  min-height:auto;
  background:linear-gradient(180deg,var(--card2),var(--card));
