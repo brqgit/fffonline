@@ -5,11 +5,15 @@ export class StoryMode {
     this.level = level;
     this.round = 0;
     this.totems = [];
+    this.scaling = 0;
   }
 
   nextRound() {
     this.round += 1;
-    // TODO: escalate difficulty, handle elites and bosses
+    // simple difficulty scaling: each 2 rounds increases enemy buff
+    this.scaling = Math.floor(this.round / 2);
+    // indicate boss rounds every 10 turns
+    return this.round % 10 === 0;
   }
 
   addTotem(totem) {
