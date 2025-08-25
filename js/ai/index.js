@@ -26,7 +26,7 @@ export function aiTurn(ctx) {
   function next() {
     if (!attackers.length) {
       G.current = "player";
-      newTurn();
+      newTurn("ai");
       return;
     }
     const a = attackers.shift();

@@ -12,6 +12,8 @@ export const Keyword = Object.freeze({
   BENCAO: 'Bênção',
   CORVO: 'Corvo',
   SERPENTE: 'Serpente',
+  ABSORVER: 'Absorver',
+  MUTAVEL: 'Mutável',
 });
 
 export const CardType = Object.freeze({
