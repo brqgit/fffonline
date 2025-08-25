@@ -20,6 +20,7 @@ export const CardType = Object.freeze({
   UNIDADE: 'Unidade',
   RITUAL: 'Ritual',
   LENDA_MITICA: 'Lenda Mítica',
+  TOTEM: 'Totem',
 });
 
 export const Faction = Object.freeze({
