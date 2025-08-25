@@ -1091,9 +1091,15 @@ function newTurn(prev) {
   if (prev) applyEndTurnEffects(prev);
   if (G.current === "player") {
     if (G.mode === "story" && G.story) {
-      const boss = G.story.nextRound();
+      const evt = G.story.nextRound();
       G.enemyScaling = G.story.scaling;
-      if (boss) log("Um Boss se aproxima!");
+      if (evt.isBoss) {
+        log("Um Boss se aproxima!");
+      } else if (evt.isElite) {
+        log("Encontro Elite à frente!");
+      } else if (evt.isShop) {
+        log("Um mercador misterioso aparece.");
+      }
     }
     G.playerManaCap = clamp(G.playerManaCap + 1, 0, 10);
     G.playerMana = G.playerManaCap;
@@ -1150,6 +1156,7 @@ function playFromHand(id, st) {
       G.playerDiscard.push(c);
     } else {
       G.totems.push({ name: c.name });
+      if (G.story) G.story.addTotem({ name: c.name });
       if (G.playerBoard.length) {
         const t = rand(G.playerBoard);
         t.atk += 1;
@@ -1543,6 +1550,11 @@ function endGame(win) {
 }
 function checkWin() {
   if (G.aiHP <= 0) {
+    if (G.mode === "story" && G.story) {
+      const { leveled, rewards } = G.story.handleVictory();
+      log(`Recompensas disponíveis: ${rewards.join(", ")}`);
+      if (leveled) log(`Você alcançou o nível ${G.story.level}!`);
+    }
     endGame(true);
   }
   if (G.playerHP <= 0) {
