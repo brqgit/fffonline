@@ -1107,6 +1107,23 @@ function burnCard(c) {
   log(`${c.name} queimou por mão cheia!`);
   screenParticle("explosion", window.innerWidth / 2, window.innerHeight / 2);
 }
+function applyTotemBuffs() {
+  if (!G.playerBoard.length || !G.totems.length) return;
+  G.playerBoard.forEach((u) => {
+    u.atk = u.baseAtk ?? u.atk;
+    u.hp = u.baseHp ?? u.hp;
+    u.baseAtk = u.atk;
+    u.baseHp = u.hp;
+  });
+  G.totems.forEach((t) => {
+    const count = Math.min(3, G.playerBoard.length);
+    const picks = shuffle([...G.playerBoard]).slice(0, count);
+    picks.forEach((u) => {
+      if (t.buffs.atk) u.atk += t.buffs.atk;
+      if (t.buffs.hp) u.hp += t.buffs.hp;
+    });
+  });
+}
 function newTurn(prev) {
   if (prev) applyEndTurnEffects(prev);
   if (G.current === "player") {
@@ -1175,18 +1192,12 @@ function playFromHand(id, st) {
       log("Número máximo de Totens atingido.");
       G.playerDiscard.push(c);
     } else {
-      G.totems.push({ name: c.name });
-      if (G.story) G.story.addTotem({ name: c.name });
-      if (G.playerBoard.length) {
-        const t = rand(G.playerBoard);
-        t.atk += 1;
-        t.hp += 1;
-        fxTextOnCard(t.id, "+1/+1", "buff");
-        particleOnCard(t.id, "magic");
-        log(`${c.name}: ${t.name} recebeu +1/+1.`);
-      } else {
-        log(`${c.name} colocado em campo.`);
-      }
+      const buffs = c.buffs || { atk: 1, hp: 1 };
+      const t = { name: c.name, buffs };
+      G.totems.push(t);
+      if (G.story) G.story.addTotem(t);
+      applyTotemBuffs();
+      log(`${c.name} ativado.`);
     }
     renderAll();
     return;
@@ -1210,6 +1221,7 @@ function summon(side, c, st = "attack") {
   triggerBattlecry(side, c);
   if (c.kw.includes("Absorver")) absorbFromAlly(side, c);
   if (st === "defense") setTimeout(() => animateDefense(c.id), 30);
+  if (side === "player") applyTotemBuffs();
 }
 function triggerBattlecry(side, c) {
   const foe = side === "player" ? "ai" : "player";

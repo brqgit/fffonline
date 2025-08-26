@@ -1,19 +1,7 @@
 export class Totem {
-  constructor({ name = '', slots = 3, buffs = [] } = {}) {
+  constructor({ name = '', icon = '🗿', buffs = {} } = {}) {
     this.name = name;
-    this.slots = slots;
+    this.icon = icon;
     this.buffs = buffs;
-  }
-
-  canApply() {
-    return this.buffs.length < this.slots;
-  }
-
-  applyBuff(buff) {
-    if (this.canApply()) {
-      this.buffs.push(buff);
-      return true;
-    }
-    return false;
   }
 }
