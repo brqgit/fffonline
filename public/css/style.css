@@ -107,6 +107,8 @@ width:calc(5*var(--card-w) + 4*14px + 24px)}
 #aiBoard,#playerBoard{margin:0 auto}
 .row{display:flex;gap:14px;align-items:flex-start;flex:1;justify-content:center}
 .row .board{flex:0 0 auto}
+.totem-bar{display:flex;justify-content:center;gap:8px;margin-top:8px}
+.totem-slot{width:40px;height:40px;border:1px solid #31408b;background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,0));border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:24px}
 .hand{position:relative;height:calc(var(--card-h) - 20px);margin:20px 0 0;flex:0 0 auto;overflow:visible;--hover-shift:70px}
 .hand .card{position:absolute;top:0;width:var(--card-w);transition:transform .2s,box-shadow .2s;--x:0px;--push:0px;--raise:0px;left:calc(50% + var(--x) - var(--card-w)/2);transform:translate(var(--push),var(--raise))}
 .hand .card:hover~.card{--push:var(--hover-shift)}
@@ -687,3 +689,9 @@ display:block}
 .reconnect-overlay{position:fixed;inset:0;display:none;place-items:center;background:radial-gradient(800px 400px at 50% 50%,rgba(255,255,255,.06),rgba(0,0,0,.8));z-index:2000}
 .reconnect-overlay.show{display:grid}
 .reconnect-box{background:linear-gradient(180deg,#121a44,#0c1230);border:1px solid #2b3a86;border-radius:16px;box-shadow:0 20px 50px rgba(0,0,0,.5);padding:22px 26px;display:flex;flex-direction:column;gap:12px;align-items:center;text-align:center}
+
+/* Shop modal */
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;place-items:center;z-index:2000}
+.modal .box{background:linear-gradient(180deg,#121a44,#0c1230);border:1px solid #2b3a86;border-radius:16px;padding:22px 26px;max-width:600px;width:90%;box-shadow:0 20px 50px rgba(0,0,0,.5)}
+.shop-grid{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(140px,1fr))}
+.shop-card{background:#223;border:2px solid #334;border-radius:8px;padding:8px;text-align:center}
