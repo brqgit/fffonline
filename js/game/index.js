@@ -779,9 +779,17 @@ function renderAll() {
   els.drawCount.textContent = G.playerDeck.length;
   els.discardCount.textContent = G.playerDiscard.length;
   updateMeters();
+  if (els.totemBar) {
+    if (G.mode === "story") {
+      els.totemBar.style.display = "flex";
+      renderTotems();
+    } else {
+      els.totemBar.style.display = "none";
+      els.totemBar.innerHTML = "";
+    }
+  }
   renderHand();
   renderBoard();
-  renderTotems();
 }
 function renderHand() {
   els.pHand.innerHTML = "";
@@ -900,18 +908,17 @@ function openStanceChooser(anchor, cb, onCancel) {
   anchor.classList.add("chosen");
   const prevZ = anchor.style.zIndex;
   anchor.style.zIndex = 10000;
-  const box = document.createElement("div");
+  const box = document.createElement("div"),
+    bA = document.createElement("button"),
+    bD = document.createElement("button");
   box.className = "stance-chooser";
-  const bA = document.createElement("button");
-  bA.className = "btn";
+  bA.className = bD.className = "btn";
   bA.textContent = "⚔️ Ataque";
-  const bD = document.createElement("button");
-  bD.className = "btn";
   bD.textContent = "🛡️ Defesa";
   const cleanup = () => {
     anchor.classList.remove("chosen");
     anchor.style.zIndex = prevZ;
-    closeStanceChooser();
+    box.remove();
   };
   bA.addEventListener("click", (e) => {
     e.stopPropagation();
@@ -924,12 +931,14 @@ function openStanceChooser(anchor, cb, onCancel) {
     cb("defense");
   });
   box.append(bA, bD);
-  anchor.appendChild(box);
+  document.body.appendChild(box);
+  const r = anchor.getBoundingClientRect();
   Object.assign(box.style, {
-    position: "absolute",
-    left: "50%",
-    bottom: "100%",
-    transform: "translate(-50%, -8px)",
+    position: "fixed",
+    left: r.left + r.width / 2 + "px",
+    top: r.top + "px",
+    transform: "translate(-50%, -100%)",
+    zIndex: 10001,
   });
   setTimeout(() => {
     const h = (ev) => {
@@ -946,7 +955,7 @@ const closeStanceChooser = () => {
   const old = document.querySelector(".stance-chooser");
   old && old.remove();
   document
-    .querySelectorAll(".hand .card.chosen")
+    .querySelectorAll(".card.chosen")
     .forEach((c) => c.classList.remove("chosen"));
 };
 function flyToBoard(node, onEnd) {
@@ -1182,6 +1191,12 @@ function playFromHand(id, st) {
   G.playerMana -= c.cost;
   G.playerHarvest -= c.harvestCost;
   if (c.type === "totem") {
+    if (G.mode !== "story") {
+      log("Totens só estão disponíveis no modo história.");
+      G.playerDiscard.push(c);
+      renderAll();
+      return;
+    }
     if (G.totems.length >= 3) {
       log("Número máximo de Totens atingido.");
       G.playerDiscard.push(c);
