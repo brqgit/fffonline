@@ -122,8 +122,17 @@ convergentes:[
   ["Sábio Prismal","","Convergente",3,5,4,"Entra: +1/+1 aleatório","M","BR1"],
   ["Avatar Mutagênico","","Convergente",6,6,6,"","M"],
 ]};
+class StoryMode{
+  constructor({level=1}={}){this.level=level;this.round=0;this.totems=[];this.scaling=0;this.xp=0;this.bossInterval=10;this.eliteEvery=5;this.shopEvery=3;this.currentEncounter='normal';}
+  nextRound(){this.round+=1;this.scaling=Math.floor(this.round/2)+(this.level-1);const isBoss=this.round%this.bossInterval===0;const isElite=!isBoss&&this.round%this.eliteEvery===0;const isShop=this.round%this.shopEvery===0;this.currentEncounter=isBoss?'boss':isElite?'elite':isShop?'shop':'normal';return{isBoss,isElite,isShop};}
+  handleVictory(){const xpGain=this.currentEncounter==='boss'?20:this.currentEncounter==='elite'?10:5;this.xp+=xpGain;const leveled=this.checkLevelUp();return{leveled,rewards:this.rewardOptions()};}
+  rewardOptions(){return['Nova carta','Evoluir carta','Ganhar Totem','Buff permanente'];}
+  checkLevelUp(){const need=this.level*50;if(this.xp>=need){this.level+=1;this.xp-=need;return true}return false}
+  addTotem(t){if(this.totems.length>=3)return false;this.totems.push(t);return true}
+  reset(){this.round=0;this.totems=[];this.xp=0;this.currentEncounter='normal';}
+}
 const ALL_DECKS=Object.keys(TEMPLATES);
-const G={playerHP:30,aiHP:30,turn:0,playerMana:0,playerManaCap:0,aiMana:0,aiManaCap:0,current:'player',playerDeck:[],aiDeck:[],playerHand:[],aiHand:[],playerBoard:[],aiBoard:[],playerDiscard:[],aiDiscard:[],chosen:null,playerDeckChoice:'vikings',aiDeckChoice:rand(ALL_DECKS),customDeck:null};
+const G={playerHP:30,aiHP:30,turn:0,playerMana:0,playerManaCap:0,aiMana:0,aiManaCap:0,current:'player',playerDeck:[],aiDeck:[],playerHand:[],aiHand:[],playerBoard:[],aiBoard:[],playerDiscard:[],aiDiscard:[],chosen:null,playerDeckChoice:'vikings',aiDeckChoice:rand(ALL_DECKS),customDeck:null,mode:'solo',story:null,enemyScaling:0,maxHandSize:5,totems:[]};
 const els={pHP:$('#playerHP'),pHP2:$('#playerHP2'),aHP:$('#aiHP'),aHP2:$('#aiHP2'),opponentLabel:$('#opponentLabel'),mana:$('#mana'),pHand:$('#playerHand'),pBoard:$('#playerBoard'),aBoard:$('#aiBoard'),endBtn:$('#endTurnBtn'),muteBtn:$('#muteBtn'),aAva:$('#aiAvatar'),drawCount:$('#drawCount'),discardCount:$('#discardCount'),barPHP:$('#barPlayerHP'),barAHP:$('#barAiHP'),barMana:$('#barMana'),wrap:$('#gameWrap'),start:$('#start'),openEncy:$('#openEncy'),ency:$('#ency'),encyGrid:$('#encyGrid'),encyFilters:$('#encyFilters'),closeEncy:$('#closeEncy'),startGame:$('#startGame'),endOverlay:$('#endOverlay'),endMsg:$('#endMsg'),endSub:$('#endSub'),playAgainBtn:$('#playAgainBtn'),rematchBtn:$('#rematchBtn'),menuBtn:$('#menuBtn'),openMenuBtn:$('#openMenuBtn'),gameMenu:$('#gameMenu'),closeMenuBtn:$('#closeMenuBtn'),resignBtn:$('#resignBtn'),restartBtn:$('#restartBtn'),mainMenuBtn:$('#mainMenuBtn'),turnIndicator:$('#turnIndicator'),emojiBar:$('#emojiBar'),playerEmoji:$('#playerEmoji'),opponentEmoji:$('#opponentEmoji'),deckBuilder:$('#deckBuilder'),saveDeck:$('#saveDeck')};
 els.startGame.disabled=true;
 const DECK_TITLES={vikings:'Fazendeiros Vikings',animais:'Bestas do Norte',pescadores:'Pescadores do Fiorde',floresta:'Feras da Floresta',convergentes:'Convergentes da Aurora',custom:'Custom'};
@@ -319,9 +328,72 @@ const closeStanceChooser=()=>{const old=document.querySelector('.stance-chooser'
 function flyToBoard(node,onEnd){const r=node.getBoundingClientRect(),clone=node.cloneNode(true);Object.assign(clone.style,{left:r.left+'px',top:r.top+'px',width:r.width+'px',height:r.height+'px',position:'fixed',zIndex:999,transition:'transform .45s ease,opacity .45s ease'});clone.classList.add('fly');document.body.appendChild(clone);const br=els.pBoard.getBoundingClientRect();requestAnimationFrame(()=>{const tx=br.left+br.width/2-r.left-r.width/2,ty=br.top+10-r.top;clone.style.transform=`translate(${tx}px,${ty}px) scale(.9)`;clone.style.opacity='0'});setTimeout(()=>{clone.remove();onEnd&&onEnd()},450)}
 function animateMove(fromEl,toEl){const r1=fromEl.getBoundingClientRect(),r2=toEl.getBoundingClientRect(),ghost=document.createElement('div');Object.assign(ghost.style,{left:r1.left+'px',top:r1.top+'px',width:r1.width+'px',height:r1.height+'px',position:'fixed',zIndex:998,transition:'transform .5s ease,opacity .5s ease',background:'#fff',borderRadius:'10px',opacity:1});document.body.appendChild(ghost);requestAnimationFrame(()=>{ghost.style.transform=`translate(${r2.left-r1.left}px,${r2.top-r1.top}px)`;ghost.style.opacity='0'});setTimeout(()=>ghost.remove(),500)}
 function stackHand(){const cards=$$('#playerHand .card');const total=cards.length;if(!total)return;const spread=150,width=cards[0].offsetWidth,overlap=width-spread;els.pHand.style.setProperty('--hover-shift',`${overlap}px`);cards.forEach((c,i)=>{const offset=(i-(total-1)/2)*spread;c.style.setProperty('--x',`${offset}px`);c.dataset.z=String(i+1);c.style.zIndex=i+1;})}
-function startGame(first='player'){const sanitize=c=>{if(c.hp<1)c.hp=1;if(c.atk<0)c.atk=0;return c};G.playerDeck=(G.playerDeckChoice==='custom'&&G.customDeck?G.customDeck.slice():TEMPLATES[G.playerDeckChoice].map(makeCard));shuffle(G.playerDeck);G.playerDeck.forEach(c=>{sanitize(c);c.owner='player';c.deck=(G.playerDeckChoice==='custom'?'custom':G.playerDeckChoice)});G.aiDeck=TEMPLATES[G.aiDeckChoice].map(makeCard);shuffle(G.aiDeck);G.aiDeck.forEach(c=>{sanitize(c);c.owner='ai';c.deck=G.aiDeckChoice});G.playerDiscard=[];G.aiDiscard=[];G.playerHand=[];G.aiHand=[];G.playerBoard=[];G.aiBoard=[];G.playerHP=30;G.aiHP=30;G.current=first;G.playerMana=0;G.playerManaCap=0;G.turn=0;if(!window.isMultiplayer){const diff=document.getElementById('difficulty');G.aiSkill=diff?parseInt(diff.value):1;}els.emojiBar&&(els.emojiBar.style.display=window.isMultiplayer?'flex':'none');setDeckBacks();if(first==='player')draw('player',5);else draw('ai',5);newTurn(true);renderAll();stopMenuMusic();startMenuMusic('combat');log('A batalha começou!');sfx('start')}
+function startGame(opts='player') {
+  const isObj = typeof opts === 'object';
+  const first = isObj ? (opts.first || 'player') : opts;
+  const continuing = isObj && opts.continueStory;
+  const sanitize = c => { if (c.hp < 1) c.hp = 1; if (c.atk < 0) c.atk = 0; return c; };
+  G.mode = window.currentGameMode === 'story' ? 'story' : 'solo';
+  if (G.mode === 'story') {
+    if (!G.story) G.story = new StoryMode({ level: 1 });
+    G.story.nextRound();
+    G.enemyScaling = G.story.scaling;
+    log(`Round ${G.story.round}: ${G.story.currentEncounter}`);
+    G.maxHandSize = 10;
+  } else {
+    G.story = null;
+    G.enemyScaling = 0;
+    G.maxHandSize = 5;
+  }
+  if (G.mode === 'story' && continuing) {
+    G.playerDeck.push(...G.playerHand, ...G.playerBoard, ...G.playerDiscard);
+    G.playerHand = [];
+    G.playerBoard = [];
+    G.playerDiscard = [];
+  } else {
+    G.totems = [];
+    G.playerDeck = (G.playerDeckChoice === 'custom' && G.customDeck ? G.customDeck.slice() : TEMPLATES[G.playerDeckChoice].map(makeCard));
+    if (G.mode === 'story') {
+      const t = makeCard(["Totem de Força", "🗿", "Totem", 0, 0, 2, "Ative: +1/+1 em um aliado"]);
+      t.type = 'totem';
+      G.playerDeck.push(t);
+    }
+    shuffle(G.playerDeck);
+  }
+  G.playerDeck.forEach(c => { sanitize(c); c.owner = 'player'; c.deck = (G.playerDeckChoice === 'custom' ? 'custom' : G.playerDeckChoice); });
+  G.aiDeck = TEMPLATES[G.aiDeckChoice].map(makeCard);
+  shuffle(G.aiDeck);
+  G.aiDeck.forEach(c => { sanitize(c); c.owner = 'ai'; c.deck = G.aiDeckChoice; if (G.mode === 'story') { c.atk += G.enemyScaling; c.hp += G.enemyScaling; } });
+  G.playerDiscard = [];
+  G.aiDiscard = [];
+  if (!(G.mode === 'story' && continuing)) {
+    G.playerHand = [];
+    G.aiHand = [];
+    G.playerBoard = [];
+    G.aiBoard = [];
+  }
+  G.playerHP = 30;
+  G.aiHP = 30;
+  G.current = first;
+  G.playerMana = 0;
+  G.playerManaCap = 0;
+  G.turn = 0;
+  if (!window.isMultiplayer) {
+    const diff = document.getElementById('difficulty');
+    G.aiSkill = diff ? parseInt(diff.value) : 1;
+  }
+  els.emojiBar && (els.emojiBar.style.display = window.isMultiplayer ? 'flex' : 'none');
+  setDeckBacks();
+  if (first === 'player') draw('player', 5); else draw('ai', 5);
+  newTurn(true);
+  renderAll();
+  stopMenuMusic();
+  startMenuMusic('combat');
+  log('A batalha começou!');
+  sfx('start');
+}
 const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
-function draw(who,n=1){const deck=who==='player'?G.playerDeck:G.aiDeck,hand=who==='player'?G.playerHand:G.aiHand,disc=who==='player'?G.playerDiscard:G.aiDiscard;const deckEl=document.getElementById('drawPile');const handEl=els.pHand;for(let i=0;i<n;i++){if(deck.length===0&&disc.length){disc.forEach(resetCardState);deck.push(...shuffle(disc.splice(0)));deckEl.classList.add('shuffling');setTimeout(()=>deckEl.classList.remove('shuffling'),600)}if(deck.length){const c=deck.shift();resetCardState(c);if(c.hp<1)c.hp=1;hand.push(c);if(who==='player')animateMove(deckEl,handEl)}}if(who==='player'){els.drawCount.textContent=G.playerDeck.length;els.discardCount.textContent=G.playerDiscard.length;setTimeout(stackHand,500)}}
+function draw(who,n=1){const deck=who==='player'?G.playerDeck:G.aiDeck,hand=who==='player'?G.playerHand:G.aiHand,disc=who==='player'?G.playerDiscard:G.aiDiscard;const deckEl=document.getElementById('drawPile');const handEl=els.pHand;for(let i=0;i<n;i++){if(deck.length===0&&disc.length){disc.forEach(resetCardState);deck.push(...shuffle(disc.splice(0)));deckEl.classList.add('shuffling');setTimeout(()=>deckEl.classList.remove('shuffling'),600)}if(deck.length){const c=deck.shift();resetCardState(c);if(c.hp<1)c.hp=1;if(who==='player'&&hand.length>=G.maxHandSize){G.playerDiscard.push(c);log(`${c.name} queimou por excesso de cartas.`);}else{hand.push(c);if(who==='player')animateMove(deckEl,handEl);}}}if(who==='player'){els.drawCount.textContent=G.playerDeck.length;els.discardCount.textContent=G.playerDiscard.length;setTimeout(stackHand,500)}}
 function discardHand(side){const hand=side==='player'?G.playerHand:G.aiHand;const disc=side==='player'?G.playerDiscard:G.aiDiscard;if(hand.length){if(side==='player'){const cards=$$('#playerHand .card');const pile=document.getElementById('discardPile');cards.forEach(c=>animateMove(c,pile))}disc.push(...hand.splice(0));if(side==='player'){els.discardCount.textContent=G.playerDiscard.length;setTimeout(stackHand,500)}}}
 function showMultiplayerDeckSelect(){
   els.wrap.style.display='none';
@@ -397,7 +469,7 @@ function checkDeaths(){const deadA=G.aiBoard.filter(c=>c.hp<=0);deadA.forEach(c=
 function aiTurn(){const skill=G.aiSkill||1;const playable=G.aiHand.filter(c=>c.cost<=G.aiMana);if(skill===2){playable.sort((a,b)=>(b.atk+b.hp)-(a.atk+a.hp))}else if(skill===1){playable.sort((a,b)=>b.cost-a.cost)}else{playable.sort(()=>Math.random()-0.5)}while(playable.length&&G.aiBoard.length<5&&G.aiMana>0){const c=skill===0?playable.pop():playable.shift();const i=G.aiHand.findIndex(x=>x.id===c.id);if(i>-1&&c.cost<=G.aiMana){G.aiHand.splice(i,1);const stance=(c.hp>=c.atk+1)?(Math.random()<.7?'defense':'attack'):(Math.random()<.3?'defense':'attack');summon('ai',c,stance);G.aiMana-=c.cost}}renderAll();const attackers=G.aiBoard.filter(c=>c.canAttack&&c.stance!=='defense');function next(){if(!attackers.length){discardHand('ai');G.current='player';newTurn(false,'ai');return}const a=attackers.shift();const legal=G.playerBoard.filter(x=>legalTarget('player',x));if(legal.length){let target;if(skill===2){target=legal.reduce((p,c)=>c.hp<p.hp?c:p,legal[0])}else{target=rand(legal)}attackCard(a,target)}else{attackFace(a,'player')}setTimeout(next,500)}setTimeout(next,500)}
 function fireworks(win){const b=document.createElement('div');b.className='boom';b.style.left='50%';b.style.top='50%';b.style.background=`radial-gradient(circle at 50% 50%, ${win?'#8bf5a2':'#ff8a8a'}, transparent)`;document.body.appendChild(b);setTimeout(()=>b.remove(),650);} 
 function endGame(win){stopMenuMusic();els.endMsg.textContent=win?'You WIN!':'You Lose...';els.endMsg.style.color=win?'#8bf5a2':'#ff8a8a';els.endSub.textContent=win?'Parabéns! Quer continuar jogando?':'Tentar de novo ou voltar ao menu.';els.endOverlay.classList.add('show');setTimeout(()=>fireworks(win),1000);} 
-function checkWin(){if(G.aiHP<=0){endGame(true)}if(G.playerHP<=0){endGame(false)}}
+function checkWin(){if(G.aiHP<=0){if(G.mode==='story'&&G.story){const{leveled,rewards}=G.story.handleVictory();log(`Recompensas disponíveis: ${rewards.join(', ')}`);if(leveled)log(`Você alcançou o nível ${G.story.level}!`);setTimeout(()=>startGame({continueStory:true}),1000);return;}endGame(true)}if(G.playerHP<=0){endGame(false)}}
 function allCards(){let out=[];for(const k of Object.keys(TEMPLATES)){for(const raw of TEMPLATES[k]){const c=makeCard(raw);c.deck=k;out.push(c)}}return out}
 function renderEncy(filter='all',locked=false){els.encyGrid.innerHTML='';const cards=(filter==='all'?allCards():TEMPLATES[filter].map(makeCard).map(c=>Object.assign(c,{deck:filter})));cards.forEach(c=>{const d=cardNode(c,'player');d.classList.add('ency-card');tiltify(d);els.encyGrid.appendChild(d)});els.ency.classList.add('show');els.encyFilters.style.display=locked?'none':'flex';$$('.filters .fbtn').forEach(b=>b.classList.toggle('active',b.dataset.deck===filter||filter==='all'&&b.dataset.deck==='all'))}
 els.endBtn.addEventListener('click',endTurn);els.muteBtn.addEventListener('click',()=>{initAudio();ensureRunning();allMuted=!allMuted;musicMuted=allMuted;sfxMuted=allMuted;if(master) master.gain.value=allMuted?0:.18*sfxVolume; if(musicGain) musicGain.gain.value=allMuted?0:musicBase*musicVolume; els.muteBtn.textContent=allMuted?'🔇 Som':'🔊 Som'});window.addEventListener('keydown',e=>{if(e.key==='Escape')cancelTargeting()});document.addEventListener('click',e=>{if(!G.chosen)return;if(e.target.closest('#aiBoard .card.selectable')||e.target.closest('#playerBoard .card.selectable')||e.target.closest('#aiBoard .face-attack-btn'))return;cancelTargeting()},{capture:true});

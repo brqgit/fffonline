@@ -10,6 +10,7 @@ import {
 } from "../audio/index.js";
 import { aiTurn } from "../ai/index.js";
 import { Keyword } from "./card.js";
+import { StoryMode } from "./storyMode.js";
 
 const rand = (a) => a[Math.floor(Math.random() * a.length)];
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -561,6 +562,11 @@ const G = {
   playerDeckChoice: "vikings",
   aiDeckChoice: rand(ALL_DECKS),
   customDeck: null,
+  mode: "solo",
+  story: null,
+  maxHandSize: 5,
+  totems: [],
+  enemyScaling: 0,
 };
 const els = {
   pHP: $("#playerHP"),
@@ -592,6 +598,7 @@ const els = {
   playAgainBtn: $("#playAgainBtn"),
   rematchBtn: $("#rematchBtn"),
   menuBtn: $("#menuBtn"),
+  totemBar: $("#totemBar"),
 };
 // deck builder DOM (may be null if builder UI not present)
 const poolEl = $("#pool"),
@@ -759,6 +766,7 @@ function renderAll() {
   updateMeters();
   renderHand();
   renderBoard();
+  renderTotems();
 }
 function renderHand() {
   els.pHand.innerHTML = "";
@@ -771,7 +779,7 @@ function renderHand() {
         c.cost > G.playerMana ||
         c.harvestCost > G.playerHarvest ||
         G.current !== "player" ||
-        G.playerBoard.length >= 5;
+        (c.type !== "totem" && G.playerBoard.length >= 5);
       if (blocked) {
         d.style.transform = "translateY(-2px)";
         setTimeout(() => (d.style.transform = ""), 150);
@@ -782,7 +790,9 @@ function renderHand() {
       previewCard(d, c);
     });
     const cantPay = c.cost > G.playerMana || c.harvestCost > G.playerHarvest;
-    const disable = G.current !== "player" || G.playerBoard.length >= 5;
+    const disable =
+      G.current !== "player" ||
+      (c.type !== "totem" && G.playerBoard.length >= 5);
     d.classList.toggle("blocked", cantPay);
     d.style.opacity = cantPay || disable ? 0.9 : 1;
     d.style.cursor = cantPay || disable ? "not-allowed" : "pointer";
@@ -804,6 +814,17 @@ function stackHand() {
     c.dataset.z = String(i + 1);
     c.style.zIndex = i + 1;
   });
+}
+
+function renderTotems() {
+  if (!els.totemBar) return;
+  els.totemBar.innerHTML = "";
+  for (let i = 0; i < 3; i++) {
+    const slot = document.createElement("div");
+    slot.className = "totem-slot";
+    if (G.totems[i]) slot.textContent = "🗿";
+    els.totemBar.appendChild(slot);
+  }
 }
 function renderBoard() {
   validateChosen();
@@ -969,16 +990,42 @@ function flyToBoard(node, onEnd) {
     onEnd && onEnd();
   }, 450);
 }
-export function startGame() {
+export function startGame(opts = {}) {
   const sanitize = (c) => {
     if (c.hp < 1) c.hp = 1;
     if (c.atk < 0) c.atk = 0;
     return c;
   };
-  G.playerDeck =
-    G.playerDeckChoice === "custom" && G.customDeck
-      ? G.customDeck.slice()
-      : TEMPLATES[G.playerDeckChoice].map(makeCard);
+  const continuing = opts.continueStory;
+  G.mode = window.currentGameMode === "story" ? "story" : "solo";
+  if (G.mode === "story") {
+    if (!G.story) G.story = new StoryMode({ level: 1 });
+    G.story.nextRound();
+    G.enemyScaling = G.story.scaling;
+    log(`Round ${G.story.round}: ${G.story.currentEncounter}`);
+    G.maxHandSize = 10;
+  } else {
+    G.story = null;
+    G.enemyScaling = 0;
+    G.maxHandSize = 5;
+  }
+  if (G.mode === "story" && continuing) {
+    G.playerDeck.push(...G.playerHand, ...G.playerBoard, ...G.playerDiscard);
+    G.playerHand = [];
+    G.playerBoard = [];
+    G.playerDiscard = [];
+  } else {
+    G.totems = [];
+    G.playerDeck =
+      G.playerDeckChoice === "custom" && G.customDeck
+        ? G.customDeck.slice()
+        : TEMPLATES[G.playerDeckChoice].map(makeCard);
+    if (G.mode === "story") {
+      const t = makeCard(["Totem de Força", "🗿", "Totem", 0, 0, 2, "Ative: +1/+1 em um aliado"]);
+      t.type = "totem";
+      G.playerDeck.push(t);
+    }
+  }
   shuffle(G.playerDeck);
   G.playerDeck.forEach((c) => {
     sanitize(c);
@@ -986,12 +1033,16 @@ export function startGame() {
     c.deck = G.playerDeckChoice === "custom" ? "custom" : G.playerDeckChoice;
   });
   G.aiDeck = TEMPLATES[G.aiDeckChoice].map(makeCard);
-  shuffle(G.aiDeck);
   G.aiDeck.forEach((c) => {
     sanitize(c);
     c.owner = "ai";
     c.deck = G.aiDeckChoice;
+    if (G.mode === "story") {
+      c.atk += G.enemyScaling;
+      c.hp += G.enemyScaling;
+    }
   });
+  shuffle(G.aiDeck);
   G.playerDiscard = [];
   G.aiDiscard = [];
   G.playerHand = [];
@@ -1038,7 +1089,12 @@ function draw(who, n = 1) {
       const c = deck.shift();
       resetCardState(c);
       if (c.hp < 1) c.hp = 1;
-      hand.push(c);
+      if (hand.length >= G.maxHandSize) {
+        disc.push(c);
+        burnCard(c);
+      } else {
+        hand.push(c);
+      }
     }
   }
   if (who === "player") {
@@ -1046,9 +1102,25 @@ function draw(who, n = 1) {
     els.discardCount.textContent = G.playerDiscard.length;
   }
 }
+
+function burnCard(c) {
+  log(`${c.name} queimou por mão cheia!`);
+  screenParticle("explosion", window.innerWidth / 2, window.innerHeight / 2);
+}
 function newTurn(prev) {
   if (prev) applyEndTurnEffects(prev);
   if (G.current === "player") {
+    if (G.mode === "story" && G.story) {
+      const evt = G.story.nextRound();
+      G.enemyScaling = G.story.scaling;
+      if (evt.isBoss) {
+        log("Um Boss se aproxima!");
+      } else if (evt.isElite) {
+        log("Encontro Elite à frente!");
+      } else if (evt.isShop) {
+        log("Um mercador misterioso aparece.");
+      }
+    }
     G.playerManaCap = clamp(G.playerManaCap + 1, 0, 10);
     G.playerMana = G.playerManaCap;
     G.playerHarvestCap = clamp(G.playerHarvestCap + 1, 0, 10);
@@ -1092,16 +1164,34 @@ function playFromHand(id, st) {
   const i = G.playerHand.findIndex((c) => c.id === id);
   if (i < 0) return;
   const c = G.playerHand[i];
-  if (
-    c.cost > G.playerMana ||
-    c.harvestCost > G.playerHarvest ||
-    G.playerBoard.length >= 5
-  )
+  const boardFull = c.type !== "totem" && G.playerBoard.length >= 5;
+  if (c.cost > G.playerMana || c.harvestCost > G.playerHarvest || boardFull)
     return;
   G.playerHand.splice(i, 1);
-  summon("player", c, st);
   G.playerMana -= c.cost;
   G.playerHarvest -= c.harvestCost;
+  if (c.type === "totem") {
+    if (G.totems.length >= 3) {
+      log("Número máximo de Totens atingido.");
+      G.playerDiscard.push(c);
+    } else {
+      G.totems.push({ name: c.name });
+      if (G.story) G.story.addTotem({ name: c.name });
+      if (G.playerBoard.length) {
+        const t = rand(G.playerBoard);
+        t.atk += 1;
+        t.hp += 1;
+        fxTextOnCard(t.id, "+1/+1", "buff");
+        particleOnCard(t.id, "magic");
+        log(`${c.name}: ${t.name} recebeu +1/+1.`);
+      } else {
+        log(`${c.name} colocado em campo.`);
+      }
+    }
+    renderAll();
+    return;
+  }
+  summon("player", c, st);
   renderAll();
   sfx(st === "defense" ? "defense" : "play");
 }
@@ -1109,6 +1199,10 @@ function summon(side, c, st = "attack") {
   const board = side === "player" ? G.playerBoard : G.aiBoard;
   c.stance = st;
   c.canAttack = st === "attack" && c.kw.includes("Furioso");
+  if (side === "ai" && G.mode === "story") {
+    c.atk += G.enemyScaling;
+    c.hp += G.enemyScaling;
+  }
   board.push(c);
   log(
     `${side === "player" ? "Você" : "Inimigo"} jogou ${c.name} em modo ${st === "defense" ? "defesa" : "ataque"}.`,
@@ -1476,6 +1570,13 @@ function endGame(win) {
 }
 function checkWin() {
   if (G.aiHP <= 0) {
+    if (G.mode === "story" && G.story) {
+      const { leveled, rewards } = G.story.handleVictory();
+      log(`Recompensas disponíveis: ${rewards.join(", ")}`);
+      if (leveled) log(`Você alcançou o nível ${G.story.level}!`);
+      setTimeout(() => startGame({ continueStory: true }), 1000);
+      return;
+    }
     endGame(true);
   }
   if (G.playerHP <= 0) {
