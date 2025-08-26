@@ -103,6 +103,7 @@ function openShop({ faction, gold, onClose }){
   shopState.onClose = onClose;
   rerolled = false;
   $('#btnReroll').disabled = false;
+
   $('#shopGold').textContent = shopState.gold;
   renderShop();
   $('#shopModal').style.display = 'grid';
@@ -121,4 +122,5 @@ document.getElementById('btnReroll')?.addEventListener('click', () => {
   document.getElementById('btnReroll').disabled = true;
   renderShop();
 });
+
 document.getElementById('closeShop')?.addEventListener('click', closeShop);
