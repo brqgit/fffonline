@@ -17,6 +17,7 @@ O modo adiciona progressão em níveis e estrutura de torre. Jogadores escolhem 
 - Encontros Elite ocorrem a cada 5 rounds e rendem mais recompensas.
 - Chefes surgem nos rounds 10, 20, 30...
 - Nível 1 possui um chefe final; níveis posteriores trazem dois chefes.
+- Após cada vitória, a escalada continua automaticamente para a próxima batalha.
 
 ## Loja
 - A loja aparece regularmente durante a escalada (a cada 3 rounds).

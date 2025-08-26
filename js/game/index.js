@@ -990,25 +990,41 @@ function flyToBoard(node, onEnd) {
     onEnd && onEnd();
   }, 450);
 }
-export function startGame() {
+export function startGame(opts = {}) {
   const sanitize = (c) => {
     if (c.hp < 1) c.hp = 1;
     if (c.atk < 0) c.atk = 0;
     return c;
   };
+  const continuing = opts.continueStory;
   G.mode = window.currentGameMode === "story" ? "story" : "solo";
-  G.story = G.mode === "story" ? new StoryMode({ level: 1 }) : null;
-  G.maxHandSize = G.mode === "story" ? 10 : 5;
-  G.totems = [];
-  G.enemyScaling = 0;
-  G.playerDeck =
-    G.playerDeckChoice === "custom" && G.customDeck
-      ? G.customDeck.slice()
-      : TEMPLATES[G.playerDeckChoice].map(makeCard);
   if (G.mode === "story") {
-    const t = makeCard(["Totem de Força", "🗿", "Totem", 0, 0, 2, "Ative: +1/+1 em um aliado"]);
-    t.type = "totem";
-    G.playerDeck.push(t);
+    if (!G.story) G.story = new StoryMode({ level: 1 });
+    G.story.nextRound();
+    G.enemyScaling = G.story.scaling;
+    log(`Round ${G.story.round}: ${G.story.currentEncounter}`);
+    G.maxHandSize = 10;
+  } else {
+    G.story = null;
+    G.enemyScaling = 0;
+    G.maxHandSize = 5;
+  }
+  if (G.mode === "story" && continuing) {
+    G.playerDeck.push(...G.playerHand, ...G.playerBoard, ...G.playerDiscard);
+    G.playerHand = [];
+    G.playerBoard = [];
+    G.playerDiscard = [];
+  } else {
+    G.totems = [];
+    G.playerDeck =
+      G.playerDeckChoice === "custom" && G.customDeck
+        ? G.customDeck.slice()
+        : TEMPLATES[G.playerDeckChoice].map(makeCard);
+    if (G.mode === "story") {
+      const t = makeCard(["Totem de Força", "🗿", "Totem", 0, 0, 2, "Ative: +1/+1 em um aliado"]);
+      t.type = "totem";
+      G.playerDeck.push(t);
+    }
   }
   shuffle(G.playerDeck);
   G.playerDeck.forEach((c) => {
@@ -1017,12 +1033,16 @@ export function startGame() {
     c.deck = G.playerDeckChoice === "custom" ? "custom" : G.playerDeckChoice;
   });
   G.aiDeck = TEMPLATES[G.aiDeckChoice].map(makeCard);
-  shuffle(G.aiDeck);
   G.aiDeck.forEach((c) => {
     sanitize(c);
     c.owner = "ai";
     c.deck = G.aiDeckChoice;
+    if (G.mode === "story") {
+      c.atk += G.enemyScaling;
+      c.hp += G.enemyScaling;
+    }
   });
+  shuffle(G.aiDeck);
   G.playerDiscard = [];
   G.aiDiscard = [];
   G.playerHand = [];
@@ -1554,6 +1574,8 @@ function checkWin() {
       const { leveled, rewards } = G.story.handleVictory();
       log(`Recompensas disponíveis: ${rewards.join(", ")}`);
       if (leveled) log(`Você alcançou o nível ${G.story.level}!`);
+      setTimeout(() => startGame({ continueStory: true }), 1000);
+      return;
     }
     endGame(true);
   }
