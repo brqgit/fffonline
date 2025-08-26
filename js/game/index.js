@@ -795,7 +795,16 @@ function renderHand() {
         return;
       }
       e.stopPropagation();
-      previewCard(d, c);
+      openStanceChooser(
+        d,
+        (st) => {
+          d.style.visibility = "hidden";
+          flyToBoard(d, () => playFromHand(c.id, st));
+        },
+        () => {
+          d.style.visibility = "";
+        },
+      );
     });
     const cantPay = c.cost > G.playerMana || c.harvestCost > G.playerHarvest;
     const disable =
@@ -876,52 +885,6 @@ function renderBoard() {
     els.aBoard.appendChild(btn);
   }
   updateFaceAttackZone();
-}
-function previewCard(orig, c) {
-  const r = orig.getBoundingClientRect(),
-    clone = orig.cloneNode(true);
-  orig.style.visibility = "hidden";
-  clone.classList.add("card-preview");
-  Object.assign(clone.style, {
-    position: "fixed",
-    left: r.left + "px",
-    top: r.top + "px",
-    margin: "0",
-    zIndex: 1000,
-    transition: "left .3s ease, top .3s ease",
-  });
-  document.body.appendChild(clone);
-  requestAnimationFrame(() => {
-    clone.style.left = window.innerWidth / 2 - r.width / 2 + "px";
-    clone.style.top = window.innerHeight / 2 - r.height / 2 + "px";
-  });
-  clone.addEventListener(
-    "transitionend",
-    function handler() {
-      clone.removeEventListener("transitionend", handler);
-      openStanceChooser(
-        clone,
-        (st) => {
-          flyToBoard(clone, () => playFromHand(c.id, st));
-          clone.remove();
-        },
-        () => {
-          const r2 = orig.getBoundingClientRect();
-          clone.style.left = r2.left + "px";
-          clone.style.top = r2.top + "px";
-          clone.addEventListener(
-            "transitionend",
-            () => {
-              clone.remove();
-              orig.style.visibility = "";
-            },
-            { once: true },
-          );
-        },
-      );
-    },
-    { once: true },
-  );
 }
 
 function openStanceChooser(anchor, cb, onCancel) {

@@ -7,8 +7,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const soloBtn = document.getElementById('menuSolo');
   const multiBtn = document.getElementById('menuMulti');
   const optBtn = document.getElementById('menuOptions');
+  const testBtn = document.getElementById('menuTestes');
   const backToMenu = document.getElementById('backToMenu');
   const closeOptions = document.getElementById('closeOptions');
+  const testModal = document.getElementById('testModal');
+  const closeTest = document.getElementById('closeTest');
+  const testShopBtn = document.getElementById('testShopBtn');
   const diffLabel = document.querySelector('label[for="difficulty"]');
   const diffSelect = document.getElementById('difficulty');
 
@@ -41,6 +45,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (optionsMenu) optionsMenu.style.display = 'grid';
   });
 
+  if (testBtn) testBtn.addEventListener('click', () => {
+    if (testModal) testModal.style.display = 'grid';
+  });
+
   if (backToMenu) backToMenu.addEventListener('click', () => {
     if (deckScreen) deckScreen.style.display = 'none';
     if (titleMenu) titleMenu.style.display = 'grid';
@@ -51,6 +59,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (closeOptions) closeOptions.addEventListener('click', () => {
     if (optionsMenu) optionsMenu.style.display = 'none';
+  });
+
+  if (closeTest) closeTest.addEventListener('click', () => {
+    if (testModal) testModal.style.display = 'none';
+  });
+
+  if (testShopBtn) testShopBtn.addEventListener('click', () => {
+    if (window.openShop) openShop({ faction: 'vikings', gold: 30 });
   });
 
   const musicVol = document.getElementById('musicVol');
