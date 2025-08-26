@@ -24,6 +24,9 @@ O modo adiciona progressão em níveis e estrutura de torre. Jogadores escolhem 
 - Permite comprar cartas, totens e buffs temporários.
 - Itens priorizam cartas da facção escolhida pelo jogador.
 
+## Encontros Visuais
+- Um banner animado anuncia o nome do inimigo ou da loja a cada partida.
+- Chefes exibem efeitos de raio e cores chamativas.
 ## Regras Especiais
 - Mão máxima aumentada para 10 cartas. Excedentes são descartadas com animação de queima.
 - Experiência baseada na dificuldade dos inimigos derrotados.

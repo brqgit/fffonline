@@ -10,11 +10,19 @@ import {
 } from "../audio/index.js";
 import { aiTurn } from "../ai/index.js";
 import { Keyword } from "./card.js";
+import { ENEMY_NAMES } from "./enemyNames.js";
 import { StoryMode } from "./storyMode.js";
 
 const rand = (a) => a[Math.floor(Math.random() * a.length)];
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const uid = () => Math.random().toString(36).slice(2);
+const pickEnemyName = (deck, boss = false) => {
+  const pool = ENEMY_NAMES[deck] || [];
+  const list = pool.filter(e => boss ? e.boss : !e.boss);
+  const c = list.length ? rand(list) : { name: "Inimigo" };
+  return c.name;
+};
+
 
 const KW = {
     P: Keyword.PROTETOR,
@@ -1001,8 +1009,12 @@ export function startGame(opts = {}) {
   if (G.mode === "story") {
     if (!G.story) G.story = new StoryMode({ level: 1 });
     G.story.nextRound();
+    G.aiDeckChoice = rand(ALL_DECKS);
+    const boss = G.story.currentEncounter === "boss";
     G.enemyScaling = G.story.scaling;
-    log(`Round ${G.story.round}: ${G.story.currentEncounter}`);
+    G.currentEnemyName = pickEnemyName(G.aiDeckChoice, boss);
+    log(`Round ${G.story.round}: ${G.currentEnemyName} (${G.story.currentEncounter})`);
+    showEncounterBanner(G.currentEnemyName, boss ? "boss" : "enemy");
     G.maxHandSize = 10;
   } else {
     G.story = null;
@@ -1433,6 +1445,14 @@ function screenParticle(name, x, y) {
   document.body.appendChild(fx);
   setTimeout(() => fx.remove(), 600);
 }
+function showEncounterBanner(name, type = "enemy") {
+  const b = document.getElementById("encounterBanner");
+  if (!b) return;
+  b.textContent = name;
+  b.className = type + " show";
+  setTimeout(() => b.classList.remove("show"), 1500);
+}
+
 function particleOnCard(cid, name) {
   const n = nodeById(cid);
   if (!n) return;
