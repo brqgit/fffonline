@@ -320,9 +320,10 @@ align-items:center}
 #roomList{margin-top:12px}
 #roomList .room{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
 #roomList .room button{margin-left:8px}
-.turn-bar{display:flex;align-items:center;margin:8px 0}
-.turn-indicator{flex:1;text-align:center;font-size:20px;font-weight:700}
-#endTurnBtn{margin-right:10%}
+.turn-bar{display:flex;align-items:center;justify-content:center;gap:8px;margin:8px 0}
+.turn-indicator{font-size:20px;font-weight:700}
+#endTurnBtn{margin-left:0;position:relative;overflow:hidden}
+#endTurnBtn::before{content:"";position:absolute;left:0;top:0;bottom:0;width:var(--timer,0%);background:rgba(255,0,0,.4);pointer-events:none}
 .game-menu{position:fixed;inset:0;display:none;place-items:center;z-index:50;background:rgba(0,0,0,.7)}
 .game-menu.show{display:grid}
 .game-menu .panel{text-align:center;display:flex;flex-direction:column;gap:12px}
