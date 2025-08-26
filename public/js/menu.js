@@ -66,7 +66,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   if (testShopBtn) testShopBtn.addEventListener('click', () => {
-    if (window.openShop) openShop({ faction: 'vikings', gold: 30 });
+    if (window.openShop) openShop({ faction: 'vikings', gold: 30, unlimited: true });
   });
 
   const musicVol = document.getElementById('musicVol');

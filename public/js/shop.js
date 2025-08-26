@@ -24,8 +24,10 @@ const NEUTRAL = [
   { name: 'Totem do Carvalho', type: 'totem', desc: '+1 HP', cost: 9 }
 ];
 
-let shopState = { faction: '', gold: 0, onClose: null };
+let shopState = { faction: '', gold: 0, onClose: null, unlimited: false };
 let rerolled = false;
+
+const shuffle = arr => arr.sort(() => Math.random() - 0.5);
 
 const slug = str => str.toLowerCase().replace(/[^a-z0-9]+/g,'-');
 function withImg(it){
@@ -36,11 +38,8 @@ function withImg(it){
 }
 
 function genShopOffers(){
-  const pool = [...FACTIONS[shopState.faction].pool, ...NEUTRAL];
-  const offers = [];
-  for(let i=0;i<6;i++){
-    offers.push(withImg({ ...pool[Math.floor(Math.random()*pool.length)] }));
-  }
+  const pool = shuffle([...FACTIONS[shopState.faction].pool, ...NEUTRAL]);
+  const offers = pool.slice(0,6).map(it => withImg({ ...it }));
   offers.push(withImg({ name: 'Elixir de Força', type: 'buff', desc: '+1 ATK a suas unidades neste round', cost: 7 }));
   return offers;
 }
@@ -53,57 +52,39 @@ function renderShop(){
     const card = document.createElement('div');
     card.className = 'shop-card';
 
-    const imgWrap = document.createElement('div');
-    imgWrap.className = 'shop-item-img';
-    if(it.img){
-      const img = document.createElement('img');
-      img.src = it.img;
-      img.alt = it.name;
-      imgWrap.appendChild(img);
-      card.appendChild(imgWrap);
-      const h4 = document.createElement('h4');
-      h4.textContent = it.name;
-      card.appendChild(h4);
-      if(it.atk !== undefined){
-        const stats = document.createElement('div');
-        stats.textContent = `⚔ ${it.atk} ❤ ${it.hp}`;
-        card.appendChild(stats);
-      }
-      if(it.desc){
-        const sub = document.createElement('div');
-        sub.className = 'sub';
-        sub.textContent = it.desc;
-        card.appendChild(sub);
-      }
+    if(['unit','spell','totem'].includes(it.type) && window.cardNode){
+      const node = window.cardNode(it,'player');
+      card.appendChild(node);
     }else{
-      imgWrap.classList.add('placeholder');
-      imgWrap.innerHTML = `<div class="name">${it.name}</div><div class="desc">${it.desc||''}</div>`;
-      card.appendChild(imgWrap);
+      const p = document.createElement('div');
+      p.className = 'shop-placeholder';
+      p.textContent = it.name;
+      card.appendChild(p);
     }
 
     const btn = document.createElement('button');
-    btn.className = 'btn';
-    btn.innerHTML = `Comprar (${it.cost}<img src="/img/ui/coin.png" class="coin-icon" alt="moeda">)`;
+    btn.className = 'btn price-btn';
+    btn.innerHTML = `${it.cost}<img src="/img/ui/coin.png" class="coin-icon" alt="moeda">`;
     btn.onclick = () => {
       if(shopState.gold < it.cost){ alert('Sem ouro.'); return; }
       shopState.gold -= it.cost;
       $('#shopGold').textContent = shopState.gold;
       btn.disabled = true;
-      btn.textContent = 'Comprado';
+      btn.textContent = '✔';
     };
     card.appendChild(btn);
     wrap.appendChild(card);
   });
 }
 
-function openShop({ faction, gold, onClose }){
+function openShop({ faction, gold, onClose, unlimited=false }){
   const map = { vikings:'Furioso', animais:'Furioso', pescadores:'Sombras', floresta:'Percepcao', convergentes:'Percepcao' };
   shopState.faction = map[faction] || faction || 'Furioso';
   shopState.gold = gold;
   shopState.onClose = onClose;
+  shopState.unlimited = unlimited;
   rerolled = false;
   $('#btnReroll').disabled = false;
-
   $('#shopGold').textContent = shopState.gold;
   renderShop();
   $('#shopModal').style.display = 'grid';
@@ -117,10 +98,9 @@ function closeShop(){
 window.openShop = openShop;
 
 document.getElementById('btnReroll')?.addEventListener('click', () => {
-  if(rerolled){ alert('Sem re-rolagens.'); return; }
+  if(!shopState.unlimited && rerolled){ alert('Sem re-rolagens.'); return; }
   rerolled = true;
-  document.getElementById('btnReroll').disabled = true;
+  if(!shopState.unlimited) document.getElementById('btnReroll').disabled = true;
   renderShop();
 });
-
 document.getElementById('closeShop')?.addEventListener('click', closeShop);
