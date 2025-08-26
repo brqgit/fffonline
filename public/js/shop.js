@@ -25,14 +25,23 @@ const NEUTRAL = [
 ];
 
 let shopState = { faction: '', gold: 0, onClose: null };
+let rerolled = false;
+
+const slug = str => str.toLowerCase().replace(/[^a-z0-9]+/g,'-');
+function withImg(it){
+  if(['unit','spell','totem'].includes(it.type)){
+    return { ...it, img:`/img/cards/${slug(it.name)}.png` };
+  }
+  return it;
+}
 
 function genShopOffers(){
   const pool = [...FACTIONS[shopState.faction].pool, ...NEUTRAL];
   const offers = [];
   for(let i=0;i<6;i++){
-    offers.push({ ...pool[Math.floor(Math.random()*pool.length)] });
+    offers.push(withImg({ ...pool[Math.floor(Math.random()*pool.length)] }));
   }
-  offers.push({ name: 'Elixir de Força', type: 'buff', desc: '+1 ATK a suas unidades neste round', cost: 7 });
+  offers.push(withImg({ name: 'Elixir de Força', type: 'buff', desc: '+1 ATK a suas unidades neste round', cost: 7 }));
   return offers;
 }
 
@@ -43,12 +52,38 @@ function renderShop(){
   genShopOffers().forEach(it => {
     const card = document.createElement('div');
     card.className = 'shop-card';
-    card.innerHTML = `<h4>${it.name}</h4>`;
-    if(it.atk !== undefined) card.innerHTML += `<div>⚔ ${it.atk} ❤ ${it.hp}</div>`;
-    if(it.desc) card.innerHTML += `<div class="sub">${it.desc}</div>`;
+
+    const imgWrap = document.createElement('div');
+    imgWrap.className = 'shop-item-img';
+    if(it.img){
+      const img = document.createElement('img');
+      img.src = it.img;
+      img.alt = it.name;
+      imgWrap.appendChild(img);
+      card.appendChild(imgWrap);
+      const h4 = document.createElement('h4');
+      h4.textContent = it.name;
+      card.appendChild(h4);
+      if(it.atk !== undefined){
+        const stats = document.createElement('div');
+        stats.textContent = `⚔ ${it.atk} ❤ ${it.hp}`;
+        card.appendChild(stats);
+      }
+      if(it.desc){
+        const sub = document.createElement('div');
+        sub.className = 'sub';
+        sub.textContent = it.desc;
+        card.appendChild(sub);
+      }
+    }else{
+      imgWrap.classList.add('placeholder');
+      imgWrap.innerHTML = `<div class="name">${it.name}</div><div class="desc">${it.desc||''}</div>`;
+      card.appendChild(imgWrap);
+    }
+
     const btn = document.createElement('button');
     btn.className = 'btn';
-    btn.textContent = `Comprar (${it.cost}⦿)`;
+    btn.innerHTML = `Comprar (${it.cost}<img src="/img/ui/coin.png" class="coin-icon" alt="moeda">)`;
     btn.onclick = () => {
       if(shopState.gold < it.cost){ alert('Sem ouro.'); return; }
       shopState.gold -= it.cost;
@@ -66,6 +101,9 @@ function openShop({ faction, gold, onClose }){
   shopState.faction = map[faction] || faction || 'Furioso';
   shopState.gold = gold;
   shopState.onClose = onClose;
+  rerolled = false;
+  $('#btnReroll').disabled = false;
+
   $('#shopGold').textContent = shopState.gold;
   renderShop();
   $('#shopModal').style.display = 'grid';
@@ -78,5 +116,11 @@ function closeShop(){
 
 window.openShop = openShop;
 
-document.getElementById('btnReroll')?.addEventListener('click', renderShop);
+document.getElementById('btnReroll')?.addEventListener('click', () => {
+  if(rerolled){ alert('Sem re-rolagens.'); return; }
+  rerolled = true;
+  document.getElementById('btnReroll').disabled = true;
+  renderShop();
+});
+
 document.getElementById('closeShop')?.addEventListener('click', closeShop);
