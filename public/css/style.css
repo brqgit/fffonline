@@ -123,6 +123,7 @@ width:calc(5*var(--card-w) + 4*14px + 24px)}
 .hand .card:hover~.card{--push:var(--hover-shift)}
 .hand .card.chosen{--raise:calc(var(--card-h) * -0.2);box-shadow:0 0 12px var(--accent),0 16px 30px rgba(0,0,0,.45)}
 .hand .card.chosen{pointer-events:none;z-index:1000}
+.board .card.chosen{transform:translateY(-10px);box-shadow:0 0 12px var(--accent),0 16px 30px rgba(0,0,0,.45);z-index:1000}
 @keyframes stanceHolo{from{filter:hue-rotate(0deg) drop-shadow(0 0 6px rgba(0,255,255,.6));}to{filter:hue-rotate(360deg) drop-shadow(0 0 6px rgba(0,255,255,.6));}}
 @keyframes sparkle{0%{filter:hue-rotate(0deg) brightness(1);}50%{filter:hue-rotate(180deg) brightness(1.05);}100%{filter:hue-rotate(360deg) brightness(1);}}
 .card{width:100%;max-width:var(--card-w);aspect-ratio:220/300;
@@ -175,6 +176,7 @@ font-size:60px;
 position:relative;
 padding-bottom:4px}
 .art::after{content:"";position:absolute;inset:0;background:linear-gradient(115deg,rgba(255,255,255,.25),rgba(255,255,255,0) 60%);mix-blend-mode:screen;pointer-events:none;opacity:.2}
+.art img,.art canvas{width:100%;height:100%;object-fit:cover;border-radius:calc(12px * var(--card-scale));display:block}
 .text{font-size:calc(12px * var(--card-scale));color:#d9e3ff;background:#0e1435;border:1px solid #25306a;border-radius:calc(10px * var(--card-scale));padding:calc(4px * var(--card-scale));margin:0;max-width:100%;word-break:break-word;box-sizing:border-box;white-space:normal;overflow:hidden;height:auto;display:flex;align-items:center;flex-wrap:wrap;gap:calc(6px * var(--card-scale))}
 .text::after{content:""}
 .stats{display:flex;justify-content:space-between;align-items:center;margin:0;min-height:calc(26px * var(--card-scale));align-self:end;gap:calc(4px * var(--card-scale))}
