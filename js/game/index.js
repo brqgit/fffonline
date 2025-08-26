@@ -771,7 +771,11 @@ function renderAll() {
   els.aHP.textContent = G.aiHP;
   els.aHP2.textContent = G.aiHP;
   els.mana.textContent = `${G.playerMana}/${G.playerManaCap} | 🌾 ${G.playerHarvest}/${G.playerHarvestCap}`;
-  els.endBtn.disabled = G.current !== "player";
+  const playerTurn = G.current === "player";
+  if (els.endBtn) {
+    els.endBtn.style.display = playerTurn ? "inline-block" : "none";
+    els.endBtn.disabled = !playerTurn;
+  }
   els.drawCount.textContent = G.playerDeck.length;
   els.discardCount.textContent = G.playerDiscard.length;
   updateMeters();
@@ -1109,6 +1113,7 @@ function applyTotemBuffs() {
     });
   });
 }
+let turnTimer=null;function startTurnTimer(){if(!window.isMultiplayer||!els.endBtn)return;stopTurnTimer();const start=Date.now(),dur=3e4;turnTimer=setInterval(()=>{const pct=(Date.now()-start)/dur*100;els.endBtn.style.setProperty('--timer',Math.min(pct,100)+'%');if(pct>=100){stopTurnTimer();endTurn();}},100)}function stopTurnTimer(){if(turnTimer){clearInterval(turnTimer);turnTimer=null;}els.endBtn&&els.endBtn.style.setProperty('--timer','0%')}
 function newTurn(prev) {
   if (prev) applyEndTurnEffects(prev);
   if (G.current === "player") {
@@ -1138,9 +1143,13 @@ function newTurn(prev) {
     G.aiBoard.forEach((c) => (c.canAttack = true));
   }
   renderAll();
+  if (window.isMultiplayer) {
+    G.current === "player" ? startTurnTimer() : stopTurnTimer();
+  }
 }
 function endTurn() {
   if (G.current !== "player") return;
+  stopTurnTimer();
   G.current = "ai";
   G.chosen = null;
   updateTargetingUI();
