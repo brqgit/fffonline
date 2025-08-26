@@ -217,7 +217,6 @@ function createProjection(container,card){
       img=document.createElement('img');
       setSrcFallback(img,urls.slice());
     }
-    img.width=96;img.height=96;
     img.loading='eager';
     container.appendChild(img);
   }else if(card.emoji){
@@ -312,6 +311,10 @@ function renderBoard(){
     els.aBoard.appendChild(btn);
   }
   updateFaceAttackZone();
+  if(G.chosen){
+    const n=document.querySelector(`.card[data-id="${G.chosen.id}"]`);
+    if(n) requestAnimationFrame(()=>n.classList.add('chosen'));
+  }
 }
 
 function renderTotems(){
@@ -466,8 +469,30 @@ function validateChosen(){
   G.chosen=ref;
   return true;
 }
-function cancelTargeting(){if(!G.chosen)return;G.chosen=null;updateTargetingUI();els.aBoard.classList.remove('face-can-attack');renderBoard()}
-function selectAttacker(c){if(G.current!=='player'||!c.canAttack||c.stance==='defense')return;G.chosen=c;updateTargetingUI();renderBoard();updateFaceAttackZone();G.aiBoard.filter(x=>x.stance==='defense').forEach(x=>setTimeout(()=>animateDefense(x.id),20))}
+function cancelTargeting(){
+  if(!G.chosen) return;
+  const node=document.querySelector(`.card[data-id="${G.chosen.id}"]`);
+  G.chosen=null;
+  updateTargetingUI();
+  els.aBoard.classList.remove('face-can-attack');
+  if(node){
+    node.classList.remove('chosen');
+    setTimeout(()=>renderBoard(),180);
+  }else{
+    renderBoard();
+  }
+}
+function selectAttacker(c){
+  if(G.current!=='player'||!c.canAttack||c.stance==='defense')return;
+  if(G.chosen){
+    const prev=document.querySelector(`.card[data-id="${G.chosen.id}"]`);
+    if(prev) prev.classList.remove('chosen');
+  }
+  G.chosen=c;
+  updateTargetingUI();
+  renderBoard();
+  G.aiBoard.filter(x=>x.stance==='defense').forEach(x=>setTimeout(()=>animateDefense(x.id),20));
+}
 function updateFaceAttackZone(){
   const guard=hasGuard(G.aiBoard), valid=validateChosen();
   const canFace = valid && !guard;
