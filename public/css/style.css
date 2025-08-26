@@ -128,7 +128,7 @@ width:calc(5*var(--card-w) + 4*14px + 24px)}
 .card{width:100%;max-width:var(--card-w);aspect-ratio:220/300;
  min-height:auto;
  background:linear-gradient(180deg,var(--card2),var(--card));
- border-radius:18px;
+ border-radius:calc(18px * var(--card-scale));
  border:1px solid #28336b;
  box-shadow:0 10px 20px rgba(0,0,0,.35),inset 0 0 0 1px rgba(255,255,255,.06);
  padding:calc(8px * var(--card-scale));
@@ -138,7 +138,7 @@ width:calc(5*var(--card-w) + 4*14px + 24px)}
  position:relative;
  user-select:none;
  transition:transform .18s ease,box-shadow .18s ease;
- overflow:visible;
+ overflow:hidden;
  transform-style:preserve-3d;}
 .card .head-bar{background:linear-gradient(180deg,rgba(0,0,0,.6),rgba(0,0,0,.2));padding:calc(2px * var(--card-scale)) calc(4px * var(--card-scale));border-radius:calc(6px * var(--card-scale));display:flex;flex-direction:column;gap:calc(2px * var(--card-scale))}
 .card .head-bar .name{font-weight:800;font-size:calc(14px * var(--card-scale));white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:linear-gradient(180deg,rgba(0,0,0,.7),rgba(0,0,0,.3));padding:0 calc(4px * var(--card-scale));border-radius:calc(4px * var(--card-scale))}
