@@ -345,9 +345,23 @@ function openStanceChooser(anchor,cb,onCancel){
 const closeStanceChooser=()=>{const old=document.querySelector('.stance-chooser');if(old)old.remove();document.querySelectorAll('.hand .card.chosen').forEach(c=>c.classList.remove('chosen'))}
 function flyToBoard(node,onEnd){const r=node.getBoundingClientRect();const ph=document.createElement('div');ph.style.width=r.width+'px';ph.style.height=r.height+'px';node.parentNode.replaceChild(ph,node);Object.assign(node.style,{left:r.left+'px',top:r.top+'px',width:r.width+'px',height:r.height+'px',position:'fixed',zIndex:999,transition:'transform .45s ease,opacity .45s ease'});document.body.appendChild(node);const br=els.pBoard.getBoundingClientRect();requestAnimationFrame(()=>{const tx=br.left+br.width/2-r.left-r.width/2,ty=br.top+10-r.top;node.style.transform=`translate(${tx}px,${ty}px) scale(.9)`;node.style.opacity='0'});setTimeout(()=>{node.remove();ph.remove();onEnd&&onEnd()},450)}
 function animateMove(fromEl,toEl){const r1=fromEl.getBoundingClientRect(),r2=toEl.getBoundingClientRect(),ghost=document.createElement('div');Object.assign(ghost.style,{left:r1.left+'px',top:r1.top+'px',width:r1.width+'px',height:r1.height+'px',position:'fixed',zIndex:998,transition:'transform .5s ease,opacity .5s ease',background:'#fff',borderRadius:'10px',opacity:1});document.body.appendChild(ghost);requestAnimationFrame(()=>{ghost.style.transform=`translate(${r2.left-r1.left}px,${r2.top-r1.top}px)`;ghost.style.opacity='0'});setTimeout(()=>ghost.remove(),500)}
-function stackHand(){const cards=$$('#playerHand .card');const total=cards.length;if(!total)return;const spread=150,width=cards[0].offsetWidth,overlap=width-spread;els.pHand.style.setProperty('--hover-shift',`${overlap}px`);cards.forEach((c,i)=>{const offset=(i-(total-1)/2)*spread;c.style.setProperty('--x',`${offset}px`);c.dataset.z=String(i+1);c.style.zIndex=i+1;})}
+function stackHand(){
+  const cards=$$('#playerHand .card');
+  const total=cards.length;
+  if(!total) return;
+  const root=getComputedStyle(document.documentElement);
+  const width=parseFloat(root.getPropertyValue('--card-w'))||cards[0].offsetWidth;
+  const spread=width*0.68;
+  const overlap=width-spread;
+  els.pHand.style.setProperty('--hover-shift',`${overlap}px`);
+  cards.forEach((c,i)=>{
+    const offset=(i-(total-1)/2)*spread;
+    c.style.setProperty('--x',`${offset}px`);
+    c.dataset.z=String(i+1);
+    c.style.zIndex=i+1;
+  });
+}
 function startGame(opts='player') {
-  updateCardSize();
   const isObj = typeof opts === 'object';
   const first = isObj ? (opts.first || 'player') : opts;
   const continuing = isObj && opts.continueStory;

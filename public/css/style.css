@@ -34,7 +34,9 @@ color:var(--text)}
 h1{margin:0 0 12px;
 font-size:clamp(22px,4vw,36px);
 letter-spacing:.5px}
-.wrap{width:min(100vw,calc(100vh * 16 / 9),calc(7*var(--card-w) + 6*14px + 72px));
+/* limit overall game width so edge elements don't hug the viewport */
+.wrap{width:min(100vw,calc(100vh * 16 / 9),calc(5*var(--card-w) + 4*14px + 80px));
+height:min(100vh,calc(100vw * 9 / 16));
 margin:0 auto;
 padding:16px 24px;
 display:flex;
@@ -111,13 +113,17 @@ margin:6px 0 2px}
  position:relative;
  overflow:visible;
  margin:12px 0;
-width:calc(5*var(--card-w) + 4*14px + 24px)}
+ width:calc(5*var(--card-w) + 4*14px + 24px);
+ justify-items:center;
+ align-items:center;
+}
 #aiBoard,#playerBoard{margin:0 auto}
 .row{display:flex;gap:14px;align-items:flex-start;flex:1;justify-content:center}
 .row .board{flex:0 0 auto}
 .totem-bar{display:flex;justify-content:center;gap:8px;margin-top:8px}
 .totem-slot{width:40px;height:40px;border:1px solid #31408b;background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,0));border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:24px}
 .hand{position:relative;height:calc(var(--card-h) - 20px);margin:20px 0 0;flex:0 0 auto;overflow:visible;--hover-shift:70px}
+/* hand cards are centered via custom property offsets */
 .hand .card{position:absolute;top:0;width:var(--card-w);transition:transform .2s,box-shadow .2s;--x:0px;--push:0px;--raise:0px;left:calc(50% + var(--x) - var(--card-w)/2);transform:translate(var(--push),var(--raise))}
 .hand .card:hover~.card{--push:var(--hover-shift)}
 .hand .card.chosen{--raise:calc(var(--card-h) * -0.2);box-shadow:0 0 12px var(--accent),0 16px 30px rgba(0,0,0,.45)}
@@ -138,21 +144,24 @@ width:calc(5*var(--card-w) + 4*14px + 24px)}
  user-select:none;
  transition:transform .18s ease,box-shadow .18s ease;
  overflow:visible;
- transform-style:preserve-3d;}
-.card .head-bar{background:linear-gradient(180deg,rgba(0,0,0,.6),rgba(0,0,0,.2));padding:2px 4px;border-radius:6px;display:flex;flex-direction:column;gap:2px}
-.card .head-bar .name{font-weight:800;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:linear-gradient(180deg,rgba(0,0,0,.7),rgba(0,0,0,.3));padding:0 4px;border-radius:4px}
-.card .head-bar .cost-bar{display:flex;justify-content:flex-start;align-items:center;gap:4px;position:relative}
-.card .mana-row{display:flex;align-items:center;gap:4px}
+ transform-style:preserve-3d;
+ /* scale inner content with card width */
+ font-size:calc(var(--card-w)/13.75);
+}
+.card .head-bar{background:linear-gradient(180deg,rgba(0,0,0,.6),rgba(0,0,0,.2));padding:.125em .25em;border-radius:.375em;display:flex;flex-direction:column;gap:.125em}
+.card .head-bar .name{font-weight:800;font-size:.875em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:linear-gradient(180deg,rgba(0,0,0,.7),rgba(0,0,0,.3));padding:0 .25em;border-radius:.25em}
+.card .head-bar .cost-bar{display:flex;justify-content:flex-start;align-items:center;gap:.25em;position:relative}
+.card .mana-row{display:flex;align-items:center;gap:.25em}
 /* Mana icons use a local sprite sheet with five gems in a row */
-.mana-dot{width:16px;height:16px;background-image:url('../img/mana/mana.png');background-size:500% 100%;image-rendering:pixelated;display:inline-block}
+.mana-dot{width:1em;height:1em;background-image:url('../img/mana/mana.png');background-size:500% 100%;image-rendering:pixelated;display:inline-block}
 .mana-dot.animais{background-position:0 0}
 .mana-dot.vikings{background-position:25% 0}
 .mana-dot.pescadores{background-position:50% 0}
 .mana-dot.floresta{background-position:75% 0}
 .mana-dot.custom{background-position:100% 0}
 .mana-num{font-weight:900}
-.badge{font-size:16px;
-padding:3px 6px;
+.badge{font-size:1em;
+padding:.1875em .375em;
 border-radius:999px;
 border:1px solid rgba(255,255,255,.14);
 display:flex;
@@ -161,7 +170,7 @@ justify-content:center}
 .badge.atk{background:linear-gradient(180deg,#1f2a64,#15204a)}
 .badge.def{background:linear-gradient(180deg,#2a5f3a,#1e462b)}
 .stance-label.attack,.stance-label.defense{animation:stanceHolo 2s linear infinite;filter:drop-shadow(0 0 6px rgba(0,255,255,.6))}
-.stance-label{padding:3px 6px;border-radius:999px;border:1px solid rgba(255,255,255,.14);font-size:16px;display:flex;align-items:center;justify-content:center;color:#fff}
+.stance-label{padding:.1875em .375em;border-radius:999px;border:1px solid rgba(255,255,255,.14);font-size:1em;display:flex;align-items:center;justify-content:center;color:#fff}
 .stance-label.attack{background:linear-gradient(180deg,#1f2a64,#15204a)}
 .stance-label.defense{background:linear-gradient(180deg,#2a5f3a,#1e462b)}
 /* tribe text removed */
@@ -170,33 +179,33 @@ align-items:flex-end;
 justify-content:center;
 min-height:110px;
 height:auto;
-font-size:60px;
+font-size:3.75em;
 position:relative;
-padding-bottom:4px}
+padding-bottom:.25em}
 .art::after{content:"";position:absolute;inset:0;background:linear-gradient(115deg,rgba(255,255,255,.25),rgba(255,255,255,0) 60%);mix-blend-mode:screen;pointer-events:none;opacity:.2}
-.text{font-size:12px;color:#d9e3ff;background:#0e1435;border:1px solid #25306a;border-radius:10px;padding:4px;margin:0;max-width:100%;word-break:break-word;box-sizing:border-box;white-space:normal;overflow:hidden;height:auto;display:flex;align-items:center;flex-wrap:wrap;gap:6px}
+.text{font-size:.75em;color:#d9e3ff;background:#0e1435;border:1px solid #25306a;border-radius:.625em;padding:.25em;margin:0;max-width:100%;word-break:break-word;box-sizing:border-box;white-space:normal;overflow:hidden;height:auto;display:flex;align-items:center;flex-wrap:wrap;gap:.375em}
 .text::after{content:""}
-.stats{display:flex;justify-content:space-between;align-items:center;margin:0;min-height:26px;align-self:end;gap:4px}
-.stats .stance-label{margin:0 4px;text-align:center}
+.stats{display:flex;justify-content:space-between;align-items:center;margin:0;min-height:1.625em;align-self:end;gap:.25em}
+.stats .stance-label{margin:0 .25em;text-align:center}
 
-.gem{padding:6px 10px;
+.gem{padding:.375em .625em;
 border-radius:999px;
-font-size:12px;
+font-size:.75em;
 font-weight:900;
 display:inline-flex;
 align-items:center;
-gap:6px;
+gap:.375em;
 border:1px solid rgba(255,255,255,.08)}
 .atk{background:linear-gradient(180deg,#233b7a,#1a2f66)}
 .hp{background:linear-gradient(180deg,#2a5f3a,#1e462b)}
 .hp.low{background:linear-gradient(180deg,#7a2e36,#5a1f25)}
 .keyword{display:inline-block;
 background:linear-gradient(180deg,#6342b6,#3b1f7e);
-padding:2px 6px;
+padding:.125em .375em;
 border-radius:999px;
-font-size:11px;
+font-size:.6875em;
 border:1px solid rgba(255,255,255,.12)}
-.class-tag{display:inline-block;margin-left:auto;padding:2px 6px;border-radius:999px;font-size:11px;border:1px solid rgba(255,255,255,.12);color:#fff}
+.class-tag{display:inline-block;margin-left:auto;padding:.125em .375em;border-radius:999px;font-size:.6875em;border:1px solid rgba(255,255,255,.12);color:#fff}
 .class-tag.tank{background:#2a5f3a}
 .class-tag.dps{background:#5f2a2a}
 .class-tag.support{background:#2a4a5f}
