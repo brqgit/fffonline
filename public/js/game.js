@@ -201,7 +201,7 @@ function updateCurve(){if(!curveEl)return;const list=(G.customDeck||[]);const bu
 window.addEventListener('error',function(e){console.error('JS Error:',e.message,e.filename+':'+e.lineno);try{typeof log==='function'&&log('⚠️ '+e.message)}catch(_){}});
 window.addEventListener('unhandledrejection',function(e){console.error('Unhandled Rejection:',e.reason);try{const msg=e.reason&&e.reason.message?e.reason.message:String(e.reason);typeof log==='function'&&log('⚠️ '+msg)}catch(_){}});
 
-function tiltify(card,lift=!1){const h=card.offsetHeight,w=card.offsetWidth;let hov=!1;if(lift){card.addEventListener('mouseenter',()=>{hov=!0;card.style.zIndex=1000;card.style.transform='translateY(-20px)'});card.addEventListener('mouseleave',()=>{hov=!1;card.style.zIndex=card.dataset.z||'';card.style.transform=''})}else{card.addEventListener('mouseleave',()=>{card.style.transform=''})}card.addEventListener('mousemove',e=>{if(card.classList.contains('chosen'))return;const x=(e.offsetX/w-.5)*12,y=(e.offsetY/h-.5)*-12,ty=hov?-20:0;card.style.transform=`translateY(${ty}px) perspective(600px) rotateX(${y}deg) rotateY(${x}deg)`})}
+function tiltify(card,lift=!1){const h=card.offsetHeight,w=card.offsetWidth;let hov=!1;if(lift){card.addEventListener('mouseenter',()=>{if(card.classList.contains('chosen'))return;hov=!0;card.style.zIndex=1000;card.style.transform='translateY(-20px)'});card.addEventListener('mouseleave',()=>{if(card.classList.contains('chosen'))return;hov=!1;card.style.zIndex=card.dataset.z||'';card.style.transform=''})}else{card.addEventListener('mouseleave',()=>{if(card.classList.contains('chosen'))return;card.style.transform=''})}card.addEventListener('mousemove',e=>{if(card.classList.contains('chosen'))return;const x=(e.offsetX/w-.5)*12,y=(e.offsetY/h-.5)*-12,ty=hov?-20:0;card.style.transform=`translateY(${ty}px) perspective(600px) rotateX(${y}deg) rotateY(${x}deg)`})}
 function showPopup(anchor,text){const box=document.createElement('div');box.className='card-popup';box.textContent=text;const r=anchor.getBoundingClientRect();box.style.left=r.left+r.width/2+'px';box.style.top=r.top+'px';document.body.appendChild(box);setTimeout(()=>box.remove(),1200)}
 function createProjection(container,card){
   const urls=iconUrl(card.deck,card.icon);
@@ -263,7 +263,7 @@ const hasGuard=b=>b.some(x=>x.kw.includes('Protetor')||x.stance==='defense');
 function updateMeters(){const pct=(v,max)=>(max>0?Math.max(0,Math.min(100,(v/max)*100)):0);els.barPHP.style.width=pct(G.playerHP,30)+'%';els.barAHP.style.width=pct(G.aiHP,30)+'%';els.barMana.style.width=pct(G.playerMana,G.playerManaCap)+'%'}
 function updateOpponentLabel(){if(!els.opponentLabel)return;if(window.isMultiplayer){els.opponentLabel.textContent=window.opponentName?` ${window.opponentName}`:'';}else if(G.mode==='story'){els.opponentLabel.textContent='';}else{const t=DECK_TITLES[G.aiDeckChoice]||'';els.opponentLabel.textContent=t?` ${t}`:'';}}
 function renderAll(){els.pHP.textContent=G.playerHP;els.pHP2.textContent=G.playerHP;els.aHP.textContent=G.aiHP;els.aHP2.textContent=G.aiHP;els.mana.textContent=`${G.playerMana}/${G.playerManaCap}`;els.endBtn.disabled=G.current!=='player';els.drawCount.textContent=G.playerDeck.length;els.discardCount.textContent=G.playerDiscard.length;updateMeters();updateOpponentLabel();renderHand();renderBoard();renderTotems()}
-function renderHand(){els.pHand.innerHTML='';G.playerHand.forEach(c=>{const d=cardNode(c,'player');d.classList.add('handcard');tiltify(d,!0);d.addEventListener('click',e=>{const blocked=(c.cost>G.playerMana)||G.current!=='player'||G.playerBoard.length>=5;if(blocked){d.style.transform='translateY(-2px)';setTimeout(()=>d.style.transform='',150);sfx('error');return}e.stopPropagation();openStanceChooser(d,st=>{flyToBoard(d,()=>playFromHand(c.id,st));});});const cantPay=(c.cost>G.playerMana);const disable=(G.current!=='player'||G.playerBoard.length>=5);d.classList.toggle('blocked',cantPay);d.classList.toggle('playable',!cantPay&&!disable);d.style.cursor=(cantPay||disable)?'not-allowed':'pointer';els.pHand.appendChild(d)});stackHand()}
+function renderHand(){els.pHand.innerHTML='';G.playerHand.forEach(c=>{const d=cardNode(c,'player');d.classList.add('handcard');tiltify(d,!0);d.addEventListener('click',e=>{if(d.classList.contains('chosen'))return;const blocked=(c.cost>G.playerMana)||G.current!=='player'||G.playerBoard.length>=5;if(blocked){d.style.transform='translateY(-2px)';setTimeout(()=>d.style.transform='',150);sfx('error');return}e.stopPropagation();openStanceChooser(d,st=>{flyToBoard(d,()=>playFromHand(c.id,st));});});const cantPay=(c.cost>G.playerMana);const disable=(G.current!=='player'||G.playerBoard.length>=5);d.classList.toggle('blocked',cantPay);d.classList.toggle('playable',!cantPay&&!disable);d.style.cursor=(cantPay||disable)?'not-allowed':'pointer';els.pHand.appendChild(d)});stackHand()}
 function renderBoard(){
   validateChosen();
   els.pBoard.innerHTML='';
@@ -326,16 +326,14 @@ function openStanceChooser(anchor,cb,onCancel){
   closeStanceChooser();
   anchor.classList.add('chosen');
   const prevZ = anchor.style.zIndex;
-  const prevPE = anchor.style.pointerEvents;
-  anchor.style.zIndex = 999;
-  anchor.style.pointerEvents = 'none';
+  anchor.style.zIndex = 10000;
   const box=document.createElement('div');
   box.className='stance-chooser';
   const bA=document.createElement('button');bA.className='btn';bA.textContent='⚔️ Ataque';
   const bD=document.createElement('button');bD.className='btn';bD.textContent='🛡️ Defesa';
-  const cleanup=()=>{anchor.classList.remove('chosen');anchor.style.zIndex=prevZ;anchor.style.pointerEvents=prevPE;closeStanceChooser();};
-  bA.onclick=()=>{cleanup();cb('attack')};
-  bD.onclick=()=>{cleanup();cb('defense')};
+  const cleanup=()=>{anchor.classList.remove('chosen');anchor.style.zIndex=prevZ;closeStanceChooser();};
+  bA.addEventListener('click',e=>{e.stopPropagation();cleanup();cb('attack')});
+  bD.addEventListener('click',e=>{e.stopPropagation();cleanup();cb('defense')});
   box.append(bA,bD);
   anchor.appendChild(box);
   Object.assign(box.style,{position:'absolute',left:'50%',bottom:'100%',transform:'translate(-50%,-8px)'});

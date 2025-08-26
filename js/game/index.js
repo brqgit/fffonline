@@ -700,17 +700,20 @@ function tiltify(card, lift = false) {
   let hovering = false;
   if (lift) {
     card.addEventListener("mouseenter", () => {
+      if (card.classList.contains("chosen")) return;
       hovering = true;
       card.style.zIndex = 1000;
       card.style.transform = "translateY(-20px)";
     });
     card.addEventListener("mouseleave", () => {
+      if (card.classList.contains("chosen")) return;
       hovering = false;
       card.style.zIndex = card.dataset.z || "";
       card.style.transform = "";
     });
   } else {
     card.addEventListener("mouseleave", () => {
+      if (card.classList.contains("chosen")) return;
       card.style.transform = "";
     });
   }
@@ -783,6 +786,7 @@ function renderHand() {
     d.classList.add("handcard");
     tiltify(d, true);
     d.addEventListener("click", (e) => {
+      if (d.classList.contains("chosen")) return;
       const blocked =
         c.cost > G.playerMana ||
         c.harvestCost > G.playerHarvest ||
@@ -890,6 +894,8 @@ function renderBoard() {
 function openStanceChooser(anchor, cb, onCancel) {
   closeStanceChooser();
   anchor.classList.add("chosen");
+  const prevZ = anchor.style.zIndex;
+  anchor.style.zIndex = 10000;
   const box = document.createElement("div");
   box.className = "stance-chooser";
   const bA = document.createElement("button");
@@ -898,16 +904,21 @@ function openStanceChooser(anchor, cb, onCancel) {
   const bD = document.createElement("button");
   bD.className = "btn";
   bD.textContent = "🛡️ Defesa";
-  bA.onclick = () => {
+  const cleanup = () => {
     anchor.classList.remove("chosen");
+    anchor.style.zIndex = prevZ;
     closeStanceChooser();
+  };
+  bA.addEventListener("click", (e) => {
+    e.stopPropagation();
+    cleanup();
     cb("attack");
-  };
-  bD.onclick = () => {
-    anchor.classList.remove("chosen");
-    closeStanceChooser();
+  });
+  bD.addEventListener("click", (e) => {
+    e.stopPropagation();
+    cleanup();
     cb("defense");
-  };
+  });
   box.append(bA, bD);
   anchor.appendChild(box);
   Object.assign(box.style, {
@@ -920,8 +931,7 @@ function openStanceChooser(anchor, cb, onCancel) {
     const h = (ev) => {
       if (ev.target.closest(".stance-chooser") || ev.target === anchor) return;
       window.removeEventListener("click", h, true);
-      anchor.classList.remove("chosen");
-      closeStanceChooser();
+      cleanup();
       onCancel && onCancel();
     };
     window.addEventListener("click", h, true);

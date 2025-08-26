@@ -321,7 +321,9 @@ align-items:center}
 #roomList{margin-top:12px}
 #roomList .room{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
 #roomList .room button{margin-left:8px}
-.turn-indicator{text-align:center;font-size:20px;font-weight:700;margin:8px 0}
+.turn-bar{display:flex;align-items:center;margin:8px 0}
+.turn-indicator{flex:1;text-align:center;font-size:20px;font-weight:700}
+#endTurnBtn{margin-left:auto}
 .game-menu{position:fixed;inset:0;display:none;place-items:center;z-index:50;background:rgba(0,0,0,.7)}
 .game-menu.show{display:grid}
 .game-menu .panel{text-align:center;display:flex;flex-direction:column;gap:12px}
@@ -719,4 +721,3 @@ display:block}
 @keyframes bolt{0%{transform:translateX(-50%) scaleY(0)}60%{transform:translateX(-50%) scaleY(1)}100%{opacity:0;transform:translateX(-50%) scaleY(1)}}
 #encounterTransition{position:fixed;inset:0;background:#000;opacity:0;pointer-events:none;transition:opacity .4s ease;z-index:2500}
 #encounterTransition.show{opacity:1}
-#endTurnBtn{position:absolute;right:16px;top:50%;transform:translateY(-50%);z-index:1000}
