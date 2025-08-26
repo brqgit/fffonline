@@ -261,7 +261,7 @@ function resetCardState(c){
 }
 const hasGuard=b=>b.some(x=>x.kw.includes('Protetor')||x.stance==='defense');
 function updateMeters(){const pct=(v,max)=>(max>0?Math.max(0,Math.min(100,(v/max)*100)):0);els.barPHP.style.width=pct(G.playerHP,30)+'%';els.barAHP.style.width=pct(G.aiHP,30)+'%';els.barMana.style.width=pct(G.playerMana,G.playerManaCap)+'%'}
-function updateOpponentLabel(){if(!els.opponentLabel)return;if(window.isMultiplayer){els.opponentLabel.textContent=window.opponentName?` ${window.opponentName}`:'';}else{const t=DECK_TITLES[G.aiDeckChoice]||'';els.opponentLabel.textContent=t?` ${t}`:'';}}
+function updateOpponentLabel(){if(!els.opponentLabel)return;if(window.isMultiplayer){els.opponentLabel.textContent=window.opponentName?` ${window.opponentName}`:'';}else if(G.mode==='story'){els.opponentLabel.textContent='';}else{const t=DECK_TITLES[G.aiDeckChoice]||'';els.opponentLabel.textContent=t?` ${t}`:'';}}
 function renderAll(){els.pHP.textContent=G.playerHP;els.pHP2.textContent=G.playerHP;els.aHP.textContent=G.aiHP;els.aHP2.textContent=G.aiHP;els.mana.textContent=`${G.playerMana}/${G.playerManaCap}`;els.endBtn.disabled=G.current!=='player';els.drawCount.textContent=G.playerDeck.length;els.discardCount.textContent=G.playerDiscard.length;updateMeters();updateOpponentLabel();renderHand();renderBoard();renderTotems()}
 function renderHand(){els.pHand.innerHTML='';G.playerHand.forEach(c=>{const d=cardNode(c,'player');d.classList.add('handcard');tiltify(d,!0);d.addEventListener('click',e=>{const blocked=(c.cost>G.playerMana)||G.current!=='player'||G.playerBoard.length>=5;if(blocked){d.style.transform='translateY(-2px)';setTimeout(()=>d.style.transform='',150);sfx('error');return}e.stopPropagation();openStanceChooser(d,st=>{flyToBoard(d,()=>playFromHand(c.id,st));});});const cantPay=(c.cost>G.playerMana);const disable=(G.current!=='player'||G.playerBoard.length>=5);d.classList.toggle('blocked',cantPay);d.classList.toggle('playable',!cantPay&&!disable);d.style.cursor=(cantPay||disable)?'not-allowed':'pointer';els.pHand.appendChild(d)});stackHand()}
 function renderBoard(){
@@ -326,12 +326,14 @@ function openStanceChooser(anchor,cb,onCancel){
   closeStanceChooser();
   anchor.classList.add('chosen');
   const prevZ = anchor.style.zIndex;
+  const prevPE = anchor.style.pointerEvents;
   anchor.style.zIndex = 999;
+  anchor.style.pointerEvents = 'none';
   const box=document.createElement('div');
   box.className='stance-chooser';
   const bA=document.createElement('button');bA.className='btn';bA.textContent='⚔️ Ataque';
   const bD=document.createElement('button');bD.className='btn';bD.textContent='🛡️ Defesa';
-  const cleanup=()=>{anchor.classList.remove('chosen');anchor.style.zIndex=prevZ;closeStanceChooser();};
+  const cleanup=()=>{anchor.classList.remove('chosen');anchor.style.zIndex=prevZ;anchor.style.pointerEvents=prevPE;closeStanceChooser();};
   bA.onclick=()=>{cleanup();cb('attack')};
   bD.onclick=()=>{cleanup();cb('defense')};
   box.append(bA,bD);
@@ -482,6 +484,7 @@ const animateDefense=id=>{const n=nodeById(id);addAnim(n,'shield-flash',600)};
 function screenSlash(x,y,ang){const fx=document.createElement('div');fx.className='fx fx-slash';fx.style.left=x+'px';fx.style.top=y+'px';fx.style.setProperty('--ang',ang+'deg');document.body.appendChild(fx);setTimeout(()=>fx.remove(),380)}
 function screenParticle(n,x,y){const fx=document.createElement('div');fx.className='fx fx-'+n;fx.style.left=x+'px';fx.style.top=y+'px';document.body.appendChild(fx);setTimeout(()=>fx.remove(),600)}
 function showEncounterBanner(name,type='enemy'){const b=document.getElementById('encounterBanner');if(!b)return;b.textContent=name;b.className=type+' show';setTimeout(()=>b.classList.remove('show'),1500);}
+function encounterTransition(cb){const t=document.getElementById('encounterTransition');if(!t){cb();return;}t.classList.add('show');setTimeout(()=>{cb();setTimeout(()=>t.classList.remove('show'),400);},400)}
 function particleOnCard(cid,n){const t=nodeById(cid);if(!t)return;const r=t.getBoundingClientRect();screenParticle(n,r.left+r.width/2,r.top+r.height/2)}
 function particleOnFace(side,n){const el=side==='ai'?els.aHP2:els.pHP2;if(!el)return;const r=el.getBoundingClientRect();screenParticle(n,r.left+r.width/2,r.top+r.height/2)}
 function fxTextOnCard(cid,text,cls){const n=document.querySelector(`.card[data-id="${cid}"]`);if(!n)return;const r=n.getBoundingClientRect();const fx=document.createElement('div');fx.className='fx-float '+(cls||'');fx.textContent=text;fx.style.left=(r.left+r.width/2)+'px';fx.style.top=(r.top+r.height/2)+'px';document.body.appendChild(fx);setTimeout(()=>fx.remove(),950);}
@@ -499,7 +502,7 @@ function checkWin(){
       log(`Recompensas disponíveis: ${rewards.join(', ')}`);
       log(`Você ganhou ${goldGain} ouro.`);
       if(leveled) log(`Você alcançou o nível ${G.story.level}!`);
-      const proceed=()=>setTimeout(()=>startGame({continueStory:true}),500);
+      const proceed=()=>encounterTransition(()=>startGame({continueStory:true}));
       if(G.story.round % 3 === 0){
         showEncounterBanner('Loja Itinerante','shop');
         openShop({
@@ -522,7 +525,7 @@ els.endBtn.addEventListener('click',endTurn);els.muteBtn.addEventListener('click
 function confirmExit(){return G.mode==='story'?confirm('Progresso da história será perdido. Continuar?'):confirm('Tem certeza?');}
 if(els.openMenuBtn)els.openMenuBtn.addEventListener('click',()=>{els.gameMenu.classList.add('show');els.restartBtn&&(els.restartBtn.style.display=window.isMultiplayer?'none':'block')});
 if(els.closeMenuBtn)els.closeMenuBtn.addEventListener('click',()=>{els.gameMenu.classList.remove('show')});
-if(els.mainMenuBtn)els.mainMenuBtn.addEventListener('click',()=>{if(!confirmExit())return;els.gameMenu.classList.remove('show');els.start.style.display='grid';els.wrap.style.display='none';startMenuMusic('menu');if(window.isMultiplayer&&window.NET){NET.disconnect();}window.isMultiplayer=false;window.mpState=null;const custom=document.querySelector('.deckbtn[data-deck="custom"]');custom&&(custom.style.display='');if(els.startGame){els.startGame.textContent='Jogar';els.startGame.disabled=true;}});
+if(els.mainMenuBtn)els.mainMenuBtn.addEventListener('click',()=>{if(!confirmExit())return;els.gameMenu.classList.remove('show');const title=document.getElementById('titleMenu');const deck=document.getElementById('start');if(title)title.style.display='block';if(deck)deck.style.display='none';els.wrap.style.display='none';startMenuMusic('menu');if(window.isMultiplayer&&window.NET){NET.disconnect();}window.isMultiplayer=false;window.mpState=null;const custom=document.querySelector('.deckbtn[data-deck="custom"]');custom&&(custom.style.display='');if(els.startGame){els.startGame.textContent='Jogar';els.startGame.disabled=true;}});
 if(els.restartBtn)els.restartBtn.addEventListener('click',()=>{if(window.isMultiplayer)return;if(!confirmExit())return;els.gameMenu.classList.remove('show');startGame()});
 if(els.resignBtn)els.resignBtn.addEventListener('click',()=>{if(!confirmExit())return;els.gameMenu.classList.remove('show');if(window.isMultiplayer&&window.NET){NET.resign();}endGame(false)});
 if(els.emojiBar){els.emojiBar.querySelectorAll('.emoji-btn').forEach(b=>b.addEventListener('click',()=>{const em=b.dataset.emoji;showEmoji('player',em);if(window.isMultiplayer&&window.NET){NET.sendEmoji(em)}}));}
@@ -570,6 +573,7 @@ if(els.saveDeck)els.saveDeck.addEventListener('click',()=>{if(G.customDeck&&G.cu
 els.startGame.addEventListener('click',()=>{if(els.startGame.disabled)return;if(window.isMultiplayer){if(window.mpState==='readyStart'){NET.startReady();window.mpState='waitingStart';els.startGame.textContent='Aguardando oponente iniciar...';els.startGame.disabled=true}else if(!window.mpState){NET.deckChoice(G.playerDeckChoice);if(window.opponentConfirmed){window.mpState='readyStart';els.startGame.textContent='Iniciar';els.startGame.disabled=false}else{window.mpState='waitingDeck';els.startGame.textContent='Aguardando oponente confirmar deck...';els.startGame.disabled=true}}}else{els.start.style.display='none';els.wrap.style.display='block';initAudio();ensureRunning();stopMenuMusic();startGame()}});
 els.openEncy.addEventListener('click',()=>renderEncy('all',false));els.closeEncy.addEventListener('click',()=>{els.ency.classList.remove('show')});$$('.filters .fbtn').forEach(b=>b.addEventListener('click',()=>{renderEncy(b.dataset.deck,false)}));
 els.playAgainBtn.addEventListener('click',()=>{if(!confirmExit())return;if(window.isMultiplayer){showMultiplayerDeckSelect();els.endOverlay.classList.remove('show');}else{els.endOverlay.classList.remove('show');startGame()}});els.rematchBtn.addEventListener('click',()=>{if(!confirmExit())return;if(window.isMultiplayer&&window.NET){NET.requestRematch();els.rematchBtn.disabled=true;els.endSub.textContent='Aguardando oponente';}else{els.endOverlay.classList.remove('show');startGame()}});els.menuBtn.addEventListener('click',()=>{if(!confirmExit())return;els.endOverlay.classList.remove('show');els.start.style.display='grid';els.wrap.style.display='none';startMenuMusic('menu');if(window.isMultiplayer&&window.NET){NET.disconnect();}window.isMultiplayer=false;window.mpState=null;const custom=document.querySelector('.deckbtn[data-deck="custom"]');custom&&(custom.style.display='');if(els.startGame){els.startGame.textContent='Jogar';els.startGame.disabled=true;}});
+window.startTotemTest=()=>{window.currentGameMode='solo';const deck=[{id:uid(),type:'unit',name:'Rastreador do Fiorde',cost:1,atk:1,hp:2,kw:[]},{id:uid(),type:'unit',name:'Ceifeira Ágil',cost:2,atk:3,hp:2,kw:[]},{id:uid(),type:'totem',name:'Totem de Fúria',cost:1,buffs:{atk:1}},{id:uid(),type:'totem',name:'Totem de Pedra',cost:1,buffs:{hp:1}}];G.customDeck=deck.map(c=>Object.assign({},c));G.playerDeckChoice='custom';els.start.style.display='none';els.wrap.style.display='block';initAudio();ensureRunning();stopMenuMusic();startGame();G.playerHand=G.playerDeck.splice(0);G.playerManaCap=10;G.playerMana=10;renderAll();stackHand();};
 function handleMove(move){switch(move.type){case 'summon':{summon('ai',move.card,move.stance,true);applyBattlecryEffects('ai',move.effects||[]);G.aiMana-=move.card.cost;renderAll();break}case 'attack':{const a=G.aiBoard.find(x=>x.id===move.attackerId);const t=G.playerBoard.find(x=>x.id===move.targetId);if(a&&t)attackCard(a,t);break}case 'attackFace':{const a=G.aiBoard.find(x=>x.id===move.attackerId);if(a)attackFace(a,'player');break}}}
 function handleTurn(turn){if(turn==='end'){G.current='player';G.chosen=null;updateTargetingUI();newTurn(false,'ai')}}
 if(window.NET){NET.onOpponentDeckConfirmed(d=>{G.aiDeckChoice=d;if(window.mpState==='waitingDeck'){els.startGame.textContent='Iniciar';els.startGame.disabled=false;window.mpState='readyStart'}else{window.opponentConfirmed=true}});NET.onStartGame(()=>{els.start.style.display='none';els.wrap.style.display='block';initAudio();ensureRunning();stopMenuMusic();startGame(NET.isHost()?'player':'ai');window.mpState=null;window.opponentConfirmed=false});NET.onOpponentName(n=>{window.opponentName=n;updateOpponentLabel()})}
