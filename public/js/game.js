@@ -69,7 +69,11 @@ function deriveClassSub(name){
   if(n.includes('navegador')) return {classe:'support', subclasse:'Navegador'};
   return {classe:'', subclasse:''};
 }
-const makeCard=a=>{const[n,e,t,atk,hp,cost,tx,k=0,b=0,i]=a;let name=n;if(!name&&typeof i==='string')name=normalizeCardName(i);const cls=deriveClassSub(name);return{name,emoji:e,tribe:t,atk,hp,cost,text:tx,kw:k?k.split('|').map(x=>KW[x]):[],battlecry:b?BC[b]:void 0,icon:i,classe:cls.classe,subclasse:cls.subclasse,id:uid()}};
+const makeCard=a=>{const[n,e,t,atk,hp,cost,tx,k=0,b=0,i]=a;let name=n;if(!name&&typeof i==='string')name=normalizeCardName(i);const cls=deriveClassSub(name);const card={name,emoji:e,tribe:t,atk,hp,cost,text:tx,kw:k?k.split('|').map(x=>KW[x]):[],battlecry:b?BC[b]:void 0,icon:i,classe:cls.classe,subclasse:cls.subclasse,id:uid()};
+  // detect simple totem marker: tribe set to 'Totem' or name includes 'Totem'
+  if((typeof t==='string'&&t.toLowerCase()==='totem') || (typeof name==='string' && name.toLowerCase().includes('totem'))){ card.type='totem'; }
+  return card;
+};
 const DECK_IMAGES={
   vikings:['1_Guerreiro_Loiro','2_Guerreiro_Esqueleto','3_Guerreiro_Rubro','4_Mago_Elder','5_Raider_Mascara','6_Guerreiro_Machado','7_Sombras_Encapuzado','8_Guerreiro_Espada','9_Raider_Mascara_Sombra','10_Mago_Elder_Sombra'],
   pescadores:['1_Fogueira_Viking','2_Mistico_Encapuzado','3_Drakkar','4_Guerreiro_do_Escudo','5_Estandarte_do_Cla','6_Guerreiro_das_Runas','7_Guardiao_do_Machado','8_Batalhador_Duplo','9_Navegador','10_Batalhador'],
@@ -161,7 +165,9 @@ class StoryMode{
   reset(){this.round=0;this.totems=[];this.xp=0;this.gold=30;this.currentEncounter='normal';}
 }
 const ALL_DECKS=Object.keys(TEMPLATES);
-const G={playerHP:30,aiHP:30,turn:0,playerMana:0,playerManaCap:0,aiMana:0,aiManaCap:0,current:'player',playerDeck:[],aiDeck:[],playerHand:[],aiHand:[],playerBoard:[],aiBoard:[],playerDiscard:[],aiDiscard:[],chosen:null,playerDeckChoice:'vikings',aiDeckChoice:rand(ALL_DECKS),customDeck:null,mode:'solo',story:null,enemyScaling:0,maxHandSize:5,totems:[]};
+const G={playerHP:30,aiHP:30,turn:0,playerMana:0,playerManaCap:0,aiMana:0,aiManaCap:0,current:'player',playerDeck:[],aiDeck:[],playerHand:[],aiHand:[],playerBoard:[],aiBoard:[],playerDiscard:[],aiDiscard:[],chosen:null,playerDeckChoice:'vikings',aiDeckChoice:rand(ALL_DECKS),customDeck:null,mode:'solo',story:null,enemyScaling:0,maxHandSize:5,totems:[],maxTotemSlots:3,buysPending:false};
+// pending potion selected by player from shop; {effect,name}
+G.pendingPotion = null;
 const els={pHP:$('#playerHP'),pHP2:$('#playerHP2'),aHP:$('#aiHP'),aHP2:$('#aiHP2'),opponentLabel:$('#opponentLabel'),mana:$('#mana'),pHand:$('#playerHand'),pBoard:$('#playerBoard'),aBoard:$('#aiBoard'),endBtn:$('#endTurnBtn'),muteBtn:$('#muteBtn'),aAva:$('#aiAvatar'),drawCount:$('#drawCount'),discardCount:$('#discardCount'),barPHP:$('#barPlayerHP'),barAHP:$('#barAiHP'),barMana:$('#barMana'),wrap:$('#gameWrap'),start:$('#start'),openEncy:$('#openEncy'),ency:$('#ency'),encyGrid:$('#encyGrid'),encyFilters:$('#encyFilters'),closeEncy:$('#closeEncy'),startGame:$('#startGame'),endOverlay:$('#endOverlay'),endMsg:$('#endMsg'),endSub:$('#endSub'),playAgainBtn:$('#playAgainBtn'),rematchBtn:$('#rematchBtn'),menuBtn:$('#menuBtn'),openMenuBtn:$('#openMenuBtn'),gameMenu:$('#gameMenu'),closeMenuBtn:$('#closeMenuBtn'),resignBtn:$('#resignBtn'),restartBtn:$('#restartBtn'),mainMenuBtn:$('#mainMenuBtn'),turnIndicator:$('#turnIndicator'),emojiBar:$('#emojiBar'),playerEmoji:$('#playerEmoji'),opponentEmoji:$('#opponentEmoji'),deckBuilder:$('#deckBuilder'),saveDeck:$('#saveDeck')};
 els.startGame.disabled=true;
 
@@ -313,8 +319,14 @@ function cardNode(c,owner,onBoard=false){
   d.innerHTML=`<div class="bg bg-${c.deck||'default'}"></div>
   <div class="head-bar"><div class="name">${c.name}</div><div class="cost-bar"><div class="mana-row"><span class="mana-num">${c.cost}</span>${manaDots}</div></div></div>
   <div class="art"></div>
-  <div class="text" ${tip?`data-tip='${tip}' title='${tip}'`:''}>${kwTags.join(' ')}</div>
-  <div class="stats"><span class="gem atk">⚔️ ${c.atk}</span>${c.stance?`<span class="stance-label ${c.stance}">${c.stance==='defense'?'🛡️':'⚔️'}</span>`:''}<span class="gem hp ${c.hp<=2?'low':''}">❤️ ${c.hp}</span></div>`;
+  <div class="text" ${tip?`data-tip='${tip}' title='${tip}'`:''}>${kwTags.join(' ')}</div>`;
+  // for totems, do not render atk/hp stats; add totem class for styling
+  if(c.type!=='totem'){
+    const statsHTML = `<div class="stats"><span class="gem atk">⚔️ ${c.atk}</span>${c.stance?`<span class="stance-label ${c.stance}">${c.stance==='defense'?'🛡️':'⚔️'}</span>`:''}<span class="gem hp ${c.hp<=2?'low':''}">❤️ ${c.hp}</span></div>`;
+    d.innerHTML += statsHTML;
+  } else {
+    d.classList.add('totem');
+  }
   if(!onBoard){
     const art=d.querySelector('.art');
     createProjection(art,c);
@@ -338,9 +350,9 @@ function renderAll(){
   els.aHP.textContent=G.aiHP;
   els.aHP2.textContent=G.aiHP;
   els.mana.textContent=`${G.playerMana}/${G.playerManaCap}`;
-  // disable the button and hide it when it's not the player's turn
+  // disable the button and hide it when it's not the player's turn or buys are pending
   if(els.endBtn){
-    els.endBtn.disabled = (G.current !== 'player');
+    els.endBtn.disabled = (G.current !== 'player') || G.buysPending;
     els.endBtn.style.display = (G.current === 'player') ? 'inline-block' : 'none';
   }
   // ensure the turn indicator text doesn't wrap and reflects current turn
@@ -351,7 +363,10 @@ function renderAll(){
   els.discardCount.textContent=G.playerDiscard.length;
   updateMeters();updateOpponentLabel();renderHand();renderBoard();renderTotems()
 }
-function renderHand(){els.pHand.innerHTML='';G.playerHand.forEach(c=>{const d=cardNode(c,'player');d.classList.add('handcard');tiltify(d,!0);d.addEventListener('click',e=>{if(d.classList.contains('chosen'))return;const blocked=(c.cost>G.playerMana)||G.current!=='player'||G.playerBoard.length>=5;if(blocked){d.style.transform='translateY(-2px)';setTimeout(()=>d.style.transform='',150);sfx('error');return}e.stopPropagation();openStanceChooser(d,st=>{flyToBoard(d,()=>playFromHand(c.id,st));});});const cantPay=(c.cost>G.playerMana);const disable=(G.current!=='player'||G.playerBoard.length>=5);d.classList.toggle('blocked',cantPay);d.classList.toggle('playable',!cantPay&&!disable);d.style.cursor=(cantPay||disable)?'not-allowed':'pointer';els.pHand.appendChild(d)});stackHand()}
+function renderHand(){els.pHand.innerHTML='';G.playerHand.forEach(c=>{const d=cardNode(c,'player');d.classList.add('handcard');tiltify(d,!0);d.addEventListener('click',e=>{if(d.classList.contains('chosen'))return;const blocked=(c.cost>G.playerMana)||G.current!=='player'||G.playerBoard.length>=5;if(blocked){d.style.transform='translateY(-2px)';setTimeout(()=>d.style.transform='',150);sfx('error');return}e.stopPropagation();
+  // clear any previously chosen hand card visual before selecting this one
+  clearHandChosen();
+  openStanceChooser(d,st=>{flyToBoard(d,()=>playFromHand(c.id,st));});});const cantPay=(c.cost>G.playerMana);const disable=(G.current!=='player'||G.playerBoard.length>=5);d.classList.toggle('blocked',cantPay);d.classList.toggle('playable',!cantPay&&!disable);d.style.cursor=(cantPay||disable)?'not-allowed':'pointer';els.pHand.appendChild(d)});stackHand()}
 
 
 // Animate a sequential flip for newly drawn cards.
@@ -383,11 +398,10 @@ function animateDrawFlip(ids=[]){
       node.appendChild(inner);
       node.classList.add('show-back');
     }
-    // schedule flip with stagger (50% faster)
+      // schedule flip with stagger (faster but stable)
     setTimeout(()=>{
-      // toggle class to rotate inner once
       node.classList.remove('show-back');
-      // after flip, cleanup: unwrap front children back into card root
+      // after flip, cleanup and ensure deck back is used uniformly for the back face
       setTimeout(()=>{
         const inner=node.querySelector('.flip-inner');
         if(inner){
@@ -396,7 +410,7 @@ function animateDrawFlip(ids=[]){
           inner.remove();
         }
         node.classList.remove('show-back');
-      },175);
+      },200);
     }, i*45);
   });
 }
@@ -418,7 +432,7 @@ function animateDrawFlipOne(id){
       inner.appendChild(front); inner.appendChild(back); node.appendChild(inner);
       node.classList.add('show-back');
     }
-    // trigger flip (50% faster)
+    // trigger flip with stable timing and deck back image for consistency
     requestAnimationFrame(()=>{
       node.classList.remove('show-back');
       setTimeout(()=>{
@@ -426,7 +440,7 @@ function animateDrawFlipOne(id){
         if(inner){ const front=inner.querySelector('.face.front'); while(front && front.firstChild) node.insertBefore(front.firstChild, node.firstChild); inner.remove(); }
         node.classList.remove('show-back');
         resolve();
-      },175);
+      },200);
     });
   });
 }
@@ -448,7 +462,10 @@ function renderBoard(){
     tiltify(d);
     const art = d.querySelector('.art');
     if(!art.querySelector('.projection')){ const p=document.createElement('div'); p.className='projection'; art.appendChild(p); createProjection(p,c); } else { const p=art.querySelector('.projection'); if(p) createProjection(p,c); }
-    if(G.current==='player' && c.canAttack && c.stance!=='defense'){
+    if(G.pendingPotion){
+      // apply potion when clicking a card
+      d.addEventListener('click',()=>{applyPotionToCard(c);});
+    } else if(G.current==='player' && c.canAttack && c.stance!=='defense'){
       d.classList.add('selectable','attackable');
       d.addEventListener('click',()=>selectAttacker(c));
     } else if(G.current==='player'){
@@ -463,6 +480,7 @@ function renderBoard(){
     tiltify(d);
     const art = d.querySelector('.art');
     if(!art.querySelector('.projection')){ const p=document.createElement('div'); p.className='projection'; art.appendChild(p); createProjection(p,c); } else { const p=art.querySelector('.projection'); if(p) createProjection(p,c); }
+    if(G.pendingPotion){ d.addEventListener('click',()=>{applyPotionToCard(c);}); }
     if(G.chosen && legalTarget('ai',c)){
       d.classList.add('selectable'); d.addEventListener('click',()=>attackCard(G.chosen,c));
     }
@@ -486,7 +504,8 @@ function renderTotems(){
   const bar=document.getElementById('totemBar');
   if(!bar) return;
   bar.innerHTML='';
-  for(let i=0;i<3;i++){
+  const slots = (G.maxTotemSlots && Number.isInteger(G.maxTotemSlots) && G.maxTotemSlots>0) ? G.maxTotemSlots : 3;
+  for(let i=0;i<slots;i++){
     const slot=document.createElement('div');
     slot.className='totem-slot';
     if(G.totems[i]){ slot.textContent=G.totems[i].icon||'🗿'; }
@@ -561,7 +580,8 @@ function startGame(opts='player') {
     G.currentEnemyName = pickEnemyName(G.aiDeckChoice, boss);
     log(`Round ${G.story.round}: ${G.currentEnemyName} (${G.story.currentEncounter})`);
     showEncounterBanner(G.currentEnemyName, boss ? 'boss' : 'enemy');
-    G.maxHandSize = 10;
+  G.maxHandSize = 10;
+  G.maxTotemSlots = 3;
   } else {
     G.story = null;
     G.enemyScaling = 0;
@@ -664,6 +684,28 @@ async function draw(who,n=1){
 }
 function discardHand(side){const hand=side==='player'?G.playerHand:G.aiHand;const disc=side==='player'?G.playerDiscard:G.aiDiscard;if(hand.length){if(side==='player'){const cards=$$('#playerHand .card');const pile=document.getElementById('discardPile');cards.forEach(c=>animateMove(c,pile))}disc.push(...hand.splice(0));if(side==='player'){els.discardCount.textContent=G.playerDiscard.length;setTimeout(stackHand,500)}}}
 function applyTotemBuffs(){if(!G.playerBoard.length||!G.totems.length)return;G.playerBoard.forEach(u=>{u.atk=(u.baseAtk!==undefined?u.baseAtk:u.atk);u.hp=(u.baseHp!==undefined?u.baseHp:u.hp);u.baseAtk=u.atk;u.baseHp=u.hp});G.totems.forEach(t=>{const cnt=Math.min(3,G.playerBoard.length);const picks=shuffle(G.playerBoard.slice()).slice(0,cnt);picks.forEach(u=>{if(t.buffs&&t.buffs.atk)u.atk+=t.buffs.atk;if(t.buffs&&t.buffs.hp)u.hp+=t.buffs.hp;})})}
+
+function applyTotemBuffs(){
+  // reset to base
+  if(!G.playerBoard) return;
+  G.playerBoard.forEach(u=>{u.atk=(u.baseAtk!==undefined?u.baseAtk:u.atk);u.hp=(u.baseHp!==undefined?u.baseHp:u.hp);u.baseAtk=u.atk;u.baseHp=u.hp; // clear buff classes
+    const node=nodeById(u.id); if(node){ node.classList.remove('buff-fire','buff-heal','buff-water','buff-earth','buff-lightning'); }
+  });
+  if(!G.totems||!G.totems.length) return;
+  G.totems.forEach(t=>{
+    const cnt=Math.min(G.playerBoard.length, (t.targets||3));
+    const picks=shuffle(G.playerBoard.slice()).slice(0,cnt);
+    picks.forEach(u=>{
+      if(t.buffs&&t.buffs.atk) u.atk+=t.buffs.atk;
+      if(t.buffs&&t.buffs.hp) u.hp+=t.buffs.hp;
+      // add visual class based on totem tag
+      const node=nodeById(u.id);
+      if(node && t.tag){ node.classList.add('buff-'+t.tag); }
+      // spawn particle on buffed card
+      if(node) particleOnCard(u.id, t.particle || 'magic');
+    });
+  });
+}
 function showMultiplayerDeckSelect(){
   els.wrap.style.display='none';
   els.start.style.display='grid';
@@ -684,7 +726,31 @@ function showTurnIndicator(){if(!els.turnIndicator)return;els.turnIndicator.text
 function showEmoji(side,e){const el=side==='player'?els.playerEmoji:els.opponentEmoji;if(!el)return;el.textContent=e;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),1500)}
 function newTurn(skipDraw=false,prev){if(prev)applyEndTurnEffects(prev);G.turn++;if(G.current==='player'){if(!skipDraw){if(G.playerDeck.length<=4){G.playerDeck.push(...shuffle(G.playerDiscard.splice(0)))}draw('player',5)}G.playerManaCap=clamp(G.playerManaCap+1,0,10);G.playerMana=G.playerManaCap;G.playerBoard.forEach(c=>c.canAttack=true)}else{if(!skipDraw){if(G.aiDeck.length<=4){G.aiDeck.push(...shuffle(G.aiDiscard.splice(0)))}draw('ai',5)}G.aiManaCap=clamp(G.aiManaCap+1,0,10);G.aiMana=G.aiManaCap;G.aiBoard.forEach(c=>c.canAttack=true)}renderAll();showTurnIndicator()}
 function endTurn(){if(G.current!=='player')return;discardHand('player');G.current='ai';G.chosen=null;updateTargetingUI();newTurn(false,'player');sfx('end');if(window.isMultiplayer){NET.sendTurn('end')}else{setTimeout(aiTurn,500)}}
-function playFromHand(id,st){if(G.current!=='player')return;const i=G.playerHand.findIndex(c=>c.id===id);if(i<0)return;const c=G.playerHand[i];const boardFull=c.type!=='totem'&&G.playerBoard.length>=5;if(c.cost>G.playerMana||boardFull)return;G.playerHand.splice(i,1);G.playerMana-=c.cost;if(c.type==='totem'){if(G.totems.length>=3){log('Número máximo de Totens atingido.');G.playerDiscard.push(c);}else{const t={name:c.name,buffs:c.buffs||{atk:1,hp:1}};G.totems.push(t);applyTotemBuffs();log(`${c.name} ativado.`);}renderAll();return;}summon('player',c,st);renderAll();sfx(st==='defense'?'defense':'play')}
+function playFromHand(id,st){
+  if(G.current!=='player')return;
+  const i=G.playerHand.findIndex(c=>c.id===id);if(i<0)return;const c=G.playerHand[i];
+  const boardFull=c.type!=='totem'&&G.playerBoard.length>=5;
+  if(c.cost>G.playerMana||boardFull)return;
+  G.playerHand.splice(i,1);G.playerMana-=c.cost;
+  if(c.type==='totem'){
+    if(G.totems.length>=G.maxTotemSlots){
+      log('Número máximo de Totens atingido.');G.playerDiscard.push(c);
+    }else{
+      const t={name:c.name,buffs:c.buffs||{atk:1,hp:1},tag:c.tag||'',particle:c.particle||'magic',targets:c.targets||3};
+      G.totems.push(t);
+      // if card has Sombras subclass, increase max totem slots by 1 up to 10
+      if(c.subclasse && c.subclasse.toLowerCase().includes('sombras')){
+        G.maxTotemSlots = Math.min(10, G.maxTotemSlots + 1);
+        log(`${c.name} ampliou os slots de Totem para ${G.maxTotemSlots}`);
+      }
+      applyTotemBuffs();
+      log(`${c.name} ativado.`);
+      const bar=document.getElementById('totemBar'); if(bar){ const slot=bar.children[G.totems.length-1]; if(slot){ slot.classList.add('totem-active'); setTimeout(()=>slot.classList.remove('totem-active'),900); }}
+    }
+    renderAll();return;
+  }
+  summon('player',c,st);renderAll();sfx(st==='defense'?'defense':'play')
+}
 function summon(side,c,st='attack',skipBC=false){
   const board = side==='player'?G.playerBoard:G.aiBoard;
   c.stance = st;
@@ -767,6 +833,11 @@ function absorbFromAlly(side,c){const board=side==='player'?G.playerBoard:G.aiBo
 
 function applyEndTurnEffects(side){const board=side==='player'?G.playerBoard:G.aiBoard;const foeBoard=side==='player'?G.aiBoard:G.playerBoard;for(const c of board){if(c.kw.includes('Mutável')){const atk=c.atk;c.atk=c.hp;c.hp=atk;fxTextOnCard(c.id,'⇆','buff');}if(c.name==='Totem Absorvente'){const foes=foeBoard.filter(f=>f.kw&&f.kw.length);if(foes.length){const src=rand(foes);const opts=src.kw.filter(k=>!c.kw.includes(k));if(opts.length){const kw=rand(opts);c.kw.push(kw);particleOnCard(c.id,'magic');fxTextOnCard(c.id,kw,'buff');log(`${c.name} absorveu ${kw} de ${src.name}.`)}}}}}
 function updateTargetingUI(){document.body.classList.toggle('targeting',!!G.chosen)}
+
+// remove any 'chosen' visual state from hand cards
+function clearHandChosen(){
+  document.querySelectorAll('.hand .card.chosen').forEach(cn=>{ cn.classList.remove('chosen'); cn.style.transform=''; });
+}
 function validateChosen(){
   if(!G.chosen) return false;
   if(G.current!=='player'){
@@ -781,8 +852,15 @@ function validateChosen(){
   G.chosen=ref;
   return true;
 }
-function cancelTargeting(){if(!G.chosen)return;G.chosen=null;updateTargetingUI();els.aBoard.classList.remove('face-can-attack');renderBoard()}
-function selectAttacker(c){if(G.current!=='player'||!c.canAttack||c.stance==='defense')return;G.chosen=c;updateTargetingUI();renderBoard();updateFaceAttackZone();G.aiBoard.filter(x=>x.stance==='defense').forEach(x=>setTimeout(()=>animateDefense(x.id),20))}
+function cancelTargeting(){if(!G.chosen)return;G.chosen=null;updateTargetingUI();els.aBoard.classList.remove('face-can-attack');
+  // clear any chosen visuals in hand when cancelling targeting
+  clearHandChosen();
+  renderBoard()
+}
+function selectAttacker(c){if(G.current!=='player'||!c.canAttack||c.stance==='defense')return;
+  // clear any hand card chosen visual when selecting a board attacker
+  clearHandChosen();
+  G.chosen=c;updateTargetingUI();renderBoard();updateFaceAttackZone();G.aiBoard.filter(x=>x.stance==='defense').forEach(x=>setTimeout(()=>animateDefense(x.id),20))}
 function updateFaceAttackZone(){
   const guard=hasGuard(G.aiBoard), valid=validateChosen();
   const canFace = valid && !guard;
@@ -802,10 +880,55 @@ const animateAttack=(aId,tId)=>{const a=nodeById(aId),t=tId?nodeById(tId):null;a
 const animateDefense=id=>{const n=nodeById(id);addAnim(n,'shield-flash',600)};
 function screenSlash(x,y,ang){const fx=document.createElement('div');fx.className='fx fx-slash';fx.style.left=x+'px';fx.style.top=y+'px';fx.style.setProperty('--ang',ang+'deg');document.body.appendChild(fx);setTimeout(()=>fx.remove(),380)}
 function screenParticle(n,x,y){const fx=document.createElement('div');fx.className='fx fx-'+n;fx.style.left=x+'px';fx.style.top=y+'px';document.body.appendChild(fx);setTimeout(()=>fx.remove(),600)}
-function showEncounterBanner(name,type='enemy'){const b=document.getElementById('encounterBanner');if(!b)return;b.textContent=name;b.className=type+' show';setTimeout(()=>b.classList.remove('show'),1500);}
+function showEncounterBanner(name,type='enemy'){
+  const b=document.getElementById('encounterBanner');if(!b)return;
+  b.textContent=name;
+  // if enemy and aiBoard exists, position banner centered above aiBoard
+  if(type==='enemy'){ const board=document.getElementById('aiBoard'); if(board){ const r=board.getBoundingClientRect(); b.style.left=(r.left + r.width/2)+'px'; b.style.top=(r.top + r.height/2)+'px'; b.style.position='fixed'; b.className='enemy show'; setTimeout(()=>b.classList.remove('show'),1500); return; } }
+  // fallback to center screen
+  b.style.left='50%'; b.style.top='50%'; b.style.position='fixed'; b.className=type+' show'; setTimeout(()=>b.classList.remove('show'),1500);
+}
 function encounterTransition(cb){const t=document.getElementById('encounterTransition');if(!t){cb();return;}t.classList.add('show');setTimeout(()=>{cb();setTimeout(()=>t.classList.remove('show'),400);},400)}
 function particleOnCard(cid,n){const t=nodeById(cid);if(!t)return;const r=t.getBoundingClientRect();screenParticle(n,r.left+r.width/2,r.top+r.height/2)}
 function particleOnFace(side,n){const el=side==='ai'?els.aHP2:els.pHP2;if(!el)return;const r=el.getBoundingClientRect();screenParticle(n,r.left+r.width/2,r.top+r.height/2)}
+
+function applyPotionToCard(card){
+  if(!G.pendingPotion) return;
+  const p = G.pendingPotion;
+  applyPotionEffect(card,p.effect);
+  log(`Usou ${p.name} em ${card.name}`);
+  // consume potion
+  G.pendingPotion = null;
+  // remove one matching potion from inventory if present
+  if(G.potionInventory && G.potionInventory.length){
+    // try remove by name then by effect
+    const idx = G.potionInventory.findIndex(x=>x.name===p.name || x.effect===p.effect);
+    if(idx>-1) G.potionInventory.splice(idx,1);
+  }
+  // clear any pending UI indicator
+  try{ document.body.classList.remove('potion-pending'); }catch(_){ }
+  // re-render and update tray if available
+  renderAll();
+  if(window && typeof window.renderPotionTray==='function') window.renderPotionTray();
+}
+
+function applyPotionEffect(card,effect){
+  if(!card || !effect) return;
+  switch(effect){
+    case 'heal3': card.hp = Math.min(card.hp+3, 99); fxTextOnCard(card.id,'+3','heal'); particleOnCard(card.id,'healing'); break;
+    case 'atk2': card.atk = (card.atk||0)+2; fxTextOnCard(card.id,'+2 ATK','buff'); particleOnCard(card.id,'magic'); break;
+    case 'dmg3': damageMinion(card,3); fxTextOnCard(card.id,'-3','dmg'); particleOnCard(card.id,'explosion'); break;
+    case 'shield2': card.hp = (card.hp||0)+2; fxTextOnCard(card.id,'+2','buff'); particleOnCard(card.id,'magic'); break;
+    case 'firebuff': { const node=nodeById(card.id); if(node) node.classList.add('buff-fire'); fxTextOnCard(card.id,'Fogo','buff'); particleOnCard(card.id,'attack'); break; }
+    case 'waterbuff': { const node=nodeById(card.id); if(node) node.classList.add('buff-water'); fxTextOnCard(card.id,'Água','buff'); particleOnCard(card.id,'magic'); break; }
+    case 'earthbuff': { const node=nodeById(card.id); if(node) node.classList.add('buff-earth'); fxTextOnCard(card.id,'Terra','buff'); particleOnCard(card.id,'magic'); break; }
+    case 'lightningbuff': { const node=nodeById(card.id); if(node) node.classList.add('buff-lightning'); fxTextOnCard(card.id,'Raio','buff'); particleOnCard(card.id,'attack'); break; }
+    case 'regen': // simple heal over time: heal 1 at start of each of player's turns for 3 turns
+      card._regen = (card._regen||0)+3; fxTextOnCard(card.id,'Regen','buff'); particleOnCard(card.id,'healing'); break;
+    case 'add_totem_slot': G.maxTotemSlots = Math.min(10, (G.maxTotemSlots||3)+1); log(`Slots de totem aumentados para ${G.maxTotemSlots}`); break;
+    default: break;
+  }
+}
 function fxTextOnCard(cid,text,cls){const n=document.querySelector(`.card[data-id="${cid}"]`);if(!n)return;const r=n.getBoundingClientRect();const fx=document.createElement('div');fx.className='fx-float '+(cls||'');fx.textContent=text;fx.style.left=(r.left+r.width/2)+'px';fx.style.top=(r.top+r.height/2)+'px';document.body.appendChild(fx);setTimeout(()=>fx.remove(),950);}
 function attackCard(attacker,target){if(!attacker||!attacker.canAttack||attacker.stance==='defense')return;sfx('attack');const a=nodeById(attacker.id),t=nodeById(target.id);if(a&&t){const ar=a.getBoundingClientRect(),tr=t.getBoundingClientRect();screenSlash(ar.right,ar.top+ar.height/2,15)}animateAttack(attacker.id,target.id);if(target.stance==='defense')animateDefense(target.id);particleOnCard(target.id,'attack');const pre=target.hp,overflow=Math.max(0,attacker.atk-pre);damageMinion(target,attacker.atk);damageMinion(attacker,target.atk);sfx('hit');if(overflow>0&&target.hp<=0){const isP=G.playerBoard.includes(attacker);if(isP){G.aiHP=clamp(G.aiHP-overflow,0,99);log(`${attacker.name} excedeu em ${overflow} e causou dano direto ao Inimigo!`)}else{G.playerHP=clamp(G.playerHP-overflow,0,99);log(`${attacker.name} excedeu em ${overflow} e causou dano direto a Você!`)}checkWin()}attacker.canAttack=false;log(`${attacker.name} atacou ${target.name}.`);checkDeaths();renderAll();if(window.isMultiplayer&&G.current==='player'){NET.sendMove({type:'attack',attackerId:attacker.id,targetId:target.id})}G.chosen=null;updateTargetingUI();els.aBoard.classList.remove('face-can-attack')}
 function attackFace(attacker,face){if(!attacker||!attacker.canAttack||attacker.stance==='defense')return;sfx('attack');const a=nodeById(attacker.id);if(a){const ar=a.getBoundingClientRect();screenSlash(ar.right,ar.top+ar.height/2,10)}animateAttack(attacker.id,null);particleOnFace(face,'attack');const dmg=attacker.atk;attacker.canAttack=false;if(face==='ai'){G.aiHP=clamp(G.aiHP-dmg,0,99);log(`${attacker.name} causou ${dmg} ao Inimigo!`);sfx('crit')}else{G.playerHP=clamp(G.playerHP-dmg,0,99);log(`${attacker.name} causou ${dmg} a Você!`);sfx('hit')}checkWin();if(window.isMultiplayer&&G.current==='player'){NET.sendMove({type:'attackFace',attackerId:attacker.id})}G.chosen=null;updateTargetingUI();els.aBoard.classList.remove('face-can-attack');renderAll()}
@@ -906,10 +1029,12 @@ function initDeckButtons(){
       if(pick==='custom'){
         els.deckBuilder.style.display='block';
         renderPool();renderChosen();updateCurve();
-        els.startGame.disabled=true;
+  // keep start disabled until custom deck is saved
+  els.startGame.disabled = true;
       }else{
         els.deckBuilder.style.display='none';
-        els.startGame.disabled=false;
+  // enable start when a non-custom deck is picked
+  els.startGame.disabled = false;
       }
       G.aiDeckChoice=rand(ALL_DECKS.filter(d=>d!==pick));
       startMenuMusic(pick);
@@ -956,6 +1081,8 @@ if(document.readyState!=='loading'){
 } else {
   document.addEventListener('DOMContentLoaded',()=>{ initDeckButtons(); initCommonButtonHover(); });
 }
+// defensive: ensure start button is disabled until deck selected
+if(els.startGame){ els.startGame.disabled = true; }
 if(els.saveDeck)els.saveDeck.addEventListener('click',()=>{if(G.customDeck&&G.customDeck.length){els.deckBuilder.style.display='none';els.startGame.disabled=false;}});
 els.startGame.addEventListener('click',()=>{if(els.startGame.disabled)return;if(window.isMultiplayer){if(window.mpState==='readyStart'){NET.startReady();window.mpState='waitingStart';els.startGame.textContent='Aguardando oponente iniciar...';els.startGame.disabled=true}else if(!window.mpState){NET.deckChoice(G.playerDeckChoice);if(window.opponentConfirmed){window.mpState='readyStart';els.startGame.textContent='Iniciar';els.startGame.disabled=false}else{window.mpState='waitingDeck';els.startGame.textContent='Aguardando oponente confirmar deck...';els.startGame.disabled=true}}}else{els.start.style.display='none';els.wrap.style.display='block';initAudio();ensureRunning();stopMenuMusic();startGame()}});
 els.openEncy.addEventListener('click',()=>renderEncy('all',false));els.closeEncy.addEventListener('click',()=>{els.ency.classList.remove('show')});$$('.filters .fbtn').forEach(b=>b.addEventListener('click',()=>{renderEncy(b.dataset.deck,false)}));
@@ -983,6 +1110,40 @@ window.startTotemTest=()=>{
   G.playerMana=10;
   renderAll();
   stackHand();
+};
+window.startPotionTest = ()=>{
+  window.currentGameMode='solo';
+  // minimal deck with a few units
+  const deck=[
+    {id:uid(),type:'unit',name:'Ceifeira Ágil',cost:2,atk:3,hp:2,kw:[]},
+    {id:uid(),type:'unit',name:'Guerreiro da Foice',cost:5,atk:4,hp:3,kw:[]},
+    {id:uid(),type:'unit',name:'Guardião do Bosque',cost:3,atk:2,hp:4,kw:['Protetor']},
+    {id:uid(),type:'unit',name:'Lobo Alfa',cost:5,atk:5,hp:4,kw:[]}
+  ];
+  G.customDeck = deck.map(c=>Object.assign({},c));
+  G.playerDeckChoice='custom';
+  const title=document.getElementById('titleMenu'); if(title) title.style.display='none';
+  els.start.style.display='none'; els.wrap.style.display='block';
+  initAudio(); ensureRunning(); stopMenuMusic(); startMenuMusic('combat');
+  // start game and populate board/hand
+  startGame();
+  // give player some units on board and in hand
+  G.playerBoard = [];
+  G.aiBoard = [];
+  const u1 = makeCard(["Ceifeira Ágil","","Viking",3,2,2,"","","",""]);
+  const u2 = makeCard(["Guerreiro da Foice","","Viking",4,3,3,"","","",""]);
+  const u3 = makeCard(["Guardião do Bosque","","Animal",2,5,4,"P","","",""]);
+  u1.owner='player';u2.owner='player';u3.owner='ai';
+  u1.canAttack=true;u2.canAttack=true;u1.stance='attack';u2.stance='defense';u3.stance='defense';
+  G.playerBoard.push(u1,u2);
+  G.aiBoard.push(u3);
+  G.playerHand = [ makeCard(["Lobo Alfa","","Animal",5,4,4,"","","",""]) ];
+  G.playerManaCap = 10; G.playerMana = 10;
+  // give sample potions in inventory
+  G.potionInventory = [ {name:'Poção de Cura', effect:'heal3'}, {name:'Poção de Força', effect:'atk2'}, {name:'Poção de Dano', effect:'dmg3'} ];
+  renderAll(); stackHand();
+  // show potion tray if available
+  if(window && typeof window.renderPotionTray==='function') window.renderPotionTray();
 };
 function handleMove(move){switch(move.type){case 'summon':{summon('ai',move.card,move.stance,true);applyBattlecryEffects('ai',move.effects||[]);G.aiMana-=move.card.cost;renderAll();break}case 'attack':{const a=G.aiBoard.find(x=>x.id===move.attackerId);const t=G.playerBoard.find(x=>x.id===move.targetId);if(a&&t)attackCard(a,t);break}case 'attackFace':{const a=G.aiBoard.find(x=>x.id===move.attackerId);if(a)attackFace(a,'player');break}}}
 function handleTurn(turn){if(turn==='end'){G.current='player';G.chosen=null;updateTargetingUI();newTurn(false,'ai')}}
