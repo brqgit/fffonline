@@ -14,7 +14,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const closeTest = document.getElementById('closeTest');
   const testShopBtn = document.getElementById('testShopBtn');
   const testTotemBtn = document.getElementById('testTotemBtn');
-  const testPotionsBtn = document.getElementById('testPotionsBtn');
   const diffLabel = document.querySelector('label[for="difficulty"]');
   const diffSelect = document.getElementById('difficulty');
 
@@ -74,16 +73,6 @@ document.addEventListener('DOMContentLoaded', () => {
   if (testTotemBtn) testTotemBtn.addEventListener('click', () => {
     if (testModal) testModal.style.display = 'none';
     if (window.startTotemTest) startTotemTest();
-  });
-
-  if (testPotionsBtn) testPotionsBtn.addEventListener('click', () => {
-    if (testModal) testModal.style.display = 'none';
-    if (window.startPotionTest) {
-      startPotionTest();
-      return;
-    }
-    // fallback: open shop prefilled with potions-only for testing
-    if (window.openShop) openShop({ faction: 'Furioso', gold: 50, unlimited: true, onlyPotions: true });
   });
 
   const musicVol = document.getElementById('musicVol');

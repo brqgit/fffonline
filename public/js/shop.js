@@ -24,36 +24,6 @@ const NEUTRAL = [
   { name: 'Totem do Carvalho', type: 'totem', desc: '+1 HP', cost: 9 }
 ];
 
-// Additional totems
-const EXTRA_TOTEMS = [
-  { name: 'Totem de Força', type: 'totem', buffs:{atk:1}, tag:'fire', particle:'attack', desc:'+1 ATK a aliados', cost:10 },
-  { name: 'Totem da Cura', type: 'totem', buffs:{hp:2}, tag:'heal', particle:'healing', desc:'+2 HP a aliados', cost:10 },
-  { name: 'Totem da Água', type: 'totem', buffs:{hp:1,atk:0}, tag:'water', particle:'magic', desc:'+1 HP (água)', cost:9 },
-  { name: 'Totem da Terra', type: 'totem', buffs:{hp:1}, tag:'earth', particle:'magic', desc:'+1 HP (terra)', cost:9 },
-  { name: 'Totem do Trovão', type: 'totem', buffs:{atk:2}, tag:'lightning', particle:'attack', desc:'+2 ATK a 1 aliado', cost:12 },
-  { name: 'Totem do Vigor', type: 'totem', buffs:{atk:1,hp:1}, tag:'regen', particle:'healing', desc:'+1/+1 aleatório', cost:11 },
-  { name: 'Totem do Olho', type: 'totem', buffs:{}, tag:'perception', particle:'magic', desc:'Ao entrar: compre 1', cost:11 },
-  { name: 'Totem Absorvente', type: 'totem', buffs:{}, tag:'absorb', particle:'magic', desc:'Copia uma palavra-chave ao fim do turno', cost:12 },
-  { name: 'Totem do Escudo', type: 'totem', buffs:{hp:2}, tag:'shield', particle:'magic', desc:'+2 HP em aliados', cost:11 },
-  { name: 'Totem das Sombras', type: 'totem', buffs:{atk:1}, tag:'fire', particle:'magic', desc:'Dá +1 ATK a aliados selecionados', cost:10 }
-];
-
-// merge extras into neutral pool so shop can draw them
-EXTRA_TOTEMS.forEach(t=>NEUTRAL.push(t));
-
-const POTIONS = [
-  { name: 'Poção de Cura', type: 'potion', effect: 'heal3', desc: 'Cura 3 HP a uma carta', cost: 6 },
-  { name: 'Poção de Força', type: 'potion', effect: 'atk2', desc: '+2 ATK a uma carta', cost: 7 },
-  { name: 'Poção de Escudo', type: 'potion', effect: 'shield2', desc: '+2 HP temporário', cost: 7 },
-  { name: 'Poção de Fogo', type: 'potion', effect: 'firebuff', desc: 'Aplica fogo (buff visual)', cost: 8 },
-  { name: 'Poção de Água', type: 'potion', effect: 'waterbuff', desc: 'Aplica água (buff visual)', cost: 8 },
-  { name: 'Poção de Terra', type: 'potion', effect: 'earthbuff', desc: 'Aplica terra (buff visual)', cost: 8 },
-  { name: 'Poção de Raio', type: 'potion', effect: 'lightningbuff', desc: 'Aplica raio (buff visual)', cost: 9 },
-  { name: 'Poção de Regeneração', type: 'potion', effect: 'regen', desc: 'Cura ao longo do turno', cost: 7 },
-  { name: 'Poção de Dano', type: 'potion', effect: 'dmg3', desc: 'Causa 3 de dano a uma carta', cost: 6 },
-  { name: 'Poção de Totem', type: 'potion', effect: 'add_totem_slot', desc: 'Aumenta 1 slot de totem (máx 10)', cost: 10 }
-];
-
 let shopState = { faction: '', gold: 0, onClose: null, unlimited: false };
 let rerolled = false;
 
@@ -68,10 +38,6 @@ function withImg(it){
 }
 
 function genShopOffers(){
-  if(shopState.onlyPotions){
-    // return a shuffled selection of potions only
-    return shuffle(POTIONS).slice(0,12).map(p=>withImg(Object.assign({},p)));
-  }
   // produce up to 12 offers, preferring faction pool when available
   const maxOffers = 12;
   const factionPool = (shopState.faction && FACTIONS[shopState.faction]) ? FACTIONS[shopState.faction].pool.slice() : [];
@@ -90,9 +56,6 @@ function genShopOffers(){
     if(window && window.G && window.G.playerDeckChoice && !base.deck){ base.deck = window.G.playerDeckChoice; }
     return withImg(base);
   });
-  // randomly include some potions and totems among offers
-  const includePotions = shuffle(POTIONS).slice(0,3);
-  includePotions.forEach(p=>{ if(offers.length<maxOffers) offers.splice(Math.floor(Math.random()*offers.length),0,withImg(p)); });
   // add a consumable if there's room
   if(offers.length < maxOffers) offers.push(withImg({ name: 'Elixir de Força', type: 'buff', desc: '+1 ATK a suas unidades neste round', cost: 7 }));
   return offers.slice(0, maxOffers);
@@ -130,14 +93,6 @@ function renderShop(){
       $('#shopGold').textContent = shopState.gold;
       btn.disabled = true;
       btn.textContent = '✔';
-      // if potion, add to player's potion inventory and show tray UI
-      if(it.type==='potion' && window && window.G){
-        window.G.potionInventory = window.G.potionInventory || [];
-        window.G.potionInventory.push({ effect: it.effect, name: it.name });
-        // create and render tray UI
-        ensurePotionTray();
-        renderPotionTray();
-      }
     };
     card.appendChild(btn);
     wrap.appendChild(card);
@@ -150,14 +105,10 @@ function openShop({ faction, gold, onClose, unlimited=false }){
   shopState.gold = gold;
   shopState.onClose = onClose;
   shopState.unlimited = unlimited;
-  // allow test pages to open potions-only
-  shopState.onlyPotions = arguments[0] && arguments[0].onlyPotions ? true : false;
   rerolled = false;
   $('#btnReroll').disabled = false;
   $('#shopGold').textContent = shopState.gold;
   renderShop();
-  // mark buys pending so player cannot end turn until shop closed
-  if(window && window.G) window.G.buysPending = true;
   // ensure the close button is enabled and clickable
   const closeBtn = document.getElementById('closeShop');
   if(closeBtn){ closeBtn.disabled = false; }
@@ -192,8 +143,6 @@ function closeShop(){
     }catch(_){ }
   }
   if(shopState.onClose) shopState.onClose(shopState);
-  // clear buys pending flag
-  if(window && window.G) window.G.buysPending = false;
 }
 
 window.openShop = openShop;
@@ -205,83 +154,3 @@ document.getElementById('btnReroll')?.addEventListener('click', () => {
   renderShop();
 });
 document.getElementById('closeShop')?.addEventListener('click', closeShop);
-
-// --- Potion tray UI helpers ---
-function ensurePotionTray(){
-  let tray = document.getElementById('potionTray');
-  if(tray) return tray;
-  tray = document.createElement('div');
-  tray.id = 'potionTray';
-  tray.className = 'potion-tray';
-  tray.style.position = 'fixed';
-  tray.style.right = '12px';
-  tray.style.bottom = '12px';
-  tray.style.zIndex = 99999;
-  tray.style.display = 'flex';
-  tray.style.gap = '8px';
-  tray.style.pointerEvents = 'auto';
-  document.body.appendChild(tray);
-  // expose helpers for console testing
-  try{ window.renderPotionTray = renderPotionTray; window.ensurePotionTray = ensurePotionTray; }catch(_){ }
-  return tray;
-}
-
-function renderPotionTray(){
-  if(!window || !window.G) return;
-  const tray = ensurePotionTray();
-  tray.innerHTML = '';
-  const inv = window.G.potionInventory || [];
-  if(!inv.length){ tray.style.display = 'none'; return; }
-  tray.style.display = 'flex';
-  inv.forEach((p,idx)=>{
-    const el = document.createElement('div');
-    el.className = 'potion-item';
-    el.style.background = '#222';
-    el.style.color = '#fff';
-    el.style.padding = '6px 8px';
-    el.style.borderRadius = '6px';
-    el.style.minWidth = '120px';
-    el.style.boxShadow = '0 2px 6px rgba(0,0,0,.4)';
-    el.innerHTML = `<div style="font-weight:600">${p.name}</div><div style="font-size:12px;margin-top:4px">${p.effect}</div>`;
-    const actions = document.createElement('div'); actions.style.marginTop='6px'; actions.style.display='flex'; actions.style.gap='6px';
-    const useBtn = document.createElement('button'); useBtn.className='btn'; useBtn.textContent='Usar';
-    useBtn.onclick = ()=>{
-      // set pending potion and enter targeting mode
-      window.G.pendingPotion = { effect: p.effect, name: p.name };
-      // visually indicate pending potion
-      document.body.classList.add('potion-pending');
-      // instruct player
-      alert(`Usar ${p.name}: selecione a carta alvo ou clique Cancelar.`);
-    };
-    const discardBtn = document.createElement('button'); discardBtn.className='btn btn-ghost'; discardBtn.textContent='Descartar';
-    discardBtn.onclick = ()=>{
-      window.G.potionInventory.splice(idx,1);
-      // if current pending potion is this one, clear it
-      if(window.G.pendingPotion && window.G.pendingPotion.name===p.name){ window.G.pendingPotion = null; document.body.classList.remove('potion-pending'); }
-      renderPotionTray();
-    };
-    const cancelBtn = document.createElement('button'); cancelBtn.className='btn btn-ghost'; cancelBtn.textContent='Cancelar';
-    cancelBtn.style.display='none';
-    actions.appendChild(useBtn); actions.appendChild(discardBtn); actions.appendChild(cancelBtn);
-    el.appendChild(actions);
-    tray.appendChild(el);
-  });
-}
-
-// when a potion is consumed by applyPotionToCard (in game.js), remove one matching from inventory
-// and clear pending UI class
-const originalApplyPotionToCard = window.applyPotionToCard;
-if(typeof originalApplyPotionToCard==='function'){
-  // if applyPotionToCard exists, wrap to update inventory
-  window.applyPotionToCard = function(card){
-    originalApplyPotionToCard(card);
-    if(window.G && window.G.potionInventory && window.G.pendingPotion===null){
-      // remove the first inventory entry with matching name (consumed)
-      const name = arguments[0] && arguments[0].name; // not reliable; instead, remove by effect via last used
-      // best-effort: remove any item if inventory non-empty
-      if(window.G.potionInventory.length) window.G.potionInventory.shift();
-      document.body.classList.remove('potion-pending');
-      renderPotionTray();
-    }
-  };
-}

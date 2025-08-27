@@ -395,14 +395,6 @@ z-index:1}
 .btn::before,.btn-ghost::before{content:"";position:absolute;inset:-2px;border-radius:12px;background:conic-gradient(from 0deg at var(--px,50%) var(--py,50%),#7cc4ff,#ffd166,#a5b4fc,#4ade80,#fb7185,#7cc4ff);filter:blur(8px) saturate(1.1);opacity:var(--halo,0);transition:opacity .25s ease;pointer-events:none;z-index:0}
 .btn::after,.btn-ghost::after{content:"";position:absolute;inset:0;border-radius:12px;background:radial-gradient(160px 160px at var(--px,50%) var(--py,50%),rgba(255,255,255,.18),transparent 40%);opacity:var(--shine,0);transition:opacity .25s ease;pointer-events:none;z-index:0}
 .btn>*,.btn-ghost>*{position:relative;z-index:1}
-
-/* disabled visual for primary and ghost buttons */
-.btn[disabled], .btn-ghost[disabled]{
-	opacity:0.45;
-	cursor:default;
-	filter: grayscale(.6) contrast(.9);
-	pointer-events:none;
-}
 .ribbon{font-size:12px;
 color:var(--muted)}
 .view-cards{position:absolute;
@@ -712,21 +704,8 @@ color:#24040a}
 .card-icon{width:96px;height:96px;background-repeat:no-repeat;background-position:center;image-rendering:pixelated;background-color:transparent;background-size:contain}
 
 /* 3D projection / hologram for Vikings deck */
-.card .projection{position:absolute;top:55%;left:50%;width:72px;height:72px;transform:translate(-50%,-50%);animation:holoBounce 2s ease-in-out infinite}
-.card .projection img,.card .projection canvas{width:75%;height:75%;display:block;margin:0 auto;filter:drop-shadow(0 0 6px rgba(0,255,255,.6))}
-/* ensure back face doesn't capture pointer events; front face should remain interactive */
-.card .flip-inner{pointer-events:none}
-.card .face.back{pointer-events:none}
-.card .face.front, .card .face.front *{pointer-events:auto}
-
-/* Totem visuals */
-.totem-slot.totem-active{background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,0));box-shadow:0 8px 20px rgba(0,0,0,.4),0 0 14px rgba(124,196,255,.12);border-color:#4ade80}
-.card.totem{border:1px solid rgba(165,150,80,.6);box-shadow:0 12px 30px rgba(165,150,80,.08)}
-.card.buff-fire .projection img{filter:drop-shadow(0 0 12px rgba(255,120,40,.8)) hue-rotate(-10deg)}
-.card.buff-heal .projection img{filter:drop-shadow(0 0 12px rgba(80,220,140,.9))}
-.card.buff-water .projection img{filter:drop-shadow(0 0 12px rgba(60,160,220,.9))}
-.card.buff-earth .projection img{filter:drop-shadow(0 0 12px rgba(160,120,60,.85))}
-.card.buff-lightning .projection img{filter:drop-shadow(0 0 12px rgba(200,200,50,.9))}
+.card .projection{position:absolute;top:60%;left:50%;width:96px;height:96px;transform:translate(-50%,-50%);animation:holoBounce 2s ease-in-out infinite;pointer-events:none}
+.card .projection img,.card .projection canvas{width:100%;height:100%;display:block;filter:drop-shadow(0 0 6px rgba(0,255,255,.6))}
 .card-popup{position:fixed;padding:4px 6px;background:rgba(0,0,0,.8);color:#fff;border-radius:4px;font-size:12px;z-index:2000;pointer-events:none;transform:translate(-50%,-100%)}
 @keyframes holoBounce{0%,100%{transform:translate(-50%,-50%) translateY(0)}50%{transform:translate(-50%,-50%) translateY(-6px)}}
 
