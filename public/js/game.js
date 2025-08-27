@@ -177,16 +177,16 @@ const DECK_ASSETS={
 const IMG_CACHE={};
 function preloadAssets(){
   for(const [key,info] of Object.entries(DECK_ASSETS)){
-    const dbSrc=`/img/decks/${info.folder}/deck-backs/${info.back}-db-default.${info.dbExt}`;
+  const dbSrc=`img/decks/${info.folder}/deck-backs/${info.back}-db-default.${info.dbExt}`;
     const dbImg=new Image();
     dbImg.src=dbSrc;
     IMG_CACHE[dbSrc]=dbImg;
-    const cbSrc=`/img/decks/${info.folder}/card-backs/${info.back}-cb-default.${info.cbExt}`;
+  const cbSrc=`img/decks/${info.folder}/card-backs/${info.back}-cb-default.${info.cbExt}`;
     const cbImg=new Image();
     cbImg.src=cbSrc;
     IMG_CACHE[cbSrc]=cbImg;
     (DECK_IMAGES[key]||[]).forEach(fn=>{
-      const src=`/img/decks/${info.folder}/characters/${fn.replace(/\.[^.]+$/,'')}.png`;
+  const src=`img/decks/${info.folder}/characters/${fn.replace(/\.[^.]+$/,'')}.png`;
       const img=new Image();
       img.src=src;
       IMG_CACHE[src]=img;
@@ -207,7 +207,7 @@ function iconUrl(deck,idx){
     base=`char${(idx||0)+1}`;
   }
   if(!base) return null;
-  return [`/img/decks/${info.folder}/characters/${base}.png`];
+  return [`img/decks/${info.folder}/characters/${base}.png`];
 }
 
 function setDeckBacks(){
@@ -215,7 +215,7 @@ function setDeckBacks(){
     const info=DECK_ASSETS[deck];
     if(!info)return;
     // Use deck-back art for both the draw and discard piles
-    const src=`/img/decks/${info.folder}/deck-backs/${info.back}-db-default.${info.dbExt}`;
+  const src=`img/decks/${info.folder}/deck-backs/${info.back}-db-default.${info.dbExt}`;
     const drawImg=document.querySelector(`#${drawId} img`);
     const discImg=document.querySelector(`#${discId} img`);
     if(drawImg) drawImg.src=src;
@@ -374,7 +374,7 @@ function animateDrawFlip(ids=[]){
       // back image: use deck-specific back if available
       const deckKey = (G.playerDeckChoice||'vikings');
       const info = DECK_ASSETS[deckKey] || DECK_ASSETS.vikings;
-      const backUrl = `/img/decks/${info.folder}/card-backs/${info.back}-cb-default.${info.cbExt}`;
+  const backUrl = `img/decks/${info.folder}/card-backs/${info.back}-cb-default.${info.cbExt}`;
       back.innerHTML = `<img src='${backUrl}' alt='back' style='width:90%;height:auto;max-height:80%;object-fit:contain'>`;
       // move existing content into front
       while(node.firstChild) front.appendChild(node.firstChild);
@@ -383,7 +383,7 @@ function animateDrawFlip(ids=[]){
       node.appendChild(inner);
       node.classList.add('show-back');
     }
-    // schedule flip with stagger (faster: 50% speed faster)
+    // schedule flip with stagger (50% faster)
     setTimeout(()=>{
       // toggle class to rotate inner once
       node.classList.remove('show-back');
@@ -396,8 +396,8 @@ function animateDrawFlip(ids=[]){
           inner.remove();
         }
         node.classList.remove('show-back');
-      },350);
-    }, i*90);
+      },175);
+    }, i*45);
   });
 }
 
@@ -412,13 +412,13 @@ function animateDrawFlipOne(id){
       const back=document.createElement('div'); back.className='face back';
       const deckKey = (G.playerDeckChoice||'vikings');
       const info = DECK_ASSETS[deckKey] || DECK_ASSETS.vikings;
-      const backUrl = `/img/decks/${info.folder}/card-backs/${info.back}-cb-default.${info.cbExt}`;
+  const backUrl = `img/decks/${info.folder}/card-backs/${info.back}-cb-default.${info.cbExt}`;
       back.innerHTML = `<img src='${backUrl}' alt='back' style='width:90%;height:auto;max-height:80%;object-fit:contain'>`;
       while(node.firstChild) front.appendChild(node.firstChild);
       inner.appendChild(front); inner.appendChild(back); node.appendChild(inner);
       node.classList.add('show-back');
     }
-    // trigger flip (faster)
+    // trigger flip (50% faster)
     requestAnimationFrame(()=>{
       node.classList.remove('show-back');
       setTimeout(()=>{
@@ -426,7 +426,7 @@ function animateDrawFlipOne(id){
         if(inner){ const front=inner.querySelector('.face.front'); while(front && front.firstChild) node.insertBefore(front.firstChild, node.firstChild); inner.remove(); }
         node.classList.remove('show-back');
         resolve();
-      },350);
+      },175);
     });
   });
 }
@@ -525,22 +525,22 @@ function openStanceChooser(anchor,cb,onCancel){
 const closeStanceChooser=()=>{const old=document.querySelector('.stance-chooser');if(old)old.remove();document.querySelectorAll('.hand .card.chosen').forEach(c=>c.classList.remove('chosen'))}
 function flyToBoard(node,onEnd){
   const r=node.getBoundingClientRect(),clone=node.cloneNode(true);
-  Object.assign(clone.style,{left:r.left+'px',top:r.top+'px',width:r.width+'px',height:r.height+'px',position:'fixed',zIndex:999,transition:'transform .45s ease,opacity .45s ease'});
+  Object.assign(clone.style,{left:r.left+'px',top:r.top+'px',width:r.width+'px',height:r.height+'px',position:'fixed',zIndex:999,transition:'transform .225s ease,opacity .225s ease'});
   clone.classList.add('fly');
   document.body.appendChild(clone);
   const br=els.pBoard.getBoundingClientRect();
   requestAnimationFrame(()=>{const tx=br.left+br.width/2-r.left-r.width/2,ty=br.top+10-r.top;clone.style.transform=`translate(${tx}px,${ty}px) scale(.9)`;clone.style.opacity='0'});
-  setTimeout(()=>{try{clone.remove()}catch(_){ }onEnd&&onEnd()},450);
+  setTimeout(()=>{try{clone.remove()}catch(_){ }onEnd&&onEnd()},225);
 }
 function animateMove(fromEl,toEl){
   return new Promise(resolve=>{
     try{
       const r1=fromEl.getBoundingClientRect(),r2=toEl.getBoundingClientRect();
       const ghost=document.createElement('div');
-      Object.assign(ghost.style,{left:r1.left+'px',top:r1.top+'px',width:r1.width+'px',height:r1.height+'px',position:'fixed',zIndex:998,transition:'transform .5s ease,opacity .5s ease',background:'#fff',borderRadius:'10px',opacity:1});
-      document.body.appendChild(ghost);
-      requestAnimationFrame(()=>{ghost.style.transform=`translate(${r2.left-r1.left}px,${r2.top-r1.top}px)`;ghost.style.opacity='0'});
-      setTimeout(()=>{try{ghost.remove()}catch(_){ }resolve();},500);
+  Object.assign(ghost.style,{left:r1.left+'px',top:r1.top+'px',width:r1.width+'px',height:r1.height+'px',position:'fixed',zIndex:998,transition:'transform .25s ease,opacity .25s ease',background:'#fff',borderRadius:'10px',opacity:1});
+  document.body.appendChild(ghost);
+  requestAnimationFrame(()=>{ghost.style.transform=`translate(${r2.left-r1.left}px,${r2.top-r1.top}px)`;ghost.style.opacity='0'});
+  setTimeout(()=>{try{ghost.remove()}catch(_){ }resolve();},250);
     }catch(e){resolve();}
   });
 }
@@ -628,8 +628,8 @@ async function draw(who,n=1){
     if(deck.length===0 && disc.length){
       disc.forEach(resetCardState);
       deck.push(...shuffle(disc.splice(0)));
-      deckEl.classList.add('shuffling');
-      setTimeout(()=>deckEl.classList.remove('shuffling'),600);
+  deckEl.classList.add('shuffling');
+  setTimeout(()=>deckEl.classList.remove('shuffling'),300);
     }
     if(deck.length){
       const c = deck.shift();
@@ -640,7 +640,7 @@ async function draw(who,n=1){
         log(`${c.name} queimou por excesso de cartas.`);
       } else {
         hand.push(c);
-        if(who==='player'){
+      if(who==='player'){
           // mark as freshly drawn so render will show back first
           c._freshDraw = true;
           // await move animation so draws occur one-by-one
@@ -655,11 +655,11 @@ async function draw(who,n=1){
     }
   }
   if(who==='player'){
-    els.drawCount.textContent = G.playerDeck.length;
-    els.discardCount.textContent = G.playerDiscard.length;
-    // final render/stack to ensure layout
-    renderHand();
-    setTimeout(stackHand,300);
+  els.drawCount.textContent = G.playerDeck.length;
+  els.discardCount.textContent = G.playerDiscard.length;
+  // final render/stack to ensure layout
+  renderHand();
+  setTimeout(stackHand,150);
   }
 }
 function discardHand(side){const hand=side==='player'?G.playerHand:G.aiHand;const disc=side==='player'?G.playerDiscard:G.aiDiscard;if(hand.length){if(side==='player'){const cards=$$('#playerHand .card');const pile=document.getElementById('discardPile');cards.forEach(c=>animateMove(c,pile))}disc.push(...hand.splice(0));if(side==='player'){els.discardCount.textContent=G.playerDiscard.length;setTimeout(stackHand,500)}}}
@@ -923,8 +923,39 @@ function initDeckButtons(){
     });
   });
 }
-if(document.readyState!=='loading') initDeckButtons();
-else document.addEventListener('DOMContentLoaded',initDeckButtons);
+
+// Attach the same pointer-follow and halo/shine behaviour used by deck buttons
+function attachButtonHover(btn){
+  if(!btn || btn.dataset.hoverAttached) return;
+  btn.dataset.hoverAttached = '1';
+  btn.addEventListener('pointermove', e => {
+    const r = btn.getBoundingClientRect();
+    if(r.width>0 && r.height>0){
+      btn.style.setProperty('--px', ((e.clientX - r.left)/r.width*100)+'%');
+      btn.style.setProperty('--py', ((e.clientY - r.top)/r.height*100)+'%');
+    }
+  });
+  btn.addEventListener('mouseenter', ()=>{
+    btn.style.setProperty('--halo', .7);
+    btn.style.setProperty('--shine', .7);
+  });
+  btn.addEventListener('mouseleave', ()=>{
+    btn.style.removeProperty('--halo');
+    btn.style.removeProperty('--shine');
+  });
+}
+
+function initCommonButtonHover(){
+  // Attach to all primary/ghost buttons but skip deck buttons (they already have handlers)
+  const sel = '.btn, .btn-ghost';
+  $$(sel).forEach(b=>{ if(!b.classList.contains('deckbtn')) attachButtonHover(b); });
+}
+if(document.readyState!=='loading'){
+  initDeckButtons();
+  initCommonButtonHover();
+} else {
+  document.addEventListener('DOMContentLoaded',()=>{ initDeckButtons(); initCommonButtonHover(); });
+}
 if(els.saveDeck)els.saveDeck.addEventListener('click',()=>{if(G.customDeck&&G.customDeck.length){els.deckBuilder.style.display='none';els.startGame.disabled=false;}});
 els.startGame.addEventListener('click',()=>{if(els.startGame.disabled)return;if(window.isMultiplayer){if(window.mpState==='readyStart'){NET.startReady();window.mpState='waitingStart';els.startGame.textContent='Aguardando oponente iniciar...';els.startGame.disabled=true}else if(!window.mpState){NET.deckChoice(G.playerDeckChoice);if(window.opponentConfirmed){window.mpState='readyStart';els.startGame.textContent='Iniciar';els.startGame.disabled=false}else{window.mpState='waitingDeck';els.startGame.textContent='Aguardando oponente confirmar deck...';els.startGame.disabled=true}}}else{els.start.style.display='none';els.wrap.style.display='block';initAudio();ensureRunning();stopMenuMusic();startGame()}});
 els.openEncy.addEventListener('click',()=>renderEncy('all',false));els.closeEncy.addEventListener('click',()=>{els.ency.classList.remove('show')});$$('.filters .fbtn').forEach(b=>b.addEventListener('click',()=>{renderEncy(b.dataset.deck,false)}));

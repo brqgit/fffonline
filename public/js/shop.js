@@ -32,7 +32,7 @@ const shuffle = arr => arr.sort(() => Math.random() - 0.5);
 const slug = str => str.toLowerCase().replace(/[^a-z0-9]+/g,'-');
 function withImg(it){
   if(['unit','spell','totem'].includes(it.type)){
-    return { ...it, img:`/img/cards/${slug(it.name)}.png` };
+  return { ...it, img:`img/cards/${slug(it.name)}.png` };
   }
   return it;
 }
@@ -51,7 +51,7 @@ function genShopOffers(){
   if(pool.length < 6){ pool = pool.concat(otherCandidates.slice(0, 6 - pool.length)); }
   const offers = pool.slice(0, maxOffers).map(it => {
     const base = Object.assign({}, it);
-    if(['unit','spell','totem'].includes(base.type) && !base.img){ base.img = `/img/cards/${slug(base.name)}.png`; }
+  if(['unit','spell','totem'].includes(base.type) && !base.img){ base.img = `img/cards/${slug(base.name)}.png`; }
     // if player deck choice exists, hint renderer to prefer that deck for art
     if(window && window.G && window.G.playerDeckChoice && !base.deck){ base.deck = window.G.playerDeckChoice; }
     return withImg(base);
@@ -86,7 +86,7 @@ function renderShop(){
 
     const btn = document.createElement('button');
     btn.className = 'btn price-btn';
-    btn.innerHTML = `${it.cost}<img src="/img/ui/coin.png" class="coin-icon" alt="moeda">`;
+  btn.innerHTML = `${it.cost}<img src="img/ui/coin.png" class="coin-icon" alt="moeda">`;
     btn.onclick = () => {
       if(shopState.gold < it.cost){ alert('Sem ouro.'); return; }
       shopState.gold -= it.cost;
@@ -132,7 +132,16 @@ function openShop({ faction, gold, onClose, unlimited=false }){
 }
 
 function closeShop(){
-  $('#shopModal').style.display = 'none';
+  const modal = document.getElementById('shopModal');
+  if(modal){
+    modal.classList.remove('show');
+    modal.style.display = 'none';
+    // try to remove delegated listener if present by cloning node
+    try{
+      const clone = modal.cloneNode(true);
+      modal.parentNode.replaceChild(clone, modal);
+    }catch(_){ }
+  }
   if(shopState.onClose) shopState.onClose(shopState);
 }
 

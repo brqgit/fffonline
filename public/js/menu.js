@@ -43,11 +43,11 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   if (optBtn) optBtn.addEventListener('click', () => {
-    if (optionsMenu) optionsMenu.style.display = 'grid';
+  if (optionsMenu) optionsMenu.classList.add('show');
   });
 
   if (testBtn) testBtn.addEventListener('click', () => {
-    if (testModal) testModal.style.display = 'grid';
+  if (testModal) testModal.classList.add('show');
   });
 
   if (backToMenu) backToMenu.addEventListener('click', () => {
@@ -59,11 +59,11 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   if (closeOptions) closeOptions.addEventListener('click', () => {
-    if (optionsMenu) optionsMenu.style.display = 'none';
+  if (optionsMenu) optionsMenu.classList.remove('show');
   });
 
   if (closeTest) closeTest.addEventListener('click', () => {
-    if (testModal) testModal.style.display = 'none';
+  if (testModal) testModal.classList.remove('show');
   });
 
   if (testShopBtn) testShopBtn.addEventListener('click', () => {

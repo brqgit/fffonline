@@ -12,12 +12,12 @@
  --muted:#a7b0d9;
  --card-w:220px;
  --card-h:300px;
- --cb-vikings:url('/img/decks/farm-vikings/card-backs/fv-cb-default.webp');
- --cb-pescadores:url('/img/decks/fJord-fishers/card-backs/jf-cb-default.webp');
- --cb-floresta:url('/img/decks/forest-beasts/card-backs/fb-cb-default.webp');
- --cb-animais:url('/img/decks/north-beasts/card-backs/nb-cb-default.webp');
- --body-bg:url('/img/ui/backgrounds/fff-bg-01.webp');
- --start-bg:url('/img/ui/backgrounds/fff-bg-01.webp');
+ --cb-vikings:url('../img/decks/farm-vikings/card-backs/fv-cb-default.webp');
+ --cb-pescadores:url('../img/decks/fJord-fishers/card-backs/jf-cb-default.webp');
+ --cb-floresta:url('../img/decks/forest-beasts/card-backs/fb-cb-default.webp');
+ --cb-animais:url('../img/decks/north-beasts/card-backs/nb-cb-default.webp');
+ --body-bg:url('../img/ui/backgrounds/fff-bg-01.webp');
+ --start-bg:url('../img/ui/backgrounds/fff-bg-01.webp');
 }
 *{box-sizing:border-box}
 html,body{height:100%;overflow:hidden}
@@ -144,7 +144,7 @@ width:calc(5*var(--card-w) + 4*14px + 24px)}
  transform-style:preserve-3d;}
 .card.chosen{overflow:visible} /* allow chooser UI to show */
 
-.card .flip-inner{transition:transform .3s ease;transform-style:preserve-3d;transform:rotateY(0deg)}
+.card .flip-inner{transition:transform .15s ease;transform-style:preserve-3d;transform:rotateY(0deg)}
 .card.show-back .flip-inner{transform:rotateY(180deg)}
 .card .face{position:absolute;inset:0;backface-visibility:hidden;border-radius:18px}
 .card .face.front{transform:rotateY(0deg)}
@@ -332,7 +332,7 @@ align-items:center}
 #titleMenu .main-actions{display:flex;flex-direction:column;gap:12px;align-items:center;margin-top:20px}
 .options-menu{position:fixed;inset:0;display:none;place-items:center;z-index:60;background:rgba(0,0,0,.7);pointer-events:none}
 .options-menu .panel{text-align:center;display:flex;flex-direction:column;gap:12px}
-.options-menu.show{display:grid;pointer-events:auto}
+.options-menu.show{display:grid !important;pointer-events:auto !important}
 #roomList{margin-top:12px}
 #roomList .room{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
 #roomList .room button{margin-left:8px}
@@ -340,7 +340,7 @@ align-items:center}
 .turn-indicator{flex:0;text-align:center;font-size:20px;font-weight:700;margin-right:8px;white-space:nowrap}
 #endTurnBtn{margin-left:0; margin-top:0; margin-bottom:0; display:inline-flex;align-items:center;justify-content:center;height:24px;font-size:16px;padding:0 10px;line-height:1;vertical-align:middle;border-radius:10px;box-shadow:0 4px 8px rgba(0,0,0,.18)}
 .game-menu{position:fixed;inset:0;display:none;place-items:center;z-index:50;background:rgba(0,0,0,.7);pointer-events:none}
-.game-menu.show{display:grid;pointer-events:auto}
+.game-menu.show{display:grid !important;pointer-events:auto !important}
 .game-menu .panel{text-align:center;display:flex;flex-direction:column;gap:12px}
 .emoji-bar{position:fixed;bottom:8px;left:8px;display:none;gap:6px;z-index:30}
 .emoji-bar .emoji-btn{background:#fff;border:none;border-radius:6px;padding:2px 4px;font-size:24px;cursor:pointer}
@@ -390,6 +390,11 @@ pointer-events:none;
 z-index:0}
 .deckbtn>*{position:relative;
 z-index:1}
+/* Reuse deck hover halo/shine visuals for generic buttons */
+.btn, .btn-ghost{position:relative;overflow:visible}
+.btn::before,.btn-ghost::before{content:"";position:absolute;inset:-2px;border-radius:12px;background:conic-gradient(from 0deg at var(--px,50%) var(--py,50%),#7cc4ff,#ffd166,#a5b4fc,#4ade80,#fb7185,#7cc4ff);filter:blur(8px) saturate(1.1);opacity:var(--halo,0);transition:opacity .25s ease;pointer-events:none;z-index:0}
+.btn::after,.btn-ghost::after{content:"";position:absolute;inset:0;border-radius:12px;background:radial-gradient(160px 160px at var(--px,50%) var(--py,50%),rgba(255,255,255,.18),transparent 40%);opacity:var(--shine,0);transition:opacity .25s ease;pointer-events:none;z-index:0}
+.btn>*,.btn-ghost>*{position:relative;z-index:1}
 .ribbon{font-size:12px;
 color:var(--muted)}
 .view-cards{position:absolute;
