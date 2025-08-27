@@ -356,6 +356,7 @@ gap:4px;
 align-items:flex-start;
 justify-content:center;
 overflow:visible}
+overflow:visible}
 .deckbtn[data-deck="custom"]{display:none}
 .deckbtn::before{content:"";
 position:absolute;
