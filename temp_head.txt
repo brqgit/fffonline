@@ -1,0 +1,10 @@
+const $ = sel => document.querySelector(sel);
+
+const FACTIONS = {
+  Furioso: { pool: [
+    { name: 'Ceifeira Ágil', type: 'unit', atk: 3, hp: 2, cost: 9 },
+    { name: 'Grito de Guerra', type: 'spell', desc: '+1 ATK a uma unidade', cost: 6 },
+    { name: 'Totem da Fúria', type: 'totem', desc: '+1 ATK a 1–3 unidades', cost: 12 }
+  ]},
+  Sombras: { pool: [
+    { name: 'Sombras Encapuçado', type: 'un

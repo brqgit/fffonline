@@ -14,7 +14,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const closeTest = document.getElementById('closeTest');
   const testShopBtn = document.getElementById('testShopBtn');
   const testTotemBtn = document.getElementById('testTotemBtn');
-  const testPotionsBtn = document.getElementById('testPotionsBtn');
   const diffLabel = document.querySelector('label[for="difficulty"]');
   const diffSelect = document.getElementById('difficulty');
 
@@ -76,15 +75,16 @@ document.addEventListener('DOMContentLoaded', () => {
     if (window.startTotemTest) startTotemTest();
   });
 
-  if (testPotionsBtn) testPotionsBtn.addEventListener('click', () => {
-    if (testModal) testModal.style.display = 'none';
-    if (window.startPotionTest) {
-      startPotionTest();
-      return;
-    }
-    // fallback: open shop prefilled with potions-only for testing
-    if (window.openShop) openShop({ faction: 'Furioso', gold: 50, unlimited: true, onlyPotions: true });
-  });
+  // Reset seleção de deck sempre que abrir a tela de decks
+  function clearDeckSelection(){
+    try{ if(window.G) window.G.playerDeckChoice = null; }catch(_){ }
+    const startBtn = document.getElementById('startGame');
+    if(startBtn) startBtn.disabled = true;
+    document.querySelectorAll('.deckbtn').forEach(b=>b.style.outline='none');
+  }
+  if (storyBtn) storyBtn.addEventListener('click', ()=>setTimeout(clearDeckSelection,0));
+  if (soloBtn) soloBtn.addEventListener('click', ()=>setTimeout(clearDeckSelection,0));
+  if (backToMenu) backToMenu.addEventListener('click', ()=>setTimeout(clearDeckSelection,0));
 
   const musicVol = document.getElementById('musicVol');
   const sfxVol = document.getElementById('sfxVol');

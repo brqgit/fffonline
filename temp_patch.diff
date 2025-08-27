@@ -1,0 +1,5 @@
+*** Begin Patch
+*** Update File: public/js/game.js
+@@
+ function selectAttacker(c){if(G.current!=='player'||!c.canAttack||c.stance==='defense')return;G.chosen=c;updateTargetingUI();renderBoard();updateFaceAttackZone();G.aiBoard.filter(x=>x.stance==='defense').forEach(x=>setTimeout(()=>animateDefense(x.id),20))}
+*** End Patch

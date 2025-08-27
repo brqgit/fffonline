@@ -395,14 +395,6 @@ z-index:1}
 .btn::before,.btn-ghost::before{content:"";position:absolute;inset:-2px;border-radius:12px;background:conic-gradient(from 0deg at var(--px,50%) var(--py,50%),#7cc4ff,#ffd166,#a5b4fc,#4ade80,#fb7185,#7cc4ff);filter:blur(8px) saturate(1.1);opacity:var(--halo,0);transition:opacity .25s ease;pointer-events:none;z-index:0}
 .btn::after,.btn-ghost::after{content:"";position:absolute;inset:0;border-radius:12px;background:radial-gradient(160px 160px at var(--px,50%) var(--py,50%),rgba(255,255,255,.18),transparent 40%);opacity:var(--shine,0);transition:opacity .25s ease;pointer-events:none;z-index:0}
 .btn>*,.btn-ghost>*{position:relative;z-index:1}
-
-/* disabled visual for primary and ghost buttons */
-.btn[disabled], .btn-ghost[disabled]{
-	opacity:0.45;
-	cursor:default;
-	filter: grayscale(.6) contrast(.9);
-	pointer-events:none;
-}
 .ribbon{font-size:12px;
 color:var(--muted)}
 .view-cards{position:absolute;
@@ -712,21 +704,8 @@ color:#24040a}
 .card-icon{width:96px;height:96px;background-repeat:no-repeat;background-position:center;image-rendering:pixelated;background-color:transparent;background-size:contain}
 
 /* 3D projection / hologram for Vikings deck */
-.card .projection{position:absolute;top:55%;left:50%;width:72px;height:72px;transform:translate(-50%,-50%);animation:holoBounce 2s ease-in-out infinite}
-.card .projection img,.card .projection canvas{width:75%;height:75%;display:block;margin:0 auto;filter:drop-shadow(0 0 6px rgba(0,255,255,.6))}
-/* ensure back face doesn't capture pointer events; front face should remain interactive */
-.card .flip-inner{pointer-events:none}
-.card .face.back{pointer-events:none}
-.card .face.front, .card .face.front *{pointer-events:auto}
-
-/* Totem visuals */
-.totem-slot.totem-active{background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,0));box-shadow:0 8px 20px rgba(0,0,0,.4),0 0 14px rgba(124,196,255,.12);border-color:#4ade80}
-.card.totem{border:1px solid rgba(165,150,80,.6);box-shadow:0 12px 30px rgba(165,150,80,.08)}
-.card.buff-fire .projection img{filter:drop-shadow(0 0 12px rgba(255,120,40,.8)) hue-rotate(-10deg)}
-.card.buff-heal .projection img{filter:drop-shadow(0 0 12px rgba(80,220,140,.9))}
-.card.buff-water .projection img{filter:drop-shadow(0 0 12px rgba(60,160,220,.9))}
-.card.buff-earth .projection img{filter:drop-shadow(0 0 12px rgba(160,120,60,.85))}
-.card.buff-lightning .projection img{filter:drop-shadow(0 0 12px rgba(200,200,50,.9))}
+.card .projection{position:absolute;top:60%;left:50%;width:96px;height:96px;transform:translate(-50%,-50%);animation:holoBounce 2s ease-in-out infinite;pointer-events:none}
+.card .projection img,.card .projection canvas{width:100%;height:100%;display:block;filter:drop-shadow(0 0 6px rgba(0,255,255,.6))}
 .card-popup{position:fixed;padding:4px 6px;background:rgba(0,0,0,.8);color:#fff;border-radius:4px;font-size:12px;z-index:2000;pointer-events:none;transform:translate(-50%,-100%)}
 @keyframes holoBounce{0%,100%{transform:translate(-50%,-50%) translateY(0)}50%{transform:translate(-50%,-50%) translateY(-6px)}}
 
@@ -770,3 +749,15 @@ display:block}
 @keyframes bolt{0%{transform:translateX(-50%) scaleY(0)}60%{transform:translateX(-50%) scaleY(1)}100%{opacity:0;transform:translateX(-50%) scaleY(1)}}
 #encounterTransition{position:fixed;inset:0;background:#000;opacity:0;pointer-events:none;transition:opacity .4s ease;z-index:2500}
 #encounterTransition.show{opacity:1}
+/* Totem slot tooltip */
+.totem-slot[data-tip]{position:relative}
+.totem-slot[data-tip]::after{content:attr(data-tip);position:absolute;left:50%;bottom:100%;transform:translate(-50%,-8px);background:#0e1435;border:1px solid #2b3a86;border-radius:10px;padding:8px 10px;box-shadow:0 12px 30px rgba(0,0,0,.45);font-size:12px;line-height:1.4;color:#cfe3ff;max-width:260px;min-width:180px;white-space:normal;text-align:center;opacity:0;pointer-events:none;z-index:50;transition:opacity .15s ease,transform .15s ease}
+.totem-slot[data-tip]:hover::after{opacity:1;transform:translate(-50%,-10px)}
+/* Tooltip for totem slots */
+.totem-slot[data-tip]{position:relative}
+.totem-slot[data-tip]::after{content:attr(data-tip);position:absolute;left:50%;bottom:100%;transform:translate(-50%,-8px);background:#0e1435;border:1px solid #2b3a86;border-radius:10px;padding:8px 10px;box-shadow:0 12px 30px rgba(0,0,0,.45);font-size:12px;line-height:1.4;color:#cfe3ff;max-width:260px;min-width:180px;white-space:normal;text-align:center;opacity:0;pointer-events:none;z-index:50;transition:opacity .15s ease,transform .15s ease}
+.totem-slot[data-tip]:hover::after{opacity:1;transform:translate(-50%,-10px)}
+/* Floating icon + disintegrate */
+.floating-totem{position:fixed;left:0;top:0;transform:translate(-50%,-50%);font-size:28px;filter:drop-shadow(0 4px 12px rgba(0,0,0,.45));transition:transform .42s ease, opacity .42s ease;z-index:10000;pointer-events:none}
+.card.totem-disintegrate{animation:totemFade .38s ease forwards}
+@keyframes totemFade{0%{opacity:1;transform:translateZ(0) scale(1)}60%{opacity:.5}100%{opacity:0;transform:translateZ(0) scale(.9)}}
