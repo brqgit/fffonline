@@ -385,10 +385,7 @@ flex-direction:column;
 gap:4px;
 align-items:flex-start;
 justify-content:center;
-overflow:visible;
-transition:transform .18s ease,opacity .18s ease,filter .18s ease}
-.deckbtn[data-deck="custom"]{display:none}
-.deckbtn:hover{--halo:1;--shine:1;transform:translateY(-6px);filter:brightness(1.03) saturate(1.05)}
+overflow:visible}
 .deckbtn::before{content:"";
 position:absolute;
 inset:-2px;
