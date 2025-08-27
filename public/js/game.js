@@ -349,6 +349,7 @@ function renderAll(){
 }
 function renderHand(){els.pHand.innerHTML='';G.playerHand.forEach(c=>{const d=cardNode(c,'player');d.classList.add('handcard');tiltify(d,!0);d.addEventListener('click',e=>{if(d.classList.contains('chosen'))return;const blocked=(c.cost>G.playerMana)||G.current!=='player'||G.playerBoard.length>=5;if(blocked){d.style.transform='translateY(-2px)';setTimeout(()=>d.style.transform='',150);sfx('error');return}e.stopPropagation();openStanceChooser(d,st=>{flyToBoard(d,()=>playFromHand(c.id,st));});});const cantPay=(c.cost>G.playerMana);const disable=(G.current!=='player'||G.playerBoard.length>=5);d.classList.toggle('blocked',cantPay);d.classList.toggle('playable',!cantPay&&!disable);d.style.cursor=(cantPay||disable)?'not-allowed':'pointer';els.pHand.appendChild(d)});stackHand()}
 
+
 // Animate a sequential flip for newly drawn cards.
 // ids: array of card ids in the order they appear in hand (left to right)
 function animateDrawFlip(ids=[]){
@@ -361,35 +362,68 @@ function animateDrawFlip(ids=[]){
   const nodes = domOrder.filter(n=>ids.includes(n.dataset.id));
   nodes.forEach((node,i)=>{
     // prepare back/front faces if not present
-    if(!node.querySelector('.face.back')){
-      const back=document.createElement('div');back.className='face back';
-      back.innerHTML=`<img src='/img/card-back-temp.png' alt='back' style='width:90%;height:auto;max-height:80%;object-fit:contain'>`;
-      back.style.zIndex=1;
-      const front=document.createElement('div');front.className='face front';
+    if(!node.querySelector('.flip-inner')){
+      const inner=document.createElement('div'); inner.className='flip-inner';
+      // create front and back wrappers
+      const front=document.createElement('div'); front.className='face front';
+      const back=document.createElement('div'); back.className='face back';
+      // back image: use deck-specific back if available
+      const deckKey = (G.playerDeckChoice||'vikings');
+      const info = DECK_ASSETS[deckKey] || DECK_ASSETS.vikings;
+      const backUrl = `/img/decks/${info.folder}/card-backs/${info.back}-cb-default.${info.cbExt}`;
+      back.innerHTML = `<img src='${backUrl}' alt='back' style='width:90%;height:auto;max-height:80%;object-fit:contain'>`;
       // move existing content into front
       while(node.firstChild) front.appendChild(node.firstChild);
-      node.appendChild(back);
-      node.appendChild(front);
-      node.classList.add('flip-container');
+      inner.appendChild(front);
+      inner.appendChild(back);
+      node.appendChild(inner);
+      node.classList.add('show-back');
     }
-    // ensure back visible at start
-    node.classList.remove('flip');
-    // schedule flip with stagger
+    // schedule flip with stagger (faster: 50% speed faster)
     setTimeout(()=>{
-      node.classList.add('flip');
+      // toggle class to rotate inner once
+      node.classList.remove('show-back');
       // after flip, cleanup: unwrap front children back into card root
       setTimeout(()=>{
-        const front=node.querySelector('.face.front');
-        if(front){
-          // move front children back to node
-          while(front.firstChild) node.insertBefore(front.firstChild, node.firstChild);
-          front.remove();
+        const inner=node.querySelector('.flip-inner');
+        if(inner){
+          const front=inner.querySelector('.face.front');
+          while(front && front.firstChild) node.insertBefore(front.firstChild, node.firstChild);
+          inner.remove();
         }
-        const back=node.querySelector('.face.back'); if(back) back.remove();
-        node.classList.remove('flip-container');
-        node.classList.remove('flip');
-      },650);
-    }, i*180);
+        node.classList.remove('show-back');
+      },350);
+    }, i*90);
+  });
+}
+
+function animateDrawFlipOne(id){
+  return new Promise(resolve=>{
+    const node = document.querySelector(`#playerHand .card[data-id='${id}']`);
+    if(!node) return resolve();
+    // prepare faces if absent
+    if(!node.querySelector('.flip-inner')){
+      const inner=document.createElement('div'); inner.className='flip-inner';
+      const front=document.createElement('div'); front.className='face front';
+      const back=document.createElement('div'); back.className='face back';
+      const deckKey = (G.playerDeckChoice||'vikings');
+      const info = DECK_ASSETS[deckKey] || DECK_ASSETS.vikings;
+      const backUrl = `/img/decks/${info.folder}/card-backs/${info.back}-cb-default.${info.cbExt}`;
+      back.innerHTML = `<img src='${backUrl}' alt='back' style='width:90%;height:auto;max-height:80%;object-fit:contain'>`;
+      while(node.firstChild) front.appendChild(node.firstChild);
+      inner.appendChild(front); inner.appendChild(back); node.appendChild(inner);
+      node.classList.add('show-back');
+    }
+    // trigger flip (faster)
+    requestAnimationFrame(()=>{
+      node.classList.remove('show-back');
+      setTimeout(()=>{
+        const inner=node.querySelector('.flip-inner');
+        if(inner){ const front=inner.querySelector('.face.front'); while(front && front.firstChild) node.insertBefore(front.firstChild, node.firstChild); inner.remove(); }
+        node.classList.remove('show-back');
+        resolve();
+      },350);
+    });
   });
 }
 
@@ -494,7 +528,18 @@ function flyToBoard(node,onEnd){
   requestAnimationFrame(()=>{const tx=br.left+br.width/2-r.left-r.width/2,ty=br.top+10-r.top;clone.style.transform=`translate(${tx}px,${ty}px) scale(.9)`;clone.style.opacity='0'});
   setTimeout(()=>{try{clone.remove()}catch(_){ }onEnd&&onEnd()},450);
 }
-function animateMove(fromEl,toEl){const r1=fromEl.getBoundingClientRect(),r2=toEl.getBoundingClientRect(),ghost=document.createElement('div');Object.assign(ghost.style,{left:r1.left+'px',top:r1.top+'px',width:r1.width+'px',height:r1.height+'px',position:'fixed',zIndex:998,transition:'transform .5s ease,opacity .5s ease',background:'#fff',borderRadius:'10px',opacity:1});document.body.appendChild(ghost);requestAnimationFrame(()=>{ghost.style.transform=`translate(${r2.left-r1.left}px,${r2.top-r1.top}px)`;ghost.style.opacity='0'});setTimeout(()=>ghost.remove(),500)}
+function animateMove(fromEl,toEl){
+  return new Promise(resolve=>{
+    try{
+      const r1=fromEl.getBoundingClientRect(),r2=toEl.getBoundingClientRect();
+      const ghost=document.createElement('div');
+      Object.assign(ghost.style,{left:r1.left+'px',top:r1.top+'px',width:r1.width+'px',height:r1.height+'px',position:'fixed',zIndex:998,transition:'transform .5s ease,opacity .5s ease',background:'#fff',borderRadius:'10px',opacity:1});
+      document.body.appendChild(ghost);
+      requestAnimationFrame(()=>{ghost.style.transform=`translate(${r2.left-r1.left}px,${r2.top-r1.top}px)`;ghost.style.opacity='0'});
+      setTimeout(()=>{try{ghost.remove()}catch(_){ }resolve();},500);
+    }catch(e){resolve();}
+  });
+}
 function stackHand(){const cards=$$('#playerHand .card');const total=cards.length;if(!total)return;const spread=150,width=cards[0].offsetWidth,overlap=width-spread;els.pHand.style.setProperty('--hover-shift',`${overlap}px`);cards.forEach((c,i)=>{const offset=(i-(total-1)/2)*spread;c.style.setProperty('--x',`${offset}px`);c.dataset.z=String(i+1);c.style.zIndex=i+1;})}
 function startGame(opts='player') {
   updateCardSize();
@@ -568,7 +613,7 @@ function startGame(opts='player') {
   sfx('start');
 }
 const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
-function draw(who,n=1){
+async function draw(who,n=1){
   const deck = who==='player'?G.playerDeck:G.aiDeck,
         hand = who==='player'?G.playerHand:G.aiHand,
         disc = who==='player'?G.playerDiscard:G.aiDiscard;
@@ -594,8 +639,13 @@ function draw(who,n=1){
         if(who==='player'){
           // mark as freshly drawn so render will show back first
           c._freshDraw = true;
-          newlyDrawnIds.push(c.id);
-          animateMove(deckEl,handEl);
+          // await move animation so draws occur one-by-one
+          await animateMove(deckEl,handEl);
+          // render the hand to show the newly arrived card (as back) and flip it before next draw
+          renderHand();
+          await animateDrawFlipOne(c.id);
+          // cleanup fresh flag so subsequent renders show normal front
+          delete c._freshDraw;
         }
       }
     }
@@ -603,15 +653,9 @@ function draw(who,n=1){
   if(who==='player'){
     els.drawCount.textContent = G.playerDeck.length;
     els.discardCount.textContent = G.playerDiscard.length;
-    // render hand so new cards are in DOM as backs, then run flip animation sequentially
+    // final render/stack to ensure layout
     renderHand();
-    // schedule stack after flips complete
-    if(newlyDrawnIds.length){
-      animateDrawFlip(newlyDrawnIds);
-      setTimeout(stackHand, Math.max(500, newlyDrawnIds.length*200 + 300));
-    }else{
-      setTimeout(stackHand,500);
-    }
+    setTimeout(stackHand,300);
   }
 }
 function discardHand(side){const hand=side==='player'?G.playerHand:G.aiHand;const disc=side==='player'?G.playerDiscard:G.aiDiscard;if(hand.length){if(side==='player'){const cards=$$('#playerHand .card');const pile=document.getElementById('discardPile');cards.forEach(c=>animateMove(c,pile))}disc.push(...hand.splice(0));if(side==='player'){els.discardCount.textContent=G.playerDiscard.length;setTimeout(stackHand,500)}}}
