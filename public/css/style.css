@@ -42,7 +42,8 @@ flex-direction:column;
 aspect-ratio:16/9}
 .sub{color:var(--muted);
 margin-bottom:18px}
-.btn{cursor:pointer;
+/* ensure buttons are block-level interactive elements so their full area is clickable */
+.btn{cursor:pointer;display:inline-flex;align-items:center;justify-content:center;pointer-events:auto;-webkit-appearance:none;appearance:none;
 border:0;
 border-radius:12px;
 padding:10px 14px;
@@ -149,6 +150,10 @@ width:calc(5*var(--card-w) + 4*14px + 24px)}
 .card .face.front{transform:rotateY(0deg)}
 .card .face.back{transform:rotateY(180deg);display:flex;align-items:center;justify-content:center;background:var(--cb-default,linear-gradient(180deg,#101429,#0b1230))}
 .img-missing{width:96px;height:96px;display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg,#0e1435,#09102a);border-radius:8px;color:var(--muted);font-weight:700}
+
+/* Ensure flip overlay doesn't block clicks: only the front face should receive pointer events */
+.card .flip-inner, .card .face.back{pointer-events:none}
+.card .face.front, .card .face.front *{pointer-events:auto}
 .img-missing{width:96px;height:96px;display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg,#0e1435,#09102a);border-radius:8px;color:var(--muted);font-weight:700}
 .card .head-bar{background:linear-gradient(180deg,rgba(0,0,0,.6),rgba(0,0,0,.2));padding:2px 4px;border-radius:6px;display:flex;flex-direction:column;gap:2px}
 .card .head-bar .name{font-weight:800;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:linear-gradient(180deg,rgba(0,0,0,.7),rgba(0,0,0,.3));padding:0 4px;border-radius:4px}
@@ -325,17 +330,17 @@ align-items:center}
 #joinCode{flex:1;padding:8px;border-radius:8px;border:1px solid #2b3a86;background:#0c1230;color:#cfe3ff}
 .multiplayer .panel div{display:flex;justify-content:center;gap:8px}
 #titleMenu .main-actions{display:flex;flex-direction:column;gap:12px;align-items:center;margin-top:20px}
-.options-menu{position:fixed;inset:0;display:none;place-items:center;z-index:60;background:rgba(0,0,0,.7)}
+.options-menu{position:fixed;inset:0;display:none;place-items:center;z-index:60;background:rgba(0,0,0,.7);pointer-events:none}
 .options-menu .panel{text-align:center;display:flex;flex-direction:column;gap:12px}
-.options-menu.show{display:grid}
+.options-menu.show{display:grid;pointer-events:auto}
 #roomList{margin-top:12px}
 #roomList .room{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
 #roomList .room button{margin-left:8px}
 .turn-bar{display:flex;align-items:center;margin:8px 0;justify-content:center;gap:8px}
 .turn-indicator{flex:0;text-align:center;font-size:20px;font-weight:700;margin-right:8px;white-space:nowrap}
 #endTurnBtn{margin-left:0; margin-top:0; margin-bottom:0; display:inline-flex;align-items:center;justify-content:center;height:24px;font-size:16px;padding:0 10px;line-height:1;vertical-align:middle;border-radius:10px;box-shadow:0 4px 8px rgba(0,0,0,.18)}
-.game-menu{position:fixed;inset:0;display:none;place-items:center;z-index:50;background:rgba(0,0,0,.7)}
-.game-menu.show{display:grid}
+.game-menu{position:fixed;inset:0;display:none;place-items:center;z-index:50;background:rgba(0,0,0,.7);pointer-events:none}
+.game-menu.show{display:grid;pointer-events:auto}
 .game-menu .panel{text-align:center;display:flex;flex-direction:column;gap:12px}
 .emoji-bar{position:fixed;bottom:8px;left:8px;display:none;gap:6px;z-index:30}
 .emoji-bar .emoji-btn{background:#fff;border:none;border-radius:6px;padding:2px 4px;font-size:24px;cursor:pointer}
@@ -709,23 +714,30 @@ display:block}
 .holo-logo{animation:logoBounce 2s ease-in-out infinite;filter:drop-shadow(0 0 6px rgba(0,255,255,.6))}
 
 /* Reconnect overlay */
-.reconnect-overlay{position:fixed;inset:0;display:none;place-items:center;background:radial-gradient(800px 400px at 50% 50%,rgba(255,255,255,.06),rgba(0,0,0,.8));z-index:2000}
+.reconnect-overlay{position:fixed;inset:0;display:none;place-items:center;background:radial-gradient(800px 400px at 50% 50%,rgba(255,255,255,.06),rgba(0,0,0,.8));z-index:2000;pointer-events:none}
 .reconnect-overlay.show{display:grid}
 .reconnect-box{background:linear-gradient(180deg,#121a44,#0c1230);border:1px solid #2b3a86;border-radius:16px;box-shadow:0 20px 50px rgba(0,0,0,.5);padding:22px 26px;display:flex;flex-direction:column;gap:12px;align-items:center;text-align:center}
 
 /* Shop modal */
-.modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;place-items:center;z-index:2000}
-.modal .box{background:linear-gradient(180deg,#121a44,#0c1230);border:1px solid #2b3a86;border-radius:16px;padding:22px 26px;max-width:960px;width:min(90vw,960px);box-shadow:0 20px 50px rgba(0,0,0,.5)}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;place-items:center;z-index:4000;pointer-events:auto}
+.modal .box{background:linear-gradient(180deg,#121a44,#0c1230);border:1px solid #2b3a86;border-radius:16px;padding:22px 26px;max-width:960px;width:min(90vw,960px);box-shadow:0 20px 50px rgba(0,0,0,.5);position:relative;z-index:4001;pointer-events:auto}
 #shopModal{--card-w:clamp(80px,9vw,140px)}
-#shopModal .box{aspect-ratio:16/9;display:flex;flex-direction:column;overflow:hidden}
-.shop-grid{flex:1;display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(var(--card-w),1fr));justify-items:center;align-content:center}
-.shop-card{display:flex;flex-direction:column;align-items:center;gap:6px;width:100%}
-.price-btn{display:flex;align-items:center;justify-content:center;gap:4px;font-weight:700;margin-top:4px}
+@media (max-height:700px){
+	#shopModal{--card-w:clamp(64px,8vw,110px)}
+	#shopModal .box{max-height:72vh}
+}
+.shop-grid{flex:1;display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(var(--card-w),1fr));justify-items:center;align-content:start;overflow:auto;padding:8px}
+
+/* make the shop modal box flexible vertically so content won't be clipped on short viewports */
+#shopModal .box{display:flex;flex-direction:column;max-height:min(80vh,820px);width:min(90vw,960px);overflow:auto;gap:12px}
+.shop-card{display:flex;flex-direction:column;align-items:center;gap:6px;width:100%;max-width:var(--card-w)}
+.price-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;font-weight:700;margin-top:6px;padding:6px 10px;border-radius:10px}
 .coin-icon{width:16px;height:16px}
-.shop-placeholder{width:var(--card-w);height:calc(var(--card-w)*1.42);border:1px dashed #334;border-radius:4px;display:flex;align-items:center;justify-content:center;padding:6px;text-align:center}
+.shop-placeholder{width:100%;height:auto;aspect-ratio:calc(var(--card-w) / (var(--card-w) * 1.42));min-height:calc(var(--card-w)*1.42);border:1px dashed #334;border-radius:4px;display:flex;align-items:center;justify-content:center;padding:6px;text-align:center}
 .shop-keeper{width:80px;height:80px;border-radius:8px;object-fit:cover}
-#encounterBanner{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(.8);background:#0e2024;border:2px solid #2dd4bf;padding:12px 24px;border-radius:12px;font-weight:900;font-size:32px;color:#e6fffb;text-shadow:0 0 8px #2dd4bf;z-index:3000;opacity:0;transition:transform .4s ease,opacity .4s ease}
-#encounterBanner.show{transform:translate(-50%,-50%) scale(1);opacity:1}
+/* encounter banner should not block clicks when hidden */
+#encounterBanner{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(.8);background:#0e2024;border:2px solid #2dd4bf;padding:12px 24px;border-radius:12px;font-weight:900;font-size:32px;color:#e6fffb;text-shadow:0 0 8px #2dd4bf;z-index:3000;opacity:0;transition:transform .4s ease,opacity .4s ease;pointer-events:none}
+#encounterBanner.show{transform:translate(-50%,-50%) scale(1);opacity:1;pointer-events:auto}
 #encounterBanner.boss{border-color:#f43f5e;color:#fcd34d;text-shadow:0 0 12px #f43f5e}
 #encounterBanner.shop{border-color:#fcd34d;color:#fcd34d}
 #encounterBanner.show::after{content:"";position:absolute;top:-60px;left:50%;width:4px;height:60px;background:linear-gradient(#fff,transparent);transform:translateX(-50%) scaleY(0);animation:bolt .5s forwards}

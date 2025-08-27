@@ -67,7 +67,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   if (testShopBtn) testShopBtn.addEventListener('click', () => {
-    if (window.openShop) openShop({ faction: 'vikings', gold: 30, unlimited: true });
+    if (window.openShop) openShop({ faction: 'random', gold: 30, unlimited: true });
   });
 
   if (testTotemBtn) testTotemBtn.addEventListener('click', () => {

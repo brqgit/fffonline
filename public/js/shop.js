@@ -38,10 +38,27 @@ function withImg(it){
 }
 
 function genShopOffers(){
-  const pool = shuffle([...FACTIONS[shopState.faction].pool, ...NEUTRAL]);
-  const offers = pool.slice(0,6).map(it => withImg({ ...it }));
-  offers.push(withImg({ name: 'Elixir de Força', type: 'buff', desc: '+1 ATK a suas unidades neste round', cost: 7 }));
-  return offers;
+  // produce up to 12 offers, preferring faction pool when available
+  const maxOffers = 12;
+  const factionPool = (shopState.faction && FACTIONS[shopState.faction]) ? FACTIONS[shopState.faction].pool.slice() : [];
+  const neutralPool = NEUTRAL.slice();
+  let pool = [];
+  if(factionPool.length){
+    pool = pool.concat(shuffle(factionPool).slice(0, Math.ceil(maxOffers/2)));
+  }
+  const otherCandidates = shuffle([].concat(neutralPool, ...Object.values(FACTIONS).map(f=>f.pool)));
+  for(const it of otherCandidates){ if(pool.length>=maxOffers) break; if(!pool.includes(it)) pool.push(it); }
+  if(pool.length < 6){ pool = pool.concat(otherCandidates.slice(0, 6 - pool.length)); }
+  const offers = pool.slice(0, maxOffers).map(it => {
+    const base = Object.assign({}, it);
+    if(['unit','spell','totem'].includes(base.type) && !base.img){ base.img = `/img/cards/${slug(base.name)}.png`; }
+    // if player deck choice exists, hint renderer to prefer that deck for art
+    if(window && window.G && window.G.playerDeckChoice && !base.deck){ base.deck = window.G.playerDeckChoice; }
+    return withImg(base);
+  });
+  // add a consumable if there's room
+  if(offers.length < maxOffers) offers.push(withImg({ name: 'Elixir de Força', type: 'buff', desc: '+1 ATK a suas unidades neste round', cost: 7 }));
+  return offers.slice(0, maxOffers);
 }
 
 function renderShop(){
@@ -53,7 +70,12 @@ function renderShop(){
     card.className = 'shop-card';
 
     if(['unit','spell','totem'].includes(it.type) && window.cardNode){
-      const node = window.cardNode(it,'player');
+      // normalize data for cardNode: prefer deck/icon or img
+      const nodeData = Object.assign({}, it);
+      if(nodeData.img && !nodeData.icon) nodeData.icon = nodeData.icon || '';
+      if(!nodeData.deck && window && window.G && window.G.playerDeckChoice) nodeData.deck = window.G.playerDeckChoice;
+      const node = window.cardNode(nodeData,'player');
+      node.classList.add('shop-preview');
       card.appendChild(node);
     }else{
       const p = document.createElement('div');
@@ -87,7 +109,26 @@ function openShop({ faction, gold, onClose, unlimited=false }){
   $('#btnReroll').disabled = false;
   $('#shopGold').textContent = shopState.gold;
   renderShop();
-  $('#shopModal').style.display = 'grid';
+  // ensure the close button is enabled and clickable
+  const closeBtn = document.getElementById('closeShop');
+  if(closeBtn){ closeBtn.disabled = false; }
+  // attach delegated click to modal root as a safety net
+  const modal = document.getElementById('shopModal');
+  if(modal){
+    modal.style.display = 'grid';
+    modal.addEventListener('click', function delegatedClose(ev){
+      // if user clicks the backdrop (outside .box) or the explicit close button
+      const box = modal.querySelector('.box');
+      if(!box) return;
+      if(ev.target === modal){
+        // click on backdrop
+        closeShop();
+      }
+      if(ev.target && ev.target.id === 'closeShop'){
+        closeShop();
+      }
+    });
+  }
 }
 
 function closeShop(){

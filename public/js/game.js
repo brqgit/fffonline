@@ -249,8 +249,12 @@ function tiltify(card,lift=!1){
 }
 function showPopup(anchor,text){const box=document.createElement('div');box.className='card-popup';box.textContent=text;const r=anchor.getBoundingClientRect();box.style.left=r.left+r.width/2+'px';box.style.top=r.top+'px';document.body.appendChild(box);setTimeout(()=>box.remove(),1200)}
 function createProjection(container,card){
-  const urls=iconUrl(card.deck,card.icon);
-  if(urls){
+  // Prefer deck-specific icon candidates, but fall back to any explicit absolute image path
+  let urls = iconUrl(card.deck,card.icon);
+  if((!urls || !urls.length) && card && typeof card.img === 'string' && card.img.trim()){
+    urls = [card.img];
+  }
+  if(urls && urls.length){
     const src = urls[0];
     // If the src is known-bad, or empty, skip creating an <img> to avoid repeated 404 requests.
     if(!src || (IMG_CACHE[src] && IMG_CACHE[src].failed)){
