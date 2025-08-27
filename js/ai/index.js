@@ -1,4 +1,4 @@
-export function aiTurn(ctx) {
+export async function aiTurn(ctx) {
   const { G, summon, renderAll, legalTarget, attackCard, attackFace, rand, newTurn } = ctx;
   const playable = G.aiHand
     .filter((c) => c.cost <= G.aiMana && c.harvestCost <= G.aiHarvest)
@@ -16,9 +16,21 @@ export function aiTurn(ctx) {
           : Math.random() < 0.3
             ? "defense"
             : "attack";
-      summon("ai", c, stance);
-      G.aiMana -= c.cost;
-      G.aiHarvest -= c.harvestCost;
+      // call summon and await its animation when it returns a Promise
+      const res = summon("ai", c, stance);
+      if (res && typeof res.then === 'function') {
+        // render before awaiting so the hidden real node / ghost appear
+        renderAll();
+        G.aiMana -= c.cost;
+        G.aiHarvest -= c.harvestCost;
+        await res;
+      } else {
+        G.aiMana -= c.cost;
+        G.aiHarvest -= c.harvestCost;
+      }
+
+      // small gap between plays for visual clarity
+      await new Promise((r) => setTimeout(r, 120));
     }
   }
   renderAll();
