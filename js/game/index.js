@@ -771,25 +771,13 @@ function renderAll() {
   els.aHP.textContent = G.aiHP;
   els.aHP2.textContent = G.aiHP;
   els.mana.textContent = `${G.playerMana}/${G.playerManaCap} | 🌾 ${G.playerHarvest}/${G.playerHarvestCap}`;
-  const playerTurn = G.current === "player";
-  if (els.endBtn) {
-    els.endBtn.style.display = playerTurn ? "inline-block" : "none";
-    els.endBtn.disabled = !playerTurn;
-  }
+  els.endBtn.disabled = G.current !== "player";
   els.drawCount.textContent = G.playerDeck.length;
   els.discardCount.textContent = G.playerDiscard.length;
   updateMeters();
-  if (els.totemBar) {
-    if (G.mode === "story") {
-      els.totemBar.style.display = "flex";
-      renderTotems();
-    } else {
-      els.totemBar.style.display = "none";
-      els.totemBar.innerHTML = "";
-    }
-  }
   renderHand();
   renderBoard();
+  renderTotems();
 }
 function renderHand() {
   els.pHand.innerHTML = "";
@@ -908,17 +896,18 @@ function openStanceChooser(anchor, cb, onCancel) {
   anchor.classList.add("chosen");
   const prevZ = anchor.style.zIndex;
   anchor.style.zIndex = 10000;
-  const box = document.createElement("div"),
-    bA = document.createElement("button"),
-    bD = document.createElement("button");
+  const box = document.createElement("div");
   box.className = "stance-chooser";
-  bA.className = bD.className = "btn";
+  const bA = document.createElement("button");
+  bA.className = "btn";
   bA.textContent = "⚔️ Ataque";
+  const bD = document.createElement("button");
+  bD.className = "btn";
   bD.textContent = "🛡️ Defesa";
   const cleanup = () => {
     anchor.classList.remove("chosen");
     anchor.style.zIndex = prevZ;
-    box.remove();
+    closeStanceChooser();
   };
   bA.addEventListener("click", (e) => {
     e.stopPropagation();
@@ -931,14 +920,12 @@ function openStanceChooser(anchor, cb, onCancel) {
     cb("defense");
   });
   box.append(bA, bD);
-  document.body.appendChild(box);
-  const r = anchor.getBoundingClientRect();
+  anchor.appendChild(box);
   Object.assign(box.style, {
-    position: "fixed",
-    left: r.left + r.width / 2 + "px",
-    top: r.top + "px",
-    transform: "translate(-50%, -100%)",
-    zIndex: 10001,
+    position: "absolute",
+    left: "50%",
+    bottom: "100%",
+    transform: "translate(-50%, -8px)",
   });
   setTimeout(() => {
     const h = (ev) => {
@@ -955,7 +942,7 @@ const closeStanceChooser = () => {
   const old = document.querySelector(".stance-chooser");
   old && old.remove();
   document
-    .querySelectorAll(".card.chosen")
+    .querySelectorAll(".hand .card.chosen")
     .forEach((c) => c.classList.remove("chosen"));
 };
 function flyToBoard(node, onEnd) {
@@ -1122,7 +1109,6 @@ function applyTotemBuffs() {
     });
   });
 }
-let turnTimer=null;function startTurnTimer(){if(!window.isMultiplayer||!els.endBtn)return;stopTurnTimer();const start=Date.now(),dur=3e4;turnTimer=setInterval(()=>{const pct=(Date.now()-start)/dur*100;els.endBtn.style.setProperty('--timer',Math.min(pct,100)+'%');if(pct>=100){stopTurnTimer();endTurn();}},100)}function stopTurnTimer(){if(turnTimer){clearInterval(turnTimer);turnTimer=null;}els.endBtn&&els.endBtn.style.setProperty('--timer','0%')}
 function newTurn(prev) {
   if (prev) applyEndTurnEffects(prev);
   if (G.current === "player") {
@@ -1152,13 +1138,9 @@ function newTurn(prev) {
     G.aiBoard.forEach((c) => (c.canAttack = true));
   }
   renderAll();
-  if (window.isMultiplayer) {
-    G.current === "player" ? startTurnTimer() : stopTurnTimer();
-  }
 }
 function endTurn() {
   if (G.current !== "player") return;
-  stopTurnTimer();
   G.current = "ai";
   G.chosen = null;
   updateTargetingUI();
@@ -1191,12 +1173,6 @@ function playFromHand(id, st) {
   G.playerMana -= c.cost;
   G.playerHarvest -= c.harvestCost;
   if (c.type === "totem") {
-    if (G.mode !== "story") {
-      log("Totens só estão disponíveis no modo história.");
-      G.playerDiscard.push(c);
-      renderAll();
-      return;
-    }
     if (G.totems.length >= 3) {
       log("Número máximo de Totens atingido.");
       G.playerDiscard.push(c);

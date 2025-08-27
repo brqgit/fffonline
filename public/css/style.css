@@ -52,13 +52,43 @@ background:linear-gradient(180deg,#2a3c7e,#1b2a5b);
 color:#fff;
 font-weight:700;
 letter-spacing:.3px;
-box-shadow:0 6px 14px rgba(0,0,0,.25),inset 0 0 0 1px rgba(255,255,255,.08)}
-.btn-ghost{cursor:pointer;
-border:1px solid #2b3a86;
-background:#0c1230;
-color:#cfe3ff;
-border-radius:10px;
-padding:8px 10px}
+box-shadow:0 6px 14px rgba(0,0,0,.25),inset 0 0 0 1px rgba(255,255,255,.08);
+transition:transform .18s ease,box-shadow .18s ease,opacity .12s ease}
+.btn:hover{transform:translateY(-4px);box-shadow:0 18px 36px rgba(0,0,0,.5),0 0 18px rgba(124,196,255,.08)}
+.btn:active{transform:translateY(-1px)}
+
+/* Accessible visible focus for keyboard users */
+.btn:focus-visible,.btn-ghost:focus-visible,.fbtn:focus-visible,.deckbtn:focus-visible,input:focus-visible,select:focus-visible,button:focus-visible{
+  outline:3px solid rgba(124,196,255,.22);
+  outline-offset:3px;
+  box-shadow:0 0 0 6px rgba(124,196,255,.10);
+}
+
+/* Deck button micro-interactions */
+.deckbtn{transition:transform .18s ease,opacity .18s ease,filter .18s ease}
+.deckbtn:hover{--halo:1;--shine:1;transform:translateY(-6px);filter:brightness(1.03) saturate(1.05)}
+
+/* Smooth tooltip for view-cards */
+.view-cards[data-tip]::after{transition:opacity .18s ease,transform .18s ease;transform:translateY(-6px);opacity:0}
+.view-cards:hover[data-tip]::after{opacity:1;transform:translateY(-12px)}
+
+/* Panel lift on hover for start/menu screens */
+.start .panel,.multiplayer .panel,.ency .panel{transition:transform .22s ease,box-shadow .22s ease}
+.start .panel:hover,.multiplayer .panel:hover,.ency .panel:hover{transform:translateY(-8px);box-shadow:0 30px 70px rgba(0,0,0,.6)}
+
+/* Slightly improved contrast for disabled primary action */
+.btn[disabled]{opacity:.6;filter:grayscale(.15);cursor:not-allowed}
+
+/* Reduce pointer-events issues with overlays */
+.modal,.options-menu,.game-menu,.end-overlay,.reconnect-overlay{/* backdrop-filter removed to avoid pointer-events issues */}
+
+/* Ensure focus ring on interactive chips */
+.chip:focus-visible,.keyword:focus-visible{outline:2px solid rgba(165,180,252,.18);outline-offset:2px}
+
+/* Tiny performance hint: prefer transform for move/hover changes */
+.logo-wordmark{will-change:transform}
+
+/* End of visual improvements */
 .hud{display:grid;
 grid-template-columns:1fr auto 1fr;
 gap:12px;
@@ -355,8 +385,10 @@ flex-direction:column;
 gap:4px;
 align-items:flex-start;
 justify-content:center;
-overflow:visible}
+overflow:visible;
+transition:transform .18s ease,opacity .18s ease,filter .18s ease}
 .deckbtn[data-deck="custom"]{display:none}
+.deckbtn:hover{--halo:1;--shine:1;transform:translateY(-6px);filter:brightness(1.03) saturate(1.05)}
 .deckbtn::before{content:"";
 position:absolute;
 inset:-2px;
@@ -559,7 +591,7 @@ min-height:var(--card-h);
 overflow:visible}
 .ency-card .art{min-height:110px;
 font-size:60px}
-.ency-card .name{-webkit-line-clamp:2}
+.ency-card .name{line-clamp:2;-webkit-line-clamp:2}
 .ency-card:hover{transform:translateY(-6px) scale(1.03);
 box-shadow:0 16px 30px rgba(0,0,0,.45),0 0 0 2px rgba(124,196,255,.15) inset}
 .ency-card:hover{transform:scale(1.04);
@@ -575,6 +607,7 @@ white-space:normal;
 overflow:visible;
 text-overflow:clip;
 display:-webkit-box;
+line-clamp:2;
 -webkit-line-clamp:2;
 -webkit-box-orient:vertical}
 .ency-card .mini{font-size:12px;
