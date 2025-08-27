@@ -349,6 +349,50 @@ function renderAll(){
 }
 function renderHand(){els.pHand.innerHTML='';G.playerHand.forEach(c=>{const d=cardNode(c,'player');d.classList.add('handcard');tiltify(d,!0);d.addEventListener('click',e=>{if(d.classList.contains('chosen'))return;const blocked=(c.cost>G.playerMana)||G.current!=='player'||G.playerBoard.length>=5;if(blocked){d.style.transform='translateY(-2px)';setTimeout(()=>d.style.transform='',150);sfx('error');return}e.stopPropagation();openStanceChooser(d,st=>{flyToBoard(d,()=>playFromHand(c.id,st));});});const cantPay=(c.cost>G.playerMana);const disable=(G.current!=='player'||G.playerBoard.length>=5);d.classList.toggle('blocked',cantPay);d.classList.toggle('playable',!cantPay&&!disable);d.style.cursor=(cantPay||disable)?'not-allowed':'pointer';els.pHand.appendChild(d)});stackHand()}
 
+// Animate a sequential flip for newly drawn cards.
+// ids: array of card ids in the order they appear in hand (left to right)
+function animateDrawFlip(ids=[]){
+  if(!ids.length) return;
+  // ensure hand is rendered first
+  const cards = $$('#playerHand .card');
+  // map id -> node and keep left-to-right order from DOM
+  const domOrder = cards.slice().sort((a,b)=>Number(a.style.zIndex||0)-Number(b.style.zIndex||0));
+  // find nodes for ids, in DOM left-to-right order
+  const nodes = domOrder.filter(n=>ids.includes(n.dataset.id));
+  nodes.forEach((node,i)=>{
+    // prepare back/front faces if not present
+    if(!node.querySelector('.face.back')){
+      const back=document.createElement('div');back.className='face back';
+      back.innerHTML=`<img src='/img/card-back-temp.png' alt='back' style='width:90%;height:auto;max-height:80%;object-fit:contain'>`;
+      back.style.zIndex=1;
+      const front=document.createElement('div');front.className='face front';
+      // move existing content into front
+      while(node.firstChild) front.appendChild(node.firstChild);
+      node.appendChild(back);
+      node.appendChild(front);
+      node.classList.add('flip-container');
+    }
+    // ensure back visible at start
+    node.classList.remove('flip');
+    // schedule flip with stagger
+    setTimeout(()=>{
+      node.classList.add('flip');
+      // after flip, cleanup: unwrap front children back into card root
+      setTimeout(()=>{
+        const front=node.querySelector('.face.front');
+        if(front){
+          // move front children back to node
+          while(front.firstChild) node.insertBefore(front.firstChild, node.firstChild);
+          front.remove();
+        }
+        const back=node.querySelector('.face.back'); if(back) back.remove();
+        node.classList.remove('flip-container');
+        node.classList.remove('flip');
+      },650);
+    }, i*180);
+  });
+}
+
   document.addEventListener('click', e => {
     if(!G.chosen) return;
     if(e.target.closest('#aiBoard .card.selectable') || e.target.closest('#playerBoard .card.selectable') || e.target.closest('#aiBoard .face-attack-btn')) return;
@@ -524,7 +568,52 @@ function startGame(opts='player') {
   sfx('start');
 }
 const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
-function draw(who,n=1){const deck=who==='player'?G.playerDeck:G.aiDeck,hand=who==='player'?G.playerHand:G.aiHand,disc=who==='player'?G.playerDiscard:G.aiDiscard;const deckEl=document.getElementById('drawPile');const handEl=els.pHand;for(let i=0;i<n;i++){if(deck.length===0&&disc.length){disc.forEach(resetCardState);deck.push(...shuffle(disc.splice(0)));deckEl.classList.add('shuffling');setTimeout(()=>deckEl.classList.remove('shuffling'),600)}if(deck.length){const c=deck.shift();resetCardState(c);if(c.hp<1)c.hp=1;if(who==='player'&&hand.length>=G.maxHandSize){G.playerDiscard.push(c);log(`${c.name} queimou por excesso de cartas.`);}else{hand.push(c);if(who==='player')animateMove(deckEl,handEl);}}}if(who==='player'){els.drawCount.textContent=G.playerDeck.length;els.discardCount.textContent=G.playerDiscard.length;setTimeout(stackHand,500)}}
+function draw(who,n=1){
+  const deck = who==='player'?G.playerDeck:G.aiDeck,
+        hand = who==='player'?G.playerHand:G.aiHand,
+        disc = who==='player'?G.playerDiscard:G.aiDiscard;
+  const deckEl = document.getElementById('drawPile');
+  const handEl = els.pHand;
+  const newlyDrawnIds = [];
+  for(let i=0;i<n;i++){
+    if(deck.length===0 && disc.length){
+      disc.forEach(resetCardState);
+      deck.push(...shuffle(disc.splice(0)));
+      deckEl.classList.add('shuffling');
+      setTimeout(()=>deckEl.classList.remove('shuffling'),600);
+    }
+    if(deck.length){
+      const c = deck.shift();
+      resetCardState(c);
+      if(c.hp<1) c.hp=1;
+      if(who==='player' && hand.length>=G.maxHandSize){
+        G.playerDiscard.push(c);
+        log(`${c.name} queimou por excesso de cartas.`);
+      } else {
+        hand.push(c);
+        if(who==='player'){
+          // mark as freshly drawn so render will show back first
+          c._freshDraw = true;
+          newlyDrawnIds.push(c.id);
+          animateMove(deckEl,handEl);
+        }
+      }
+    }
+  }
+  if(who==='player'){
+    els.drawCount.textContent = G.playerDeck.length;
+    els.discardCount.textContent = G.playerDiscard.length;
+    // render hand so new cards are in DOM as backs, then run flip animation sequentially
+    renderHand();
+    // schedule stack after flips complete
+    if(newlyDrawnIds.length){
+      animateDrawFlip(newlyDrawnIds);
+      setTimeout(stackHand, Math.max(500, newlyDrawnIds.length*200 + 300));
+    }else{
+      setTimeout(stackHand,500);
+    }
+  }
+}
 function discardHand(side){const hand=side==='player'?G.playerHand:G.aiHand;const disc=side==='player'?G.playerDiscard:G.aiDiscard;if(hand.length){if(side==='player'){const cards=$$('#playerHand .card');const pile=document.getElementById('discardPile');cards.forEach(c=>animateMove(c,pile))}disc.push(...hand.splice(0));if(side==='player'){els.discardCount.textContent=G.playerDiscard.length;setTimeout(stackHand,500)}}}
 function applyTotemBuffs(){if(!G.playerBoard.length||!G.totems.length)return;G.playerBoard.forEach(u=>{u.atk=(u.baseAtk!==undefined?u.baseAtk:u.atk);u.hp=(u.baseHp!==undefined?u.baseHp:u.hp);u.baseAtk=u.atk;u.baseHp=u.hp});G.totems.forEach(t=>{const cnt=Math.min(3,G.playerBoard.length);const picks=shuffle(G.playerBoard.slice()).slice(0,cnt);picks.forEach(u=>{if(t.buffs&&t.buffs.atk)u.atk+=t.buffs.atk;if(t.buffs&&t.buffs.hp)u.hp+=t.buffs.hp;})})}
 function showMultiplayerDeckSelect(){
