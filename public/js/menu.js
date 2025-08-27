@@ -3,13 +3,29 @@ document.addEventListener('DOMContentLoaded', () => {
   const deckScreen = document.getElementById('start');
   const multiMenu = document.getElementById('multiplayerMenu');
   const optionsMenu = document.getElementById('optionsMenu');
+  const storyBtn = document.getElementById('menuStory');
   const soloBtn = document.getElementById('menuSolo');
   const multiBtn = document.getElementById('menuMulti');
   const optBtn = document.getElementById('menuOptions');
+  const testBtn = document.getElementById('menuTestes');
   const backToMenu = document.getElementById('backToMenu');
   const closeOptions = document.getElementById('closeOptions');
+  const testModal = document.getElementById('testModal');
+  const closeTest = document.getElementById('closeTest');
+  const testShopBtn = document.getElementById('testShopBtn');
+  const testTotemBtn = document.getElementById('testTotemBtn');
   const diffLabel = document.querySelector('label[for="difficulty"]');
   const diffSelect = document.getElementById('difficulty');
+
+  if (storyBtn) storyBtn.addEventListener('click', () => {
+    if (titleMenu) titleMenu.style.display = 'none';
+    if (deckScreen) deckScreen.style.display = 'grid';
+    if (diffLabel) diffLabel.style.display = 'none';
+    if (diffSelect) diffSelect.style.display = 'none';
+    const startBtn = document.getElementById('startGame');
+    if (startBtn){startBtn.textContent='Iniciar História';startBtn.disabled=true;}
+    window.currentGameMode = 'story';
+  });
 
   if (soloBtn) soloBtn.addEventListener('click', () => {
     if (titleMenu) titleMenu.style.display = 'none';
@@ -18,6 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (diffSelect) diffSelect.style.display = '';
     const startBtn = document.getElementById('startGame');
     if (startBtn){startBtn.textContent='Jogar';startBtn.disabled=true;}
+    window.currentGameMode = 'solo';
   });
 
   if (multiBtn) multiBtn.addEventListener('click', () => {
@@ -29,15 +46,33 @@ document.addEventListener('DOMContentLoaded', () => {
     if (optionsMenu) optionsMenu.style.display = 'grid';
   });
 
+  if (testBtn) testBtn.addEventListener('click', () => {
+    if (testModal) testModal.style.display = 'grid';
+  });
+
   if (backToMenu) backToMenu.addEventListener('click', () => {
     if (deckScreen) deckScreen.style.display = 'none';
     if (titleMenu) titleMenu.style.display = 'grid';
     const startBtn = document.getElementById('startGame');
     if (startBtn){startBtn.textContent='Jogar';startBtn.disabled=true;}
+    window.currentGameMode = null;
   });
 
   if (closeOptions) closeOptions.addEventListener('click', () => {
     if (optionsMenu) optionsMenu.style.display = 'none';
+  });
+
+  if (closeTest) closeTest.addEventListener('click', () => {
+    if (testModal) testModal.style.display = 'none';
+  });
+
+  if (testShopBtn) testShopBtn.addEventListener('click', () => {
+    if (window.openShop) openShop({ faction: 'vikings', gold: 30, unlimited: true });
+  });
+
+  if (testTotemBtn) testTotemBtn.addEventListener('click', () => {
+    if (testModal) testModal.style.display = 'none';
+    if (window.startTotemTest) startTotemTest();
   });
 
   const musicVol = document.getElementById('musicVol');

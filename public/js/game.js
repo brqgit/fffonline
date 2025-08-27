@@ -1,6 +1,7 @@
 (function(){const $=s=>document.querySelector(s),$$=s=>Array.from(document.querySelectorAll(s));const logBox=$('#log');const log=t=>{if(!logBox)return;const d=document.createElement('div');d.textContent=t;logBox.prepend(d)};const rand=a=>a[Math.floor(Math.random()*a.length)],clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),uid=()=>(Math.random().toString(36).slice(2));
 const AudioCtx=window.AudioContext||window.webkitAudioContext;let actx=null,master=null,musicGain=null,musicLoopId=null,musicOn=false,musicPreset='menu',musicMuted=false,sfxMuted=false,musicVolume=1,sfxVolume=1,musicBase=.18,allMuted=false;function initAudio(){if(!AudioCtx)return;if(!actx){actx=new AudioCtx();master=actx.createGain();master.gain.value=.18*sfxVolume;master.connect(actx.destination)}}function ensureRunning(){if(actx&&actx.state==='suspended')actx.resume()}function tone(f=440,d=.1,t='sine',v=1,w=0){if(!actx||sfxMuted)return;ensureRunning();const o=actx.createOscillator(),g=actx.createGain();o.type=t;o.frequency.setValueAtTime(f,actx.currentTime+w);g.gain.setValueAtTime(.0001,actx.currentTime+w);g.gain.exponentialRampToValueAtTime(Math.max(.0002,v)*sfxVolume,actx.currentTime+w+.01);g.gain.exponentialRampToValueAtTime(.0001,actx.currentTime+w+d);o.connect(g);g.connect(master);o.start(actx.currentTime+w);o.stop(actx.currentTime+w+d+.02)}function sfx(n){if(!actx||sfxMuted)return;({start:()=>{tone(520,.08,'triangle',.7,0);tone(780,.09,'triangle',.6,.08)},play:()=>{tone(420,.07,'sine',.7,0);tone(560,.08,'sine',.6,.06)},defense:()=>{tone(280,.09,'square',.6,0);tone(200,.12,'sine',.5,.08)},attack:()=>{tone(300,.06,'sawtooth',.7,0);tone(220,.06,'sawtooth',.6,.05)},hit:()=>{tone(160,.07,'square',.6,0)},overflow:()=>{tone(600,.1,'triangle',.6,0)},death:()=>{tone(420,.08,'sawtooth',.6,0);tone(260,.12,'sawtooth',.55,.06)},end:()=>{tone(600,.06,'triangle',.6,0);tone(400,.06,'triangle',.5,.05)},crit:()=>{tone(120,.08,'square',.75,0);tone(90,.12,'square',.7,.06)},error:()=>{tone(140,.05,'square',.6,0);tone(140,.05,'square',.6,.06)}}[n]||(()=>{}))()}
 function setSrcFallback(el,urls){const tryNext=()=>{if(!urls.length)return;const u=urls.shift();el.onerror=tryNext;el.src=u;};tryNext();}
+const pickEnemyName=(deck,boss=false)=>{const pool=(window.ENEMY_NAMES||{})[deck]||[];const list=pool.filter(e=>boss?e.boss:!e.boss);const c=list.length?rand(list):{name:"Inimigo"};return c.name;};
 // --- MENU MUSIC (procedural, deck-themed) ---
 const MUSIC={menu:{bpm:84,leadBase:196,bassBase:98,leadWave:'triangle',bassWave:'sine',scale:[0,3,5,7,5,3,0,-5]},vikings:{bpm:76,leadBase:174.61,bassBase:87.31,leadWave:'sawtooth',bassWave:'sine',scale:[0,3,5,7,10,7,5,3]},animais:{bpm:90,leadBase:220,bassBase:110,leadWave:'square',bassWave:'sine',scale:[0,2,5,7,9,7,5,2]},pescadores:{bpm:96,leadBase:196,bassBase:98,leadWave:'triangle',bassWave:'triangle',scale:[0,2,4,7,9,7,4,2]},floresta:{bpm:68,leadBase:207.65,bassBase:103.83,leadWave:'sine',bassWave:'sine',scale:[0,3,5,10,5,3,0,-2]},combat:{bpm:118,leadBase:220,bassBase:110,leadWave:'sawtooth',bassWave:'square',scale:[0,2,3,5,7,8,7,5],perc:true,ac:4}};
 function startMenuMusic(preset){if(!AudioCtx||musicMuted)return;initAudio();ensureRunning();if(preset&&preset!==musicPreset&&musicOn){stopMenuMusic()}musicPreset=preset||musicPreset||'menu';if(musicOn)return;musicOn=true;const P=MUSIC[musicPreset]||MUSIC.menu;musicGain=actx.createGain();musicGain.gain.value=.0001;musicGain.connect(master);musicBase=musicPreset==='combat'?.22:.18;musicGain.gain.exponentialRampToValueAtTime(musicBase*musicVolume,actx.currentTime+.4);const beat=60/P.bpm,steps=P.scale.length;const schedule=()=>{if(!musicOn||!musicGain) return; let t=actx.currentTime;for(let i=0;i<steps;i++){const f=P.leadBase*Math.pow(2,P.scale[i]/12),o=actx.createOscillator(),g=actx.createGain();o.type=P.leadWave;o.frequency.setValueAtTime(f,t+i*beat);g.gain.setValueAtTime(.0001,t+i*beat);g.gain.exponentialRampToValueAtTime((musicPreset==='combat'?.13:.11)*musicVolume,t+i*beat+.01);g.gain.exponentialRampToValueAtTime(.0001,t+i*beat+beat*.92);o.connect(g);g.connect(musicGain);o.start(t+i*beat);o.stop(t+i*beat+beat)}for(let i=0;i<steps;i+=2){const o=actx.createOscillator(),g=actx.createGain();o.type=P.bassWave;o.frequency.setValueAtTime(P.bassBase,t+i*beat);g.gain.setValueAtTime(.0001,t+i*beat);g.gain.exponentialRampToValueAtTime((musicPreset==='combat'?.1:.09)*musicVolume,t+i*beat+.01);g.gain.exponentialRampToValueAtTime(.0001,t+i*beat+beat*.96);o.connect(g);g.connect(musicGain);o.start(t+i*beat);o.stop(t+i*beat+beat)}if(P.perc){for(let i=0;i<steps;i++){const h=actx.createOscillator(),hg=actx.createGain();h.type='square';h.frequency.setValueAtTime(1600,t+i*beat);hg.gain.setValueAtTime(.0001,t+i*beat);hg.gain.exponentialRampToValueAtTime(.07*musicVolume,t+i*beat+.005);hg.gain.exponentialRampToValueAtTime(.0001,t+i*beat+beat*.2);h.connect(hg);hg.connect(musicGain);h.start(t+i*beat);h.stop(t+i*beat+beat*.2);if(P.ac&&i%P.ac===0){const k=actx.createOscillator(),kg=actx.createGain();k.type='sine';k.frequency.setValueAtTime(120,t+i*beat);kg.gain.setValueAtTime(.0001,t+i*beat);kg.gain.exponentialRampToValueAtTime(.12*musicVolume,t+i*beat+.01);kg.gain.exponentialRampToValueAtTime(.0001,t+i*beat+beat*.3);k.connect(kg);kg.connect(musicGain);k.start(t+i*beat);k.stop(t+i*beat+beat*.3)}}}};schedule();const loopMs=beat*steps*1000;musicLoopId=setInterval(schedule,loopMs-25)}
@@ -122,10 +123,22 @@ convergentes:[
   ["Sábio Prismal","","Convergente",3,5,4,"Entra: +1/+1 aleatório","M","BR1"],
   ["Avatar Mutagênico","","Convergente",6,6,6,"","M"],
 ]};
+class StoryMode{
+  constructor({level=1}={}){this.level=level;this.round=0;this.totems=[];this.scaling=0;this.xp=0;this.gold=30;this.bossInterval=10;this.eliteEvery=5;this.currentEncounter='normal';}
+  nextRound(){this.round+=1;this.scaling=Math.floor(this.round/2)+(this.level-1);const isBoss=this.round%this.bossInterval===0;const isElite=!isBoss&&this.round%this.eliteEvery===0;this.currentEncounter=isBoss?'boss':isElite?'elite':'normal';return{isBoss,isElite};}
+  handleVictory(){const xpGain=this.currentEncounter==='boss'?20:this.currentEncounter==='elite'?10:5;const goldGain=this.currentEncounter==='boss'?20:this.currentEncounter==='elite'?10:5;this.xp+=xpGain;this.gold+=goldGain;const leveled=this.checkLevelUp();return{leveled,rewards:this.rewardOptions(),goldGain};}
+  rewardOptions(){return['Nova carta','Evoluir carta','Ganhar Totem','Buff permanente'];}
+  checkLevelUp(){const need=this.level*50;if(this.xp>=need){this.level+=1;this.xp-=need;return true}return false}
+  addTotem(t){if(this.totems.length>=3)return false;this.totems.push(t);return true}
+  reset(){this.round=0;this.totems=[];this.xp=0;this.gold=30;this.currentEncounter='normal';}
+}
 const ALL_DECKS=Object.keys(TEMPLATES);
-const G={playerHP:30,aiHP:30,turn:0,playerMana:0,playerManaCap:0,aiMana:0,aiManaCap:0,current:'player',playerDeck:[],aiDeck:[],playerHand:[],aiHand:[],playerBoard:[],aiBoard:[],playerDiscard:[],aiDiscard:[],chosen:null,playerDeckChoice:'vikings',aiDeckChoice:rand(ALL_DECKS),customDeck:null};
+const G={playerHP:30,aiHP:30,turn:0,playerMana:0,playerManaCap:0,aiMana:0,aiManaCap:0,current:'player',playerDeck:[],aiDeck:[],playerHand:[],aiHand:[],playerBoard:[],aiBoard:[],playerDiscard:[],aiDiscard:[],chosen:null,playerDeckChoice:'vikings',aiDeckChoice:rand(ALL_DECKS),customDeck:null,mode:'solo',story:null,enemyScaling:0,maxHandSize:5,totems:[]};
 const els={pHP:$('#playerHP'),pHP2:$('#playerHP2'),aHP:$('#aiHP'),aHP2:$('#aiHP2'),opponentLabel:$('#opponentLabel'),mana:$('#mana'),pHand:$('#playerHand'),pBoard:$('#playerBoard'),aBoard:$('#aiBoard'),endBtn:$('#endTurnBtn'),muteBtn:$('#muteBtn'),aAva:$('#aiAvatar'),drawCount:$('#drawCount'),discardCount:$('#discardCount'),barPHP:$('#barPlayerHP'),barAHP:$('#barAiHP'),barMana:$('#barMana'),wrap:$('#gameWrap'),start:$('#start'),openEncy:$('#openEncy'),ency:$('#ency'),encyGrid:$('#encyGrid'),encyFilters:$('#encyFilters'),closeEncy:$('#closeEncy'),startGame:$('#startGame'),endOverlay:$('#endOverlay'),endMsg:$('#endMsg'),endSub:$('#endSub'),playAgainBtn:$('#playAgainBtn'),rematchBtn:$('#rematchBtn'),menuBtn:$('#menuBtn'),openMenuBtn:$('#openMenuBtn'),gameMenu:$('#gameMenu'),closeMenuBtn:$('#closeMenuBtn'),resignBtn:$('#resignBtn'),restartBtn:$('#restartBtn'),mainMenuBtn:$('#mainMenuBtn'),turnIndicator:$('#turnIndicator'),emojiBar:$('#emojiBar'),playerEmoji:$('#playerEmoji'),opponentEmoji:$('#opponentEmoji'),deckBuilder:$('#deckBuilder'),saveDeck:$('#saveDeck')};
 els.startGame.disabled=true;
+
+function updateCardSize(){if(!els.wrap||getComputedStyle(els.wrap).display==='none')return;const root=document.documentElement,wrap=els.wrap,vh=window.innerHeight,q=s=>wrap.querySelector(s),marginY=e=>{if(!e)return 0;const st=getComputedStyle(e);return parseFloat(st.marginTop)+parseFloat(st.marginBottom)},outer=e=>e?e.offsetHeight+marginY(e):0,pad=(()=>{const st=getComputedStyle(wrap);return parseFloat(st.paddingTop)+parseFloat(st.paddingBottom)})();const h1=q('h1'),hud=q('.hud'),turn=q('.turn-bar'),totem=q('.totem-bar'),footer=q('.footer'),hand=q('.hand'),board=q('.board');const space=outer(h1)+outer(hud)+outer(turn)+outer(totem)+outer(footer)+pad+marginY(hand)+marginY(board)*2+60;let cardH=(vh-space)/3;const cardW=cardH*(220/300);root.style.setProperty('--card-h',cardH+'px');root.style.setProperty('--card-w',cardW+'px');}
+window.addEventListener('resize',updateCardSize);
 const DECK_TITLES={vikings:'Fazendeiros Vikings',animais:'Bestas do Norte',pescadores:'Pescadores do Fiorde',floresta:'Feras da Floresta',convergentes:'Convergentes da Aurora',custom:'Custom'};
 const DECK_ASSETS={
   vikings:{folder:'farm-vikings',back:'fv',dbExt:'png',cbExt:'webp'},
@@ -191,7 +204,7 @@ function updateCurve(){if(!curveEl)return;const list=(G.customDeck||[]);const bu
 window.addEventListener('error',function(e){console.error('JS Error:',e.message,e.filename+':'+e.lineno);try{typeof log==='function'&&log('⚠️ '+e.message)}catch(_){}});
 window.addEventListener('unhandledrejection',function(e){console.error('Unhandled Rejection:',e.reason);try{const msg=e.reason&&e.reason.message?e.reason.message:String(e.reason);typeof log==='function'&&log('⚠️ '+msg)}catch(_){}});
 
-function tiltify(card,lift=!1){const h=card.offsetHeight,w=card.offsetWidth;let hov=!1;if(lift){card.addEventListener('mouseenter',()=>{hov=!0;card.style.zIndex=1000;card.style.transform='translateY(-20px)'});card.addEventListener('mouseleave',()=>{hov=!1;card.style.zIndex=card.dataset.z||'';card.style.transform=''})}else{card.addEventListener('mouseleave',()=>{card.style.transform=''})}card.addEventListener('mousemove',e=>{if(card.classList.contains('chosen'))return;const x=(e.offsetX/w-.5)*12,y=(e.offsetY/h-.5)*-12,ty=hov?-20:0;card.style.transform=`translateY(${ty}px) perspective(600px) rotateX(${y}deg) rotateY(${x}deg)`})}
+function tiltify(card,lift=!1){const h=card.offsetHeight,w=card.offsetWidth;let hov=!1;if(lift){card.addEventListener('mouseenter',()=>{if(card.classList.contains('chosen'))return;hov=!0;card.style.zIndex=1000;card.style.transform='translateY(-20px)'});card.addEventListener('mouseleave',()=>{if(card.classList.contains('chosen'))return;hov=!1;card.style.zIndex=card.dataset.z||'';card.style.transform=''})}else{card.addEventListener('mouseleave',()=>{if(card.classList.contains('chosen'))return;card.style.transform=''})}card.addEventListener('mousemove',e=>{if(card.classList.contains('chosen'))return;const x=(e.offsetX/w-.5)*12,y=(e.offsetY/h-.5)*-12,ty=hov?-20:0;card.style.transform=`translateY(${ty}px) perspective(600px) rotateX(${y}deg) rotateY(${x}deg)`})}
 function showPopup(anchor,text){const box=document.createElement('div');box.className='card-popup';box.textContent=text;const r=anchor.getBoundingClientRect();box.style.left=r.left+r.width/2+'px';box.style.top=r.top+'px';document.body.appendChild(box);setTimeout(()=>box.remove(),1200)}
 function createProjection(container,card){
   const urls=iconUrl(card.deck,card.icon);
@@ -251,9 +264,9 @@ function resetCardState(c){
 }
 const hasGuard=b=>b.some(x=>x.kw.includes('Protetor')||x.stance==='defense');
 function updateMeters(){const pct=(v,max)=>(max>0?Math.max(0,Math.min(100,(v/max)*100)):0);els.barPHP.style.width=pct(G.playerHP,30)+'%';els.barAHP.style.width=pct(G.aiHP,30)+'%';els.barMana.style.width=pct(G.playerMana,G.playerManaCap)+'%'}
-function updateOpponentLabel(){if(!els.opponentLabel)return;if(window.isMultiplayer){els.opponentLabel.textContent=window.opponentName?` ${window.opponentName}`:'';}else{const t=DECK_TITLES[G.aiDeckChoice]||'';els.opponentLabel.textContent=t?` ${t}`:'';}}
-function renderAll(){els.pHP.textContent=G.playerHP;els.pHP2.textContent=G.playerHP;els.aHP.textContent=G.aiHP;els.aHP2.textContent=G.aiHP;els.mana.textContent=`${G.playerMana}/${G.playerManaCap}`;els.endBtn.disabled=G.current!=='player';els.drawCount.textContent=G.playerDeck.length;els.discardCount.textContent=G.playerDiscard.length;updateMeters();updateOpponentLabel();renderHand();renderBoard()}
-function renderHand(){els.pHand.innerHTML='';G.playerHand.forEach(c=>{const d=cardNode(c,'player');d.classList.add('handcard');tiltify(d,!0);d.addEventListener('click',e=>{const blocked=(c.cost>G.playerMana)||G.current!=='player'||G.playerBoard.length>=5;if(blocked){d.style.transform='translateY(-2px)';setTimeout(()=>d.style.transform='',150);sfx('error');return}e.stopPropagation();previewCard(d,c)});const cantPay=(c.cost>G.playerMana);const disable=(G.current!=='player'||G.playerBoard.length>=5);d.classList.toggle('blocked',cantPay);d.classList.toggle('playable',!cantPay&&!disable);d.style.cursor=(cantPay||disable)?'not-allowed':'pointer';els.pHand.appendChild(d)});stackHand()}
+function updateOpponentLabel(){if(!els.opponentLabel)return;if(window.isMultiplayer){els.opponentLabel.textContent=window.opponentName?` ${window.opponentName}`:'';}else if(G.mode==='story'){els.opponentLabel.textContent='';}else{const t=DECK_TITLES[G.aiDeckChoice]||'';els.opponentLabel.textContent=t?` ${t}`:'';}}
+function renderAll(){els.pHP.textContent=G.playerHP;els.pHP2.textContent=G.playerHP;els.aHP.textContent=G.aiHP;els.aHP2.textContent=G.aiHP;els.mana.textContent=`${G.playerMana}/${G.playerManaCap}`;els.endBtn.disabled=G.current!=='player';els.drawCount.textContent=G.playerDeck.length;els.discardCount.textContent=G.playerDiscard.length;updateMeters();updateOpponentLabel();renderHand();renderBoard();renderTotems()}
+function renderHand(){els.pHand.innerHTML='';G.playerHand.forEach(c=>{const d=cardNode(c,'player');d.classList.add('handcard');tiltify(d,!0);d.addEventListener('click',e=>{if(d.classList.contains('chosen'))return;const blocked=(c.cost>G.playerMana)||G.current!=='player'||G.playerBoard.length>=5;if(blocked){d.style.transform='translateY(-2px)';setTimeout(()=>d.style.transform='',150);sfx('error');return}e.stopPropagation();openStanceChooser(d,st=>{flyToBoard(d,()=>playFromHand(c.id,st));});});const cantPay=(c.cost>G.playerMana);const disable=(G.current!=='player'||G.playerBoard.length>=5);d.classList.toggle('blocked',cantPay);d.classList.toggle('playable',!cantPay&&!disable);d.style.cursor=(cantPay||disable)?'not-allowed':'pointer';els.pHand.appendChild(d)});stackHand()}
 function renderBoard(){
   validateChosen();
   els.pBoard.innerHTML='';
@@ -300,29 +313,114 @@ function renderBoard(){
   }
   updateFaceAttackZone();
 }
-function previewCard(orig,c){const r=orig.getBoundingClientRect(),clone=orig.cloneNode(true);orig.style.visibility='hidden';clone.classList.add('card-preview');Object.assign(clone.style,{position:'fixed',left:r.left+'px',top:r.top+'px',margin:'0',zIndex:1000,transition:'left .3s ease,top .3s ease'});document.body.appendChild(clone);requestAnimationFrame(()=>{clone.style.left=window.innerWidth/2-r.width/2+'px';clone.style.top=window.innerHeight/2-r.height/2+'px'});clone.addEventListener('transitionend',function handler(){clone.removeEventListener('transitionend',handler);openStanceChooser(clone,st=>{flyToBoard(clone,()=>playFromHand(c.id,st));clone.remove()},()=>{const r2=orig.getBoundingClientRect();clone.style.left=r2.left+'px';clone.style.top=r2.top+'px';clone.addEventListener('transitionend',()=>{clone.remove();orig.style.visibility=''}, {once:!0});})},{once:!0});}
+
+function renderTotems(){
+  const bar=document.getElementById('totemBar');
+  if(!bar) return;
+  bar.innerHTML='';
+  for(let i=0;i<3;i++){
+    const slot=document.createElement('div');
+    slot.className='totem-slot';
+    if(G.totems[i]){ slot.textContent=G.totems[i].icon||'🗿'; }
+    bar.appendChild(slot);
+  }
+}
 function openStanceChooser(anchor,cb,onCancel){
   closeStanceChooser();
   anchor.classList.add('chosen');
+  const prevZ = anchor.style.zIndex;
+  anchor.style.zIndex = 10000;
   const box=document.createElement('div');
   box.className='stance-chooser';
   const bA=document.createElement('button');bA.className='btn';bA.textContent='⚔️ Ataque';
   const bD=document.createElement('button');bD.className='btn';bD.textContent='🛡️ Defesa';
-  bA.onclick=()=>{anchor.classList.remove('chosen');closeStanceChooser();cb('attack')};
-  bD.onclick=()=>{anchor.classList.remove('chosen');closeStanceChooser();cb('defense')};
+  const cleanup=()=>{anchor.classList.remove('chosen');anchor.style.zIndex=prevZ;closeStanceChooser();};
+  bA.addEventListener('click',e=>{e.stopPropagation();cleanup();cb('attack')});
+  bD.addEventListener('click',e=>{e.stopPropagation();cleanup();cb('defense')});
   box.append(bA,bD);
   anchor.appendChild(box);
   Object.assign(box.style,{position:'absolute',left:'50%',bottom:'100%',transform:'translate(-50%,-8px)'});
-  setTimeout(()=>{const h=ev=>{if(ev.target.closest('.stance-chooser')||ev.target===anchor)return;window.removeEventListener('click',h,true);anchor.classList.remove('chosen');closeStanceChooser();onCancel&&onCancel()};window.addEventListener('click',h,true);bA.focus()},0)
+  setTimeout(()=>{const h=ev=>{if(ev.target.closest('.stance-chooser')||ev.target===anchor)return;window.removeEventListener('click',h,true);cleanup();onCancel&&onCancel()};window.addEventListener('click',h,true);bA.focus()},0)
 }
 const closeStanceChooser=()=>{const old=document.querySelector('.stance-chooser');if(old)old.remove();document.querySelectorAll('.hand .card.chosen').forEach(c=>c.classList.remove('chosen'))}
-function flyToBoard(node,onEnd){const r=node.getBoundingClientRect(),clone=node.cloneNode(true);Object.assign(clone.style,{left:r.left+'px',top:r.top+'px',width:r.width+'px',height:r.height+'px',position:'fixed',zIndex:999,transition:'transform .45s ease,opacity .45s ease'});clone.classList.add('fly');document.body.appendChild(clone);const br=els.pBoard.getBoundingClientRect();requestAnimationFrame(()=>{const tx=br.left+br.width/2-r.left-r.width/2,ty=br.top+10-r.top;clone.style.transform=`translate(${tx}px,${ty}px) scale(.9)`;clone.style.opacity='0'});setTimeout(()=>{clone.remove();onEnd&&onEnd()},450)}
+function flyToBoard(node,onEnd){const r=node.getBoundingClientRect();const ph=document.createElement('div');ph.style.width=r.width+'px';ph.style.height=r.height+'px';node.parentNode.replaceChild(ph,node);Object.assign(node.style,{left:r.left+'px',top:r.top+'px',width:r.width+'px',height:r.height+'px',position:'fixed',zIndex:999,transition:'transform .45s ease,opacity .45s ease'});document.body.appendChild(node);const br=els.pBoard.getBoundingClientRect();requestAnimationFrame(()=>{const tx=br.left+br.width/2-r.left-r.width/2,ty=br.top+10-r.top;node.style.transform=`translate(${tx}px,${ty}px) scale(.9)`;node.style.opacity='0'});setTimeout(()=>{node.remove();ph.remove();onEnd&&onEnd()},450)}
 function animateMove(fromEl,toEl){const r1=fromEl.getBoundingClientRect(),r2=toEl.getBoundingClientRect(),ghost=document.createElement('div');Object.assign(ghost.style,{left:r1.left+'px',top:r1.top+'px',width:r1.width+'px',height:r1.height+'px',position:'fixed',zIndex:998,transition:'transform .5s ease,opacity .5s ease',background:'#fff',borderRadius:'10px',opacity:1});document.body.appendChild(ghost);requestAnimationFrame(()=>{ghost.style.transform=`translate(${r2.left-r1.left}px,${r2.top-r1.top}px)`;ghost.style.opacity='0'});setTimeout(()=>ghost.remove(),500)}
 function stackHand(){const cards=$$('#playerHand .card');const total=cards.length;if(!total)return;const spread=150,width=cards[0].offsetWidth,overlap=width-spread;els.pHand.style.setProperty('--hover-shift',`${overlap}px`);cards.forEach((c,i)=>{const offset=(i-(total-1)/2)*spread;c.style.setProperty('--x',`${offset}px`);c.dataset.z=String(i+1);c.style.zIndex=i+1;})}
-function startGame(first='player'){const sanitize=c=>{if(c.hp<1)c.hp=1;if(c.atk<0)c.atk=0;return c};G.playerDeck=(G.playerDeckChoice==='custom'&&G.customDeck?G.customDeck.slice():TEMPLATES[G.playerDeckChoice].map(makeCard));shuffle(G.playerDeck);G.playerDeck.forEach(c=>{sanitize(c);c.owner='player';c.deck=(G.playerDeckChoice==='custom'?'custom':G.playerDeckChoice)});G.aiDeck=TEMPLATES[G.aiDeckChoice].map(makeCard);shuffle(G.aiDeck);G.aiDeck.forEach(c=>{sanitize(c);c.owner='ai';c.deck=G.aiDeckChoice});G.playerDiscard=[];G.aiDiscard=[];G.playerHand=[];G.aiHand=[];G.playerBoard=[];G.aiBoard=[];G.playerHP=30;G.aiHP=30;G.current=first;G.playerMana=0;G.playerManaCap=0;G.turn=0;if(!window.isMultiplayer){const diff=document.getElementById('difficulty');G.aiSkill=diff?parseInt(diff.value):1;}els.emojiBar&&(els.emojiBar.style.display=window.isMultiplayer?'flex':'none');setDeckBacks();if(first==='player')draw('player',5);else draw('ai',5);newTurn(true);renderAll();stopMenuMusic();startMenuMusic('combat');log('A batalha começou!');sfx('start')}
+function startGame(opts='player') {
+  updateCardSize();
+  const isObj = typeof opts === 'object';
+  const first = isObj ? (opts.first || 'player') : opts;
+  const continuing = isObj && opts.continueStory;
+  const sanitize = c => { if (c.hp < 1) c.hp = 1; if (c.atk < 0) c.atk = 0; return c; };
+  G.mode = window.currentGameMode === 'story' ? 'story' : 'solo';
+  if (G.mode === 'story') {
+    if (!G.story) G.story = new StoryMode({ level: 1 });
+    G.story.nextRound();
+    G.aiDeckChoice = rand(ALL_DECKS);
+    const boss = G.story.currentEncounter === 'boss';
+    G.enemyScaling = G.story.scaling;
+    G.currentEnemyName = pickEnemyName(G.aiDeckChoice, boss);
+    log(`Round ${G.story.round}: ${G.currentEnemyName} (${G.story.currentEncounter})`);
+    showEncounterBanner(G.currentEnemyName, boss ? 'boss' : 'enemy');
+    G.maxHandSize = 10;
+  } else {
+    G.story = null;
+    G.enemyScaling = 0;
+    G.maxHandSize = 5;
+  }
+  if (G.mode === 'story' && continuing) {
+    G.playerDeck.push(...G.playerHand, ...G.playerBoard, ...G.playerDiscard);
+    G.playerHand = [];
+    G.playerBoard = [];
+    G.playerDiscard = [];
+  } else {
+    G.totems = [];
+    G.playerDeck = (G.playerDeckChoice === 'custom' && G.customDeck ? G.customDeck.slice() : TEMPLATES[G.playerDeckChoice].map(makeCard));
+    if (G.mode === 'story') {
+      const t = makeCard(["Totem de Força", "🗿", "Totem", 0, 0, 2, "Ative: +1/+1 em um aliado"]);
+      t.type = 'totem';
+      G.playerDeck.push(t);
+    }
+    shuffle(G.playerDeck);
+  }
+  G.playerDeck.forEach(c => { sanitize(c); c.owner = 'player'; c.deck = (G.playerDeckChoice === 'custom' ? 'custom' : G.playerDeckChoice); });
+  G.aiDeck = TEMPLATES[G.aiDeckChoice].map(makeCard);
+  shuffle(G.aiDeck);
+  G.aiDeck.forEach(c => { sanitize(c); c.owner = 'ai'; c.deck = G.aiDeckChoice; if (G.mode === 'story') { c.atk += G.enemyScaling; c.hp += G.enemyScaling; } });
+  G.playerDiscard = [];
+  G.aiDiscard = [];
+  if (!(G.mode === 'story' && continuing)) {
+    G.playerHand = [];
+    G.aiHand = [];
+    G.playerBoard = [];
+    G.aiBoard = [];
+  }
+  G.playerHP = 30;
+  G.aiHP = 30;
+  G.current = first;
+  G.playerMana = 0;
+  G.playerManaCap = 0;
+  G.aiMana = 0;
+  G.aiManaCap = 0;
+  G.turn = 0;
+  if (!window.isMultiplayer) {
+    const diff = document.getElementById('difficulty');
+    G.aiSkill = diff ? parseInt(diff.value) : 1;
+  }
+  els.emojiBar && (els.emojiBar.style.display = window.isMultiplayer ? 'flex' : 'none');
+  setDeckBacks();
+  if (first === 'player') draw('player', 5); else draw('ai', 5);
+  newTurn(true);
+  renderAll();
+  stopMenuMusic();
+  startMenuMusic('combat');
+  log('A batalha começou!');
+  sfx('start');
+}
 const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
-function draw(who,n=1){const deck=who==='player'?G.playerDeck:G.aiDeck,hand=who==='player'?G.playerHand:G.aiHand,disc=who==='player'?G.playerDiscard:G.aiDiscard;const deckEl=document.getElementById('drawPile');const handEl=els.pHand;for(let i=0;i<n;i++){if(deck.length===0&&disc.length){disc.forEach(resetCardState);deck.push(...shuffle(disc.splice(0)));deckEl.classList.add('shuffling');setTimeout(()=>deckEl.classList.remove('shuffling'),600)}if(deck.length){const c=deck.shift();resetCardState(c);if(c.hp<1)c.hp=1;hand.push(c);if(who==='player')animateMove(deckEl,handEl)}}if(who==='player'){els.drawCount.textContent=G.playerDeck.length;els.discardCount.textContent=G.playerDiscard.length;setTimeout(stackHand,500)}}
+function draw(who,n=1){const deck=who==='player'?G.playerDeck:G.aiDeck,hand=who==='player'?G.playerHand:G.aiHand,disc=who==='player'?G.playerDiscard:G.aiDiscard;const deckEl=document.getElementById('drawPile');const handEl=els.pHand;for(let i=0;i<n;i++){if(deck.length===0&&disc.length){disc.forEach(resetCardState);deck.push(...shuffle(disc.splice(0)));deckEl.classList.add('shuffling');setTimeout(()=>deckEl.classList.remove('shuffling'),600)}if(deck.length){const c=deck.shift();resetCardState(c);if(c.hp<1)c.hp=1;if(who==='player'&&hand.length>=G.maxHandSize){G.playerDiscard.push(c);log(`${c.name} queimou por excesso de cartas.`);}else{hand.push(c);if(who==='player')animateMove(deckEl,handEl);}}}if(who==='player'){els.drawCount.textContent=G.playerDeck.length;els.discardCount.textContent=G.playerDiscard.length;setTimeout(stackHand,500)}}
 function discardHand(side){const hand=side==='player'?G.playerHand:G.aiHand;const disc=side==='player'?G.playerDiscard:G.aiDiscard;if(hand.length){if(side==='player'){const cards=$$('#playerHand .card');const pile=document.getElementById('discardPile');cards.forEach(c=>animateMove(c,pile))}disc.push(...hand.splice(0));if(side==='player'){els.discardCount.textContent=G.playerDiscard.length;setTimeout(stackHand,500)}}}
+function applyTotemBuffs(){if(!G.playerBoard.length||!G.totems.length)return;G.playerBoard.forEach(u=>{u.atk=(u.baseAtk!==undefined?u.baseAtk:u.atk);u.hp=(u.baseHp!==undefined?u.baseHp:u.hp);u.baseAtk=u.atk;u.baseHp=u.hp});G.totems.forEach(t=>{const cnt=Math.min(3,G.playerBoard.length);const picks=shuffle(G.playerBoard.slice()).slice(0,cnt);picks.forEach(u=>{if(t.buffs&&t.buffs.atk)u.atk+=t.buffs.atk;if(t.buffs&&t.buffs.hp)u.hp+=t.buffs.hp;})})}
 function showMultiplayerDeckSelect(){
   els.wrap.style.display='none';
   els.start.style.display='grid';
@@ -343,8 +441,8 @@ function showTurnIndicator(){if(!els.turnIndicator)return;els.turnIndicator.text
 function showEmoji(side,e){const el=side==='player'?els.playerEmoji:els.opponentEmoji;if(!el)return;el.textContent=e;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),1500)}
 function newTurn(skipDraw=false,prev){if(prev)applyEndTurnEffects(prev);G.turn++;if(G.current==='player'){if(!skipDraw){if(G.playerDeck.length<=4){G.playerDeck.push(...shuffle(G.playerDiscard.splice(0)))}draw('player',5)}G.playerManaCap=clamp(G.playerManaCap+1,0,10);G.playerMana=G.playerManaCap;G.playerBoard.forEach(c=>c.canAttack=true)}else{if(!skipDraw){if(G.aiDeck.length<=4){G.aiDeck.push(...shuffle(G.aiDiscard.splice(0)))}draw('ai',5)}G.aiManaCap=clamp(G.aiManaCap+1,0,10);G.aiMana=G.aiManaCap;G.aiBoard.forEach(c=>c.canAttack=true)}renderAll();showTurnIndicator()}
 function endTurn(){if(G.current!=='player')return;discardHand('player');G.current='ai';G.chosen=null;updateTargetingUI();newTurn(false,'player');sfx('end');if(window.isMultiplayer){NET.sendTurn('end')}else{setTimeout(aiTurn,500)}}
-function playFromHand(id,st){if(G.current!=='player')return;const i=G.playerHand.findIndex(c=>c.id===id);if(i<0)return;const c=G.playerHand[i];if(c.cost>G.playerMana||G.playerBoard.length>=5)return;G.playerHand.splice(i,1);summon('player',c,st);G.playerMana-=c.cost;renderAll();sfx(st==='defense'?'defense':'play')}
-function summon(side,c,st='attack',skipBC=false){const board=side==='player'?G.playerBoard:G.aiBoard;c.stance=st;c.canAttack=(st==='attack')&&c.kw.includes('Furioso');c.summonTurn=G.turn;board.push(c);log(`${side==='player'?'Você':'Inimigo'} jogou ${c.name} em modo ${st==='defense'?'defesa':'ataque'}.`);let effects=[];if(!skipBC){effects=triggerBattlecry(side,c);if(window.isMultiplayer&&side==='player'){NET.sendMove({type:'summon',card:c,stance:st,effects})}}if(c.kw.includes('Absorver'))absorbFromAlly(side,c);if(st==='defense')setTimeout(()=>animateDefense(c.id),30);return effects}
+function playFromHand(id,st){if(G.current!=='player')return;const i=G.playerHand.findIndex(c=>c.id===id);if(i<0)return;const c=G.playerHand[i];const boardFull=c.type!=='totem'&&G.playerBoard.length>=5;if(c.cost>G.playerMana||boardFull)return;G.playerHand.splice(i,1);G.playerMana-=c.cost;if(c.type==='totem'){if(G.totems.length>=3){log('Número máximo de Totens atingido.');G.playerDiscard.push(c);}else{const t={name:c.name,buffs:c.buffs||{atk:1,hp:1}};G.totems.push(t);applyTotemBuffs();log(`${c.name} ativado.`);}renderAll();return;}summon('player',c,st);renderAll();sfx(st==='defense'?'defense':'play')}
+function summon(side,c,st='attack',skipBC=false){const board=side==='player'?G.playerBoard:G.aiBoard;c.stance=st;c.canAttack=(st==='attack')&&c.kw.includes('Furioso');c.summonTurn=G.turn;board.push(c);log(`${side==='player'?'Você':'Inimigo'} jogou ${c.name} em modo ${st==='defense'?'defesa':'ataque'}.`);let effects=[];if(!skipBC){effects=triggerBattlecry(side,c);if(window.isMultiplayer&&side==='player'){NET.sendMove({type:'summon',card:c,stance:st,effects})}}if(c.kw.includes('Absorver'))absorbFromAlly(side,c);if(st==='defense')setTimeout(()=>animateDefense(c.id),30);if(side==='player')applyTotemBuffs();return effects}
 function triggerBattlecry(side,c){const foe=side==='player'?'ai':'player';const effects=[];switch(c.battlecry){case 'draw1':draw(side,1);log(`${c.name}: comprou 1 carta.`);effects.push({type:'draw'});break;case 'heal2':{const allies=(side==='player'?G.playerBoard:G.aiBoard);if(allies.length){const t=rand(allies);t.hp=Math.min(t.hp+2,20);fxTextOnCard(t.id,'+2','heal');const n=nodeById(t.id);if(n){const r=n.getBoundingClientRect();screenParticle('healing',r.left+r.width/2,r.top+r.height/2);}log(`${c.name}: curou 2 em ${t.name}.`);effects.push({type:'heal',targetId:t.id,amount:2})}}break;case 'ping1':{const foes=(foe==='ai'?G.aiBoard:G.playerBoard);if(foes.length){const t=rand(foes);damageMinion(t,1);particleOnCard(t.id,'attack');fxTextOnCard(t.id,'-1','dmg');log(`${c.name}: 1 de dano em ${t.name}.`);checkDeaths();renderAll();sfx('hit');effects.push({type:'damage',targetId:t.id,amount:1})}}break;case 'buffRandom1':{const allies=(side==='player'?G.playerBoard:G.aiBoard).filter(x=>x.id!==c.id);if(allies.length){const t=rand(allies);t.atk+=1;t.hp+=1;fxTextOnCard(t.id,'+1/+1','buff');particleOnCard(t.id,'magic');log(`${c.name}: deu +1/+1 em ${t.name}.`);effects.push({type:'buff',targetId:t.id,atk:1,hp:1})}}break;case 'buffAlliesAtk1':{const allies=(side==='player'?G.playerBoard:G.aiBoard).filter(x=>x.id!==c.id);allies.forEach(x=>{x.atk+=1;fxTextOnCard(x.id,'+1 ATK','buff');particleOnCard(x.id,'magic');effects.push({type:'buff',targetId:x.id,atk:1,hp:0})});if(allies.length)log(`${c.name}: aliados ganharam +1 de ataque.`)}break;case 'mana1':{if(side==='player'){G.playerManaCap=clamp(G.playerManaCap+1,0,10);G.playerMana=Math.min(G.playerMana+1,G.playerManaCap);}else{G.aiManaCap=clamp(G.aiManaCap+1,0,10);G.aiMana=Math.min(G.aiMana+1,G.aiManaCap);}log(`${c.name}: ganhou 1 de mana.`);effects.push({type:'mana',amount:1})}break;case 'sacMana':{const allies=(side==='player'?G.playerBoard:G.aiBoard).filter(x=>x.id!==c.id);if(allies.length){const t=rand(allies);const board=side==='player'?G.playerBoard:G.aiBoard;const discard=side==='player'?G.playerDiscard:G.aiDiscard;const idx=board.findIndex(x=>x.id===t.id);if(idx>-1){board.splice(idx,1);discard.push(t);resetCardState(t);particleOnCard(t.id,'explosion');}if(side==='player'){G.playerMana=Math.min(G.playerMana+t.cost,G.playerManaCap);}else{G.aiMana=Math.min(G.aiMana+t.cost,G.aiManaCap);}fxTextOnCard(t.id,'sac','dmg');log(`${c.name}: sacrificou ${t.name} e ganhou ${t.cost} de mana.`);effects.push({type:'sacMana',targetId:t.id,amount:t.cost});checkDeaths();renderAll();}}break;}return effects}
 function applyBattlecryEffects(side,effects){effects.forEach(e=>{if(e.type==='heal'){const allies=side==='player'?G.playerBoard:G.aiBoard;const t=allies.find(x=>x.id===e.targetId);if(t){t.hp=Math.min(t.hp+e.amount,20);fxTextOnCard(t.id,'+'+e.amount,'heal');particleOnCard(t.id,'healing')}}else if(e.type==='damage'){const foes=side==='player'?G.aiBoard:G.playerBoard;const t=foes.find(x=>x.id===e.targetId);if(t){damageMinion(t,e.amount);particleOnCard(t.id,'attack');fxTextOnCard(t.id,'-'+e.amount,'dmg')}}else if(e.type==='buff'){const allies=side==='player'?G.playerBoard:G.aiBoard;const t=allies.find(x=>x.id===e.targetId);if(t){t.atk+=e.atk;t.hp+=e.hp;fxTextOnCard(t.id,'+'+e.atk+(e.hp?'/'+e.hp:''),'buff');particleOnCard(t.id,'magic')}}else if(e.type==='mana'){if(side==='player'){G.playerManaCap=clamp(G.playerManaCap+e.amount,0,10);G.playerMana=Math.min(G.playerMana+e.amount,G.playerManaCap);}else{G.aiManaCap=clamp(G.aiManaCap+e.amount,0,10);G.aiMana=Math.min(G.aiMana+e.amount,G.aiManaCap);}}else if(e.type==='sacMana'){const allies=side==='player'?G.playerBoard:G.aiBoard;const discard=side==='player'?G.playerDiscard:G.aiDiscard;const t=allies.find(x=>x.id===e.targetId);if(t){allies.splice(allies.indexOf(t),1);discard.push(t);resetCardState(t);particleOnCard(t.id,'explosion');}if(side==='player'){G.playerMana=Math.min(G.playerMana+e.amount,G.playerManaCap);}else{G.aiMana=Math.min(G.aiMana+e.amount,G.aiManaCap);}}});checkDeaths()}
 
@@ -387,6 +485,8 @@ const animateAttack=(aId,tId)=>{const a=nodeById(aId),t=tId?nodeById(tId):null;a
 const animateDefense=id=>{const n=nodeById(id);addAnim(n,'shield-flash',600)};
 function screenSlash(x,y,ang){const fx=document.createElement('div');fx.className='fx fx-slash';fx.style.left=x+'px';fx.style.top=y+'px';fx.style.setProperty('--ang',ang+'deg');document.body.appendChild(fx);setTimeout(()=>fx.remove(),380)}
 function screenParticle(n,x,y){const fx=document.createElement('div');fx.className='fx fx-'+n;fx.style.left=x+'px';fx.style.top=y+'px';document.body.appendChild(fx);setTimeout(()=>fx.remove(),600)}
+function showEncounterBanner(name,type='enemy'){const b=document.getElementById('encounterBanner');if(!b)return;b.textContent=name;b.className=type+' show';setTimeout(()=>b.classList.remove('show'),1500);}
+function encounterTransition(cb){const t=document.getElementById('encounterTransition');if(!t){cb();return;}t.classList.add('show');setTimeout(()=>{cb();setTimeout(()=>t.classList.remove('show'),400);},400)}
 function particleOnCard(cid,n){const t=nodeById(cid);if(!t)return;const r=t.getBoundingClientRect();screenParticle(n,r.left+r.width/2,r.top+r.height/2)}
 function particleOnFace(side,n){const el=side==='ai'?els.aHP2:els.pHP2;if(!el)return;const r=el.getBoundingClientRect();screenParticle(n,r.left+r.width/2,r.top+r.height/2)}
 function fxTextOnCard(cid,text,cls){const n=document.querySelector(`.card[data-id="${cid}"]`);if(!n)return;const r=n.getBoundingClientRect();const fx=document.createElement('div');fx.className='fx-float '+(cls||'');fx.textContent=text;fx.style.left=(r.left+r.width/2)+'px';fx.style.top=(r.top+r.height/2)+'px';document.body.appendChild(fx);setTimeout(()=>fx.remove(),950);}
@@ -397,15 +497,39 @@ function checkDeaths(){const deadA=G.aiBoard.filter(c=>c.hp<=0);deadA.forEach(c=
 function aiTurn(){const skill=G.aiSkill||1;const playable=G.aiHand.filter(c=>c.cost<=G.aiMana);if(skill===2){playable.sort((a,b)=>(b.atk+b.hp)-(a.atk+a.hp))}else if(skill===1){playable.sort((a,b)=>b.cost-a.cost)}else{playable.sort(()=>Math.random()-0.5)}while(playable.length&&G.aiBoard.length<5&&G.aiMana>0){const c=skill===0?playable.pop():playable.shift();const i=G.aiHand.findIndex(x=>x.id===c.id);if(i>-1&&c.cost<=G.aiMana){G.aiHand.splice(i,1);const stance=(c.hp>=c.atk+1)?(Math.random()<.7?'defense':'attack'):(Math.random()<.3?'defense':'attack');summon('ai',c,stance);G.aiMana-=c.cost}}renderAll();const attackers=G.aiBoard.filter(c=>c.canAttack&&c.stance!=='defense');function next(){if(!attackers.length){discardHand('ai');G.current='player';newTurn(false,'ai');return}const a=attackers.shift();const legal=G.playerBoard.filter(x=>legalTarget('player',x));if(legal.length){let target;if(skill===2){target=legal.reduce((p,c)=>c.hp<p.hp?c:p,legal[0])}else{target=rand(legal)}attackCard(a,target)}else{attackFace(a,'player')}setTimeout(next,500)}setTimeout(next,500)}
 function fireworks(win){const b=document.createElement('div');b.className='boom';b.style.left='50%';b.style.top='50%';b.style.background=`radial-gradient(circle at 50% 50%, ${win?'#8bf5a2':'#ff8a8a'}, transparent)`;document.body.appendChild(b);setTimeout(()=>b.remove(),650);} 
 function endGame(win){stopMenuMusic();els.endMsg.textContent=win?'You WIN!':'You Lose...';els.endMsg.style.color=win?'#8bf5a2':'#ff8a8a';els.endSub.textContent=win?'Parabéns! Quer continuar jogando?':'Tentar de novo ou voltar ao menu.';els.endOverlay.classList.add('show');setTimeout(()=>fireworks(win),1000);} 
-function checkWin(){if(G.aiHP<=0){endGame(true)}if(G.playerHP<=0){endGame(false)}}
+function checkWin(){
+  if(G.aiHP<=0){
+    if(G.mode==='story'&&G.story){
+      const {leveled,rewards,goldGain}=G.story.handleVictory();
+      log(`Recompensas disponíveis: ${rewards.join(', ')}`);
+      log(`Você ganhou ${goldGain} ouro.`);
+      if(leveled) log(`Você alcançou o nível ${G.story.level}!`);
+      const proceed=()=>encounterTransition(()=>startGame({continueStory:true}));
+      if(G.story.round % 3 === 0){
+        showEncounterBanner('Loja Itinerante','shop');
+        openShop({
+          faction:G.playerDeckChoice,
+          gold:G.story.gold,
+          onClose:state=>{G.story.gold=state.gold;proceed();}
+        });
+      }else{
+        proceed();
+      }
+      return;
+    }
+    endGame(true);
+  }
+  if(G.playerHP<=0){endGame(false);}
+}
 function allCards(){let out=[];for(const k of Object.keys(TEMPLATES)){for(const raw of TEMPLATES[k]){const c=makeCard(raw);c.deck=k;out.push(c)}}return out}
 function renderEncy(filter='all',locked=false){els.encyGrid.innerHTML='';const cards=(filter==='all'?allCards():TEMPLATES[filter].map(makeCard).map(c=>Object.assign(c,{deck:filter})));cards.forEach(c=>{const d=cardNode(c,'player');d.classList.add('ency-card');tiltify(d);els.encyGrid.appendChild(d)});els.ency.classList.add('show');els.encyFilters.style.display=locked?'none':'flex';$$('.filters .fbtn').forEach(b=>b.classList.toggle('active',b.dataset.deck===filter||filter==='all'&&b.dataset.deck==='all'))}
 els.endBtn.addEventListener('click',endTurn);els.muteBtn.addEventListener('click',()=>{initAudio();ensureRunning();allMuted=!allMuted;musicMuted=allMuted;sfxMuted=allMuted;if(master) master.gain.value=allMuted?0:.18*sfxVolume; if(musicGain) musicGain.gain.value=allMuted?0:musicBase*musicVolume; els.muteBtn.textContent=allMuted?'🔇 Som':'🔊 Som'});window.addEventListener('keydown',e=>{if(e.key==='Escape')cancelTargeting()});document.addEventListener('click',e=>{if(!G.chosen)return;if(e.target.closest('#aiBoard .card.selectable')||e.target.closest('#playerBoard .card.selectable')||e.target.closest('#aiBoard .face-attack-btn'))return;cancelTargeting()},{capture:true});
+function confirmExit(){return G.mode==='story'?confirm('Progresso da história será perdido. Continuar?'):confirm('Tem certeza?');}
 if(els.openMenuBtn)els.openMenuBtn.addEventListener('click',()=>{els.gameMenu.classList.add('show');els.restartBtn&&(els.restartBtn.style.display=window.isMultiplayer?'none':'block')});
 if(els.closeMenuBtn)els.closeMenuBtn.addEventListener('click',()=>{els.gameMenu.classList.remove('show')});
-if(els.mainMenuBtn)els.mainMenuBtn.addEventListener('click',()=>{els.gameMenu.classList.remove('show');els.start.style.display='grid';els.wrap.style.display='none';startMenuMusic('menu');if(window.isMultiplayer&&window.NET){NET.disconnect();}window.isMultiplayer=false;window.mpState=null;const custom=document.querySelector('.deckbtn[data-deck="custom"]');custom&&(custom.style.display='');if(els.startGame){els.startGame.textContent='Jogar';els.startGame.disabled=true;}});
-if(els.restartBtn)els.restartBtn.addEventListener('click',()=>{if(!window.isMultiplayer){els.gameMenu.classList.remove('show');startGame()}});
-if(els.resignBtn)els.resignBtn.addEventListener('click',()=>{els.gameMenu.classList.remove('show');if(window.isMultiplayer&&window.NET){NET.resign();}endGame(false)});
+if(els.mainMenuBtn)els.mainMenuBtn.addEventListener('click',()=>{if(!confirmExit())return;els.gameMenu.classList.remove('show');const title=document.getElementById('titleMenu');const deck=document.getElementById('start');if(title)title.style.display='block';if(deck)deck.style.display='none';els.wrap.style.display='none';startMenuMusic('menu');if(window.isMultiplayer&&window.NET){NET.disconnect();}window.isMultiplayer=false;window.mpState=null;const custom=document.querySelector('.deckbtn[data-deck="custom"]');custom&&(custom.style.display='');if(els.startGame){els.startGame.textContent='Jogar';els.startGame.disabled=true;}});
+if(els.restartBtn)els.restartBtn.addEventListener('click',()=>{if(window.isMultiplayer)return;if(!confirmExit())return;els.gameMenu.classList.remove('show');startGame()});
+if(els.resignBtn)els.resignBtn.addEventListener('click',()=>{if(!confirmExit())return;els.gameMenu.classList.remove('show');if(window.isMultiplayer&&window.NET){NET.resign();}endGame(false)});
 if(els.emojiBar){els.emojiBar.querySelectorAll('.emoji-btn').forEach(b=>b.addEventListener('click',()=>{const em=b.dataset.emoji;showEmoji('player',em);if(window.isMultiplayer&&window.NET){NET.sendEmoji(em)}}));}
 function initDeckButtons(){
   $$('.deckbtn').forEach(btn=>{
@@ -450,7 +574,31 @@ else document.addEventListener('DOMContentLoaded',initDeckButtons);
 if(els.saveDeck)els.saveDeck.addEventListener('click',()=>{if(G.customDeck&&G.customDeck.length){els.deckBuilder.style.display='none';els.startGame.disabled=false;}});
 els.startGame.addEventListener('click',()=>{if(els.startGame.disabled)return;if(window.isMultiplayer){if(window.mpState==='readyStart'){NET.startReady();window.mpState='waitingStart';els.startGame.textContent='Aguardando oponente iniciar...';els.startGame.disabled=true}else if(!window.mpState){NET.deckChoice(G.playerDeckChoice);if(window.opponentConfirmed){window.mpState='readyStart';els.startGame.textContent='Iniciar';els.startGame.disabled=false}else{window.mpState='waitingDeck';els.startGame.textContent='Aguardando oponente confirmar deck...';els.startGame.disabled=true}}}else{els.start.style.display='none';els.wrap.style.display='block';initAudio();ensureRunning();stopMenuMusic();startGame()}});
 els.openEncy.addEventListener('click',()=>renderEncy('all',false));els.closeEncy.addEventListener('click',()=>{els.ency.classList.remove('show')});$$('.filters .fbtn').forEach(b=>b.addEventListener('click',()=>{renderEncy(b.dataset.deck,false)}));
-els.playAgainBtn.addEventListener('click',()=>{if(window.isMultiplayer){showMultiplayerDeckSelect();els.endOverlay.classList.remove('show');}else{els.endOverlay.classList.remove('show');startGame()}});els.rematchBtn.addEventListener('click',()=>{if(window.isMultiplayer&&window.NET){NET.requestRematch();els.rematchBtn.disabled=true;els.endSub.textContent='Aguardando oponente';}else{els.endOverlay.classList.remove('show');startGame()}});els.menuBtn.addEventListener('click',()=>{els.endOverlay.classList.remove('show');els.start.style.display='grid';els.wrap.style.display='none';startMenuMusic('menu');if(window.isMultiplayer&&window.NET){NET.disconnect();}window.isMultiplayer=false;window.mpState=null;const custom=document.querySelector('.deckbtn[data-deck="custom"]');custom&&(custom.style.display='');if(els.startGame){els.startGame.textContent='Jogar';els.startGame.disabled=true;}});
+els.playAgainBtn.addEventListener('click',()=>{if(!confirmExit())return;if(window.isMultiplayer){showMultiplayerDeckSelect();els.endOverlay.classList.remove('show');}else{els.endOverlay.classList.remove('show');startGame()}});els.rematchBtn.addEventListener('click',()=>{if(!confirmExit())return;if(window.isMultiplayer&&window.NET){NET.requestRematch();els.rematchBtn.disabled=true;els.endSub.textContent='Aguardando oponente';}else{els.endOverlay.classList.remove('show');startGame()}});els.menuBtn.addEventListener('click',()=>{if(!confirmExit())return;els.endOverlay.classList.remove('show');els.start.style.display='grid';els.wrap.style.display='none';startMenuMusic('menu');if(window.isMultiplayer&&window.NET){NET.disconnect();}window.isMultiplayer=false;window.mpState=null;const custom=document.querySelector('.deckbtn[data-deck="custom"]');custom&&(custom.style.display='');if(els.startGame){els.startGame.textContent='Jogar';els.startGame.disabled=true;}});
+window.startTotemTest=()=>{
+  window.currentGameMode='solo';
+  const deck=[
+    {id:uid(),type:'unit',name:'Rastreador do Fiorde',cost:1,atk:1,hp:2,kw:[]},
+    {id:uid(),type:'unit',name:'Ceifeira Ágil',cost:2,atk:3,hp:2,kw:[]},
+    {id:uid(),type:'totem',name:'Totem de Fúria',cost:1,buffs:{atk:1}},
+    {id:uid(),type:'totem',name:'Totem de Pedra',cost:1,buffs:{hp:1}}
+  ];
+  G.customDeck=deck.map(c=>Object.assign({},c));
+  G.playerDeckChoice='custom';
+  const title=document.getElementById('titleMenu');
+  if(title) title.style.display='none';
+  els.start.style.display='none';
+  els.wrap.style.display='block';
+  initAudio();
+  ensureRunning();
+  stopMenuMusic();
+  startGame();
+  G.playerHand=G.playerDeck.splice(0);
+  G.playerManaCap=10;
+  G.playerMana=10;
+  renderAll();
+  stackHand();
+};
 function handleMove(move){switch(move.type){case 'summon':{summon('ai',move.card,move.stance,true);applyBattlecryEffects('ai',move.effects||[]);G.aiMana-=move.card.cost;renderAll();break}case 'attack':{const a=G.aiBoard.find(x=>x.id===move.attackerId);const t=G.playerBoard.find(x=>x.id===move.targetId);if(a&&t)attackCard(a,t);break}case 'attackFace':{const a=G.aiBoard.find(x=>x.id===move.attackerId);if(a)attackFace(a,'player');break}}}
 function handleTurn(turn){if(turn==='end'){G.current='player';G.chosen=null;updateTargetingUI();newTurn(false,'ai')}}
 if(window.NET){NET.onOpponentDeckConfirmed(d=>{G.aiDeckChoice=d;if(window.mpState==='waitingDeck'){els.startGame.textContent='Iniciar';els.startGame.disabled=false;window.mpState='readyStart'}else{window.opponentConfirmed=true}});NET.onStartGame(()=>{els.start.style.display='none';els.wrap.style.display='block';initAudio();ensureRunning();stopMenuMusic();startGame(NET.isHost()?'player':'ai');window.mpState=null;window.opponentConfirmed=false});NET.onOpponentName(n=>{window.opponentName=n;updateOpponentLabel()})}
