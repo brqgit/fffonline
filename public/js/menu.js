@@ -75,17 +75,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (window.startTotemTest) startTotemTest();
   });
 
-  // Reset seleção de deck sempre que abrir a tela de decks
-  function clearDeckSelection(){
-    try{ if(window.G) window.G.playerDeckChoice = null; }catch(_){ }
-    const startBtn = document.getElementById('startGame');
-    if(startBtn) startBtn.disabled = true;
-    document.querySelectorAll('.deckbtn').forEach(b=>b.style.outline='none');
-  }
-  if (storyBtn) storyBtn.addEventListener('click', ()=>setTimeout(clearDeckSelection,0));
-  if (soloBtn) soloBtn.addEventListener('click', ()=>setTimeout(clearDeckSelection,0));
-  if (backToMenu) backToMenu.addEventListener('click', ()=>setTimeout(clearDeckSelection,0));
-
   const musicVol = document.getElementById('musicVol');
   const sfxVol = document.getElementById('sfxVol');
   if (musicVol) musicVol.addEventListener('input', e => {
