@@ -12,8 +12,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
   window.isMultiplayer = false;
   window.mpState = null;
-  let playerNamed=false;
-  function ensureName(){if(!playerNamed){const n=prompt('Seu nome?')||'Jogador';window.playerName=n;playerNamed=true;window.NET&&NET.setName(n);}}
+  let playerNamed = false;
+  function ensureName() {
+    if (!playerNamed) {
+      const n = prompt('Seu nome?') || 'Jogador';
+      window.playerName = n;
+      playerNamed = true;
+      window.NET && NET.setName(n);
+    }
+  }
 
   function showDeckSelect() {
     mpMenu.style.display = 'none';
@@ -54,7 +61,10 @@ document.addEventListener('DOMContentLoaded', () => {
       const customBtn = document.querySelector('.deckbtn[data-deck="custom"]');
       if (customBtn) customBtn.style.display = '';
       const startBtn = document.getElementById('startGame');
-      if (startBtn){startBtn.textContent='Jogar';startBtn.disabled=true;}
+      if (startBtn) {
+        startBtn.textContent = 'Jogar';
+        startBtn.disabled = true;
+      }
     });
   }
 
@@ -126,7 +136,8 @@ document.addEventListener('DOMContentLoaded', () => {
     NET.onOpponentDisconnected(() => {
       let t = 15;
       statusEl.textContent = `Oponente desconectado. Aguardando reconexão: ${t}s`;
-      if (window.showReconnect) window.showReconnect('Oponente desconectou. Aguardando reconexão...');
+      if (window.showReconnect)
+        window.showReconnect('Oponente desconectou. Aguardando reconexão...');
       clearInterval(reconTimer);
       reconTimer = setInterval(() => {
         t -= 1;
@@ -151,23 +162,23 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
       roomList.innerHTML = '';
-        rooms.forEach((r) => {
-          const div = document.createElement('div');
-          div.className = 'room';
-          div.innerHTML = `<span>${r.code}</span><span>${r.players >= 2 ? 'Cheia' : r.players + '/2'}</span>`;
-          if (r.players < 2) {
-            const b = document.createElement('button');
-            b.className = 'btn';
-            b.textContent = 'Entrar';
-            b.addEventListener('click', () => {
+      rooms.forEach((r) => {
+        const div = document.createElement('div');
+        div.className = 'room';
+        div.innerHTML = `<span>${r.code}</span><span>${r.players >= 2 ? 'Cheia' : r.players + '/2'}</span>`;
+        if (r.players < 2) {
+          const b = document.createElement('button');
+          b.className = 'btn';
+          b.textContent = 'Entrar';
+          b.addEventListener('click', () => {
             ensureName();
             NET.join(r.code);
             statusEl.textContent = 'Conectando...';
           });
           div.appendChild(b);
-          }
-          roomList.appendChild(div);
-        });
+        }
+        roomList.appendChild(div);
+      });
     });
   }
 });

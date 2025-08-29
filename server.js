@@ -11,13 +11,19 @@ const io = new Server(server);
 const PORT = process.env.PORT || 3000;
 
 // Decks permitidos no modo multiplayer
-const VALID_DECKS = new Set(['vikings', 'animais', 'pescadores', 'floresta', 'convergentes', 'custom']);
+const VALID_DECKS = new Set([
+  'vikings',
+  'animais',
+  'pescadores',
+  'floresta',
+  'convergentes',
+  'custom',
+]);
 
 // Informações sobre salas em memória
 const rooms = new Map();
 
 app.use(express.static(path.join(__dirname, 'public')));
-
 
 io.on('connection', (socket) => {
   socket.on('host', () => {
@@ -27,7 +33,15 @@ io.on('connection', (socket) => {
     } while (rooms.has(room));
     socket.join(room);
     socket.data.room = room;
-    rooms.set(room, { host: socket.id, guest: null, players: 1, hostTimer: null, guestTimer: null, hostName: socket.data.name || null, guestName: null });
+    rooms.set(room, {
+      host: socket.id,
+      guest: null,
+      players: 1,
+      hostTimer: null,
+      guestTimer: null,
+      hostName: socket.data.name || null,
+      guestName: null,
+    });
     socket.emit('hosted', room);
   });
 
@@ -52,7 +66,8 @@ io.on('connection', (socket) => {
     info.players++;
     socket.emit('joined', room);
     if (info.hostName) socket.emit('opponentName', info.hostName);
-    if (info.host) io.to(info.host).emit('opponentName', socket.data.name || '');
+    if (info.host)
+      io.to(info.host).emit('opponentName', socket.data.name || '');
     socket.to(room).emit('guestJoined');
   });
 
@@ -86,7 +101,7 @@ io.on('connection', (socket) => {
     const clients = io.sockets.adapter.rooms.get(room);
     if (!clients || clients.size !== 2) return;
 
-    const allReady = [...clients].every(id => {
+    const allReady = [...clients].every((id) => {
       const s = io.sockets.sockets.get(id);
       return s && s.data.startReady;
     });
@@ -193,7 +208,8 @@ io.on('connection', (socket) => {
       }
     }, 15000);
 
-    if (role === 'host') info.hostTimer = timer; else info.guestTimer = timer;
+    if (role === 'host') info.hostTimer = timer;
+    else info.guestTimer = timer;
     socket.to(room).emit('opponentDisconnected');
   });
 

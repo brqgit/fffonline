@@ -1,212 +1,375 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
-<head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>FFF Farm Fight Formula</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="css/style.css">
-</head>
-<body>
-  <!-- Main menu -->
-  <div class="start" id="titleMenu">
-    <div class="panel">
-      <div class="brand">
-        <img src="img/ui/logos/logo2.png" class="logo-wordmark holo-logo" alt="Farm Fight Formula logo">
-      </div>
-      <div class="main-actions">
-        <button class="btn" id="menuStory">Modo História</button>
-        <button class="btn" id="menuSolo">Jogar Solo</button>
-        <button class="btn" id="menuMulti">Jogar Multiplayer</button>
-        <button class="btn" id="menuOptions">Opções</button>
-        <button class="btn" id="menuTestes">Testes</button>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>FFF Farm Fight Formula</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body>
+    <!-- Main menu -->
+    <div class="start" id="titleMenu">
+      <div class="panel">
+        <div class="brand">
+          <img
+            src="img/ui/logos/logo2.png"
+            class="logo-wordmark holo-logo"
+            alt="Farm Fight Formula logo"
+          />
+        </div>
+        <div class="main-actions">
+          <button class="btn" id="menuStory">Modo História</button>
+          <button class="btn" id="menuSolo">Jogar Solo</button>
+          <button class="btn" id="menuMulti">Jogar Multiplayer</button>
+          <button class="btn" id="menuOptions">Opções</button>
+          <button class="btn" id="menuTestes">Testes</button>
+        </div>
       </div>
     </div>
-  </div>
 
-  <!-- Deck selection -->
-  <div class="start" id="start" style="display:none">
-    <div class="panel">
-      <div class="brand">
-        <img src="img/ui/logos/logo2.png" class="logo-wordmark holo-logo" alt="Farm Fight Formula logo">
-      </div>
-      <p class="sub">Escolha um deck e parta para a arena.</p>
-      <div class="deckpick">
-        <button class="btn deckbtn" data-deck="vikings">👩‍🌾 Fazendeiros Vikings<div class="ribbon">Cura e proteção</div><span class="view-cards" data-deck="vikings" data-tip="Ver cartas" aria-label="Ver cartas">📖</span></button>
-        <button class="btn deckbtn" data-deck="animais">🐺 Bestas do Norte<div class="ribbon">Ataque bruto</div><span class="view-cards" data-deck="animais" data-tip="Ver cartas" aria-label="Ver cartas">📖</span></button>
-        <button class="btn deckbtn" data-deck="pescadores">🎣 Pescadores do Fiorde<div class="ribbon">Suporte e bônus</div><span class="view-cards" data-deck="pescadores" data-tip="Ver cartas" aria-label="Ver cartas">📖</span></button>
-        <button class="btn deckbtn" data-deck="floresta">🌲 Feras da Floresta<div class="ribbon">Pressão constante</div><span class="view-cards" data-deck="floresta" data-tip="Ver cartas" aria-label="Ver cartas">📖</span></button>
-        <button class="btn deckbtn" data-deck="convergentes">🌀 Convergentes da Aurora<div class="ribbon">Absorção e metamorfose</div><span class="view-cards" data-deck="convergentes" data-tip="Ver cartas" aria-label="Ver cartas">📖</span></button>
-        <button class="btn deckbtn" data-deck="custom">🧩 Deck Personalizado<div class="ribbon">Monte seu baralho</div><span class="view-cards" data-deck="custom" data-tip="Ver cartas" aria-label="Ver cartas">📖</span></button>
-      </div>
-      <div id="deckBuilder" style="display:none">
-        <p>Monte seu baralho: <span id="countDeck">0</span>/20</p>
-        <div id="curve"></div>
-        <div id="pool"></div>
-        <div id="chosen"></div>
-        <button class="btn" id="saveDeck">Salvar Deck</button>
-      </div>
-      <div class="footer">
-        <div class="controls">
-          <label for="difficulty" class="sub">Dificuldade:</label>
-          <select id="difficulty" class="difficulty">
-            <option value="0">Ameba</option>
-            <option value="1" selected>Equilibrado</option>
-            <option value="2">IMPOSSIBLE!!!</option>
-          </select>
-          <button class="btn" id="openEncy">Enciclopédia</button>
+    <!-- Deck selection -->
+    <div class="start" id="start" style="display: none">
+      <div class="panel">
+        <div class="brand">
+          <img
+            src="img/ui/logos/logo2.png"
+            class="logo-wordmark holo-logo"
+            alt="Farm Fight Formula logo"
+          />
+        </div>
+        <p class="sub">Escolha um deck e parta para a arena.</p>
+        <div class="deckpick">
+          <button class="btn deckbtn" data-deck="vikings">
+            👩‍🌾 Fazendeiros Vikings
+            <div class="ribbon">Cura e proteção</div>
+            <span
+              class="view-cards"
+              data-deck="vikings"
+              data-tip="Ver cartas"
+              aria-label="Ver cartas"
+              >📖</span
+            >
+          </button>
+          <button class="btn deckbtn" data-deck="animais">
+            🐺 Bestas do Norte
+            <div class="ribbon">Ataque bruto</div>
+            <span
+              class="view-cards"
+              data-deck="animais"
+              data-tip="Ver cartas"
+              aria-label="Ver cartas"
+              >📖</span
+            >
+          </button>
+          <button class="btn deckbtn" data-deck="pescadores">
+            🎣 Pescadores do Fiorde
+            <div class="ribbon">Suporte e bônus</div>
+            <span
+              class="view-cards"
+              data-deck="pescadores"
+              data-tip="Ver cartas"
+              aria-label="Ver cartas"
+              >📖</span
+            >
+          </button>
+          <button class="btn deckbtn" data-deck="floresta">
+            🌲 Feras da Floresta
+            <div class="ribbon">Pressão constante</div>
+            <span
+              class="view-cards"
+              data-deck="floresta"
+              data-tip="Ver cartas"
+              aria-label="Ver cartas"
+              >📖</span
+            >
+          </button>
+          <button class="btn deckbtn" data-deck="convergentes">
+            🌀 Convergentes da Aurora
+            <div class="ribbon">Absorção e metamorfose</div>
+            <span
+              class="view-cards"
+              data-deck="convergentes"
+              data-tip="Ver cartas"
+              aria-label="Ver cartas"
+              >📖</span
+            >
+          </button>
+          <button class="btn deckbtn" data-deck="custom">
+            🧩 Deck Personalizado
+            <div class="ribbon">Monte seu baralho</div>
+            <span
+              class="view-cards"
+              data-deck="custom"
+              data-tip="Ver cartas"
+              aria-label="Ver cartas"
+              >📖</span
+            >
+          </button>
+        </div>
+        <div id="deckBuilder" style="display: none">
+          <p>Monte seu baralho: <span id="countDeck">0</span>/20</p>
+          <div id="curve"></div>
+          <div id="pool"></div>
+          <div id="chosen"></div>
+          <button class="btn" id="saveDeck">Salvar Deck</button>
+        </div>
+        <div class="footer">
+          <div class="controls">
+            <label for="difficulty" class="sub">Dificuldade:</label>
+            <select id="difficulty" class="difficulty">
+              <option value="0">Ameba</option>
+              <option value="1" selected>Equilibrado</option>
+              <option value="2">IMPOSSIBLE!!!</option>
+            </select>
+            <button class="btn" id="openEncy">Enciclopédia</button>
             <button class="btn" id="startGame" disabled>Jogar</button>
-          <button class="btn" id="backToMenu">Menu</button>
+            <button class="btn" id="backToMenu">Menu</button>
+          </div>
         </div>
       </div>
     </div>
-  </div>
 
-  <!-- Multiplayer lobby -->
-  <div class="multiplayer" id="multiplayerMenu" style="display:none">
-    <div class="panel">
-      <h2>Multiplayer</h2>
-      <button class="btn" id="hostBtn">Hostear partida</button>
-      <button class="btn" id="findBtn">Encontrar partida</button>
-      <div id="roomList" style="display:none"></div>
-      <div><input id="joinCode" placeholder="Código da sala"/><button class="btn" id="joinBtn">Entrar</button></div>
-      <div class="sub" id="mpStatus"></div>
-      <button class="btn-ghost" id="mpBack">Voltar</button>
+    <!-- Multiplayer lobby -->
+    <div class="multiplayer" id="multiplayerMenu" style="display: none">
+      <div class="panel">
+        <h2>Multiplayer</h2>
+        <button class="btn" id="hostBtn">Hostear partida</button>
+        <button class="btn" id="findBtn">Encontrar partida</button>
+        <div id="roomList" style="display: none"></div>
+        <div>
+          <input id="joinCode" placeholder="Código da sala" /><button
+            class="btn"
+            id="joinBtn"
+          >
+            Entrar
+          </button>
+        </div>
+        <div class="sub" id="mpStatus"></div>
+        <button class="btn-ghost" id="mpBack">Voltar</button>
+      </div>
     </div>
-  </div>
 
-  <!-- Options -->
-  <div class="options-menu" id="optionsMenu" style="display:none">
-    <div class="panel">
-      <h2>Opções</h2>
-      <label>Música <input type="range" id="musicVol" min="0" max="1" step="0.01" value="1"></label>
-      <label>Efeitos <input type="range" id="sfxVol" min="0" max="1" step="0.01" value="1"></label>
-      <label><input type="checkbox" id="disableAnims"> Desativar animações</label>
-      <button class="btn-ghost" id="closeOptions">Fechar</button>
+    <!-- Options -->
+    <div class="options-menu" id="optionsMenu" style="display: none">
+      <div class="panel">
+        <h2>Opções</h2>
+        <label
+          >Música
+          <input
+            type="range"
+            id="musicVol"
+            min="0"
+            max="1"
+            step="0.01"
+            value="1"
+        /></label>
+        <label
+          >Efeitos
+          <input type="range" id="sfxVol" min="0" max="1" step="0.01" value="1"
+        /></label>
+        <label
+          ><input type="checkbox" id="disableAnims" /> Desativar
+          animações</label
+        >
+        <button class="btn-ghost" id="closeOptions">Fechar</button>
+      </div>
     </div>
-  </div>
 
-  <!-- Test menu -->
-  <div class="options-menu" id="testModal" style="display:none">
-    <div class="panel">
-      <h2>Testes</h2>
-      <button class="btn" id="testShopBtn">Abrir Loja</button>
-      <button class="btn" id="testTotemBtn">Totens</button>
-      <button class="btn-ghost" id="closeTest">Fechar</button>
+    <!-- Test menu -->
+    <div class="options-menu" id="testModal" style="display: none">
+      <div class="panel">
+        <h2>Testes</h2>
+        <button class="btn" id="testShopBtn">Abrir Loja</button>
+        <button class="btn" id="testTotemBtn">Totens</button>
+        <button class="btn-ghost" id="closeTest">Fechar</button>
+      </div>
     </div>
-  </div>
 
-  <!-- Encyclopedia -->
-  <div class="ency" id="ency">
-    <div class="panel">
-      <div class="ency-hd">
-        <h2 style="margin:0">Enciclopédia de Cartas</h2>
-        <div class="filters" id="encyFilters">
-          <button class="fbtn active" data-deck="all">Todos</button>
-          <button class="fbtn" data-deck="vikings">Vikings</button>
-          <button class="fbtn" data-deck="animais">Animais</button>
-          <button class="fbtn" data-deck="pescadores">Pescadores</button>
-          <button class="fbtn" data-deck="floresta">Floresta</button>
-          <button class="fbtn" data-deck="convergentes">Convergentes</button>
+    <!-- Encyclopedia -->
+    <div class="ency" id="ency">
+      <div class="panel">
+        <div class="ency-hd">
+          <h2 style="margin: 0">Enciclopédia de Cartas</h2>
+          <div class="filters" id="encyFilters">
+            <button class="fbtn active" data-deck="all">Todos</button>
+            <button class="fbtn" data-deck="vikings">Vikings</button>
+            <button class="fbtn" data-deck="animais">Animais</button>
+            <button class="fbtn" data-deck="pescadores">Pescadores</button>
+            <button class="fbtn" data-deck="floresta">Floresta</button>
+            <button class="fbtn" data-deck="convergentes">Convergentes</button>
+          </div>
+        </div>
+        <div class="ency-grid" id="encyGrid"></div>
+        <div class="footer">
+          <span class="sub" style="margin: 0"
+            >Passe o mouse sobre uma palavra‑chave para ver o que ela faz.</span
+          >
+          <button class="btn-ghost" id="closeEncy">Fechar</button>
         </div>
       </div>
-      <div class="ency-grid" id="encyGrid"></div>
+    </div>
+
+    <!-- Game area -->
+    <div class="" id="gameWrap" style="display: none">
+      <div class="mid-mana" id="midMana"></div>
+      <div class="hud">
+        <div class="meter">
+          <b>Seu HP</b><span class="value" id="playerHP">30</span>
+          <div class="bar"><div class="fill" id="barPlayerHP"></div></div>
+        </div>
+        <div class="center-hud">
+          <div class="meter mana">
+            <b>Mana</b><span class="value" id="mana">0/0</span>
+            <div class="bar"><div class="fill" id="barMana"></div></div>
+          </div>
+          <button class="btn-ghost" id="muteBtn" title="Som">🔊 Som</button
+          ><button class="btn-ghost" id="openMenuBtn" title="Menu">
+            ☰ Menu
+          </button>
+        </div>
+        <div class="meter enemy" style="justify-self: end">
+          <b>HP Inimigo</b><span class="opp-label" id="opponentLabel"></span
+          ><span class="value" id="aiHP">30</span>
+          <div class="enemy-img" id="aiAvatar">🧿</div>
+          <div class="bar"><div class="fill" id="barAiHP"></div></div>
+        </div>
+      </div>
+      <div class="row enemy-row">
+        <div class="pile" id="aiDrawPile">
+          <img
+            src="img/decks/fJord-fishers/deck-backs/jf-db-default.webp"
+            alt="deck"
+          />
+          <div class="pile-label">DECK</div>
+        </div>
+        <div class="board" id="aiBoard"></div>
+        <div class="pile" id="aiDiscardPile">
+          <img
+            src="img/decks/fJord-fishers/deck-backs/jf-db-default.webp"
+            alt="discard"
+          />
+          <div class="pile-label">DESCARTE</div>
+        </div>
+      </div>
+      <div class="turn-bar">
+        <div class="turn-indicator" id="turnIndicator"></div>
+        <button class="btn" id="endTurnBtn">Encerrar turno</button>
+      </div>
+      <div class="row">
+        <div class="pile" id="drawPile">
+          <img
+            src="img/decks/fJord-fishers/deck-backs/jf-db-default.webp"
+            alt="deck"
+          />
+          <div class="count" id="drawCount">0</div>
+          <div class="pile-label">SEU DECK</div>
+        </div>
+        <div class="board" id="playerBoard"></div>
+        <div class="pile" id="discardPile">
+          <img
+            src="img/decks/fJord-fishers/deck-backs/jf-db-default.webp"
+            alt="discard"
+          />
+          <div class="count" id="discardCount">0</div>
+          <div class="pile-label">DESCARTE</div>
+        </div>
+        <div class="log-wrap">
+          <div class="zone-title">Registro</div>
+          <div class="log" id="log"></div>
+        </div>
+      </div>
+      <div class="totem-bar" id="totemBar"></div>
+      <div class="hand" id="playerHand"></div>
       <div class="footer">
-        <span class="sub" style="margin:0">Passe o mouse sobre uma palavra‑chave para ver o que ela faz.</span>
-        <button class="btn-ghost" id="closeEncy">Fechar</button>
+        <div class="face">
+          👤 Você <span class="gem hp" id="playerHP2">30</span>
+        </div>
+        <div class="face">
+          🧿 Inimigo <span class="gem hp" id="aiHP2">30</span>
+        </div>
+      </div>
+      <div class="emoji-bar" id="emojiBar">
+        <button class="emoji-btn" data-emoji="😡">😡</button>
+        <button class="emoji-btn" data-emoji="🤔">🤔</button>
+        <button class="emoji-btn" data-emoji="❤️">❤️</button>
+        <button class="emoji-btn" data-emoji="🎉">🎉</button>
+      </div>
+      <div class="emoji-popup player" id="playerEmoji"></div>
+      <div class="emoji-popup opponent" id="opponentEmoji"></div>
+    </div>
+
+    <!-- In-game menu -->
+    <div class="game-menu" id="gameMenu">
+      <div class="panel">
+        <button class="btn" id="resignBtn">Desistir</button>
+        <button class="btn" id="restartBtn">Recomeçar</button>
+        <button class="btn" id="mainMenuBtn">Menu principal</button>
+        <button class="btn-ghost" id="closeMenuBtn">Fechar</button>
       </div>
     </div>
-  </div>
 
-  <!-- Game area -->
-  <div class="" id="gameWrap" style="display:none">
-    <div class="mid-mana" id="midMana"></div>
-    <div class="hud">
-      <div class="meter"><b>Seu HP</b><span class="value" id="playerHP">30</span><div class="bar"><div class="fill" id="barPlayerHP"></div></div></div>
-      <div class="center-hud"><div class="meter mana"><b>Mana</b><span class="value" id="mana">0/0</span><div class="bar"><div class="fill" id="barMana"></div></div></div><button class="btn-ghost" id="muteBtn" title="Som">🔊 Som</button><button class="btn-ghost" id="openMenuBtn" title="Menu">☰ Menu</button></div>
-      <div class="meter enemy" style="justify-self:end"><b>HP Inimigo</b><span class="opp-label" id="opponentLabel"></span><span class="value" id="aiHP">30</span><div class="enemy-img" id="aiAvatar">🧿</div><div class="bar"><div class="fill" id="barAiHP"></div></div></div>
-    </div>
-    <div class="row enemy-row">
-  <div class="pile" id="aiDrawPile"><img src="img/decks/fJord-fishers/deck-backs/jf-db-default.webp" alt="deck"><div class="pile-label">DECK</div></div>
-      <div class="board" id="aiBoard"></div>
-  <div class="pile" id="aiDiscardPile"><img src="img/decks/fJord-fishers/deck-backs/jf-db-default.webp" alt="discard"><div class="pile-label">DESCARTE</div></div>
-    </div>
-    <div class="turn-bar"><div class="turn-indicator" id="turnIndicator"></div><button class="btn" id="endTurnBtn">Encerrar turno</button></div>
-    <div class="row">
-  <div class="pile" id="drawPile"><img src="img/decks/fJord-fishers/deck-backs/jf-db-default.webp" alt="deck"><div class="count" id="drawCount">0</div><div class="pile-label">SEU DECK</div></div>
-      <div class="board" id="playerBoard"></div>
-  <div class="pile" id="discardPile"><img src="img/decks/fJord-fishers/deck-backs/jf-db-default.webp" alt="discard"><div class="count" id="discardCount">0</div><div class="pile-label">DESCARTE</div></div>
-      <div class="log-wrap"><div class="zone-title">Registro</div><div class="log" id="log"></div></div>
-    </div>
-    <div class="totem-bar" id="totemBar"></div>
-    <div class="hand" id="playerHand"></div>
-    <div class="footer"><div class="face">👤 Você <span class="gem hp" id="playerHP2">30</span></div><div class="face">🧿 Inimigo <span class="gem hp" id="aiHP2">30</span></div></div>
-    <div class="emoji-bar" id="emojiBar">
-      <button class="emoji-btn" data-emoji="😡">😡</button>
-      <button class="emoji-btn" data-emoji="🤔">🤔</button>
-      <button class="emoji-btn" data-emoji="❤️">❤️</button>
-      <button class="emoji-btn" data-emoji="🎉">🎉</button>
-    </div>
-    <div class="emoji-popup player" id="playerEmoji"></div>
-    <div class="emoji-popup opponent" id="opponentEmoji"></div>
-  </div>
-
-  <!-- In-game menu -->
-  <div class="game-menu" id="gameMenu">
-    <div class="panel">
-      <button class="btn" id="resignBtn">Desistir</button>
-      <button class="btn" id="restartBtn">Recomeçar</button>
-      <button class="btn" id="mainMenuBtn">Menu principal</button>
-      <button class="btn-ghost" id="closeMenuBtn">Fechar</button>
-    </div>
-  </div>
-
-  <!-- End screen -->
-  <div class="end-overlay" id="endOverlay">
-    <div class="end-box">
-      <div class="end-msg" id="endMsg"></div>
-      <div class="end-sub" id="endSub"></div>
-      <div class="end-actions">
-        <button class="btn" id="playAgainBtn">Jogar de novo</button>
-        <button class="btn" id="rematchBtn">Revanche</button>
-        <button class="btn-ghost" id="menuBtn">Menu inicial</button>
+    <!-- End screen -->
+    <div class="end-overlay" id="endOverlay">
+      <div class="end-box">
+        <div class="end-msg" id="endMsg"></div>
+        <div class="end-sub" id="endSub"></div>
+        <div class="end-actions">
+          <button class="btn" id="playAgainBtn">Jogar de novo</button>
+          <button class="btn" id="rematchBtn">Revanche</button>
+          <button class="btn-ghost" id="menuBtn">Menu inicial</button>
+        </div>
       </div>
     </div>
-  </div>
 
-  <!-- Reconnect popup -->
-  <div class="reconnect-overlay" id="reconnectOverlay">
-    <div class="reconnect-box">
-      <div id="reconnectMsg">Você perdeu a conexão com a sala.</div>
-      <div>Tentando reconectar... <span id="reconnectTimer">15</span>s</div>
-    </div>
-  </div>
-
-  <!-- Shop Modal -->
-  <div id="shopModal" class="modal">
-    <div class="box">
-      <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
-  <img id="shopVendor" class="shop-keeper" src="img/ui/shopkeeper.png" alt="Vendedor">
-        <h2 style="margin:0">Loja</h2>
-  <span style="margin-left:auto"><img src="img/ui/coin.png" class="coin-icon" alt="moeda"> <b id="shopGold">0</b></span>
-        <button class="btn" id="btnReroll">Re-rolar</button>
-      </div>
-      <div class="shop-grid" id="shopChoices"></div>
-      <div style="margin-top:12px;text-align:right">
-        <button id="closeShop" class="btn">Fechar</button>
+    <!-- Reconnect popup -->
+    <div class="reconnect-overlay" id="reconnectOverlay">
+      <div class="reconnect-box">
+        <div id="reconnectMsg">Você perdeu a conexão com a sala.</div>
+        <div>Tentando reconectar... <span id="reconnectTimer">15</span>s</div>
       </div>
     </div>
-  </div>
 
-  <div id="encounterBanner"></div>
-  <div id="encounterTransition"></div>
-  <script src="socket.io/socket.io.js"></script>
-  <script src="js/net-client.js"></script>
-  <script src="js/multiplayer.js"></script>
-  <script src="js/menu.js"></script>
-  <script src="js/shop.js"></script>
-  <script src="js/enemies.js"></script>
-  <script src="js/game.js"></script>
-</body>
+    <!-- Shop Modal -->
+    <div id="shopModal" class="modal">
+      <div class="box">
+        <div
+          style="
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            margin-bottom: 8px;
+          "
+        >
+          <img
+            id="shopVendor"
+            class="shop-keeper"
+            src="img/ui/shopkeeper.png"
+            alt="Vendedor"
+          />
+          <h2 style="margin: 0">Loja</h2>
+          <span style="margin-left: auto"
+            ><img src="img/ui/coin.png" class="coin-icon" alt="moeda" />
+            <b id="shopGold">0</b></span
+          >
+          <button class="btn" id="btnReroll">Re-rolar</button>
+        </div>
+        <div class="shop-grid" id="shopChoices"></div>
+        <div style="margin-top: 12px; text-align: right">
+          <button id="closeShop" class="btn">Fechar</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="encounterBanner"></div>
+    <div id="encounterTransition"></div>
+    <script src="socket.io/socket.io.js"></script>
+    <script src="js/net-client.js"></script>
+    <script src="js/multiplayer.js"></script>
+    <script src="js/menu.js"></script>
+    <script src="js/shop.js"></script>
+    <script src="js/enemies.js"></script>
+    <script src="js/game.js"></script>
+  </body>
 </html>

@@ -12,9 +12,9 @@ export function initAudio() {
   }
 }
 export function ensureRunning() {
-  if (actx && actx.state === "suspended") actx.resume();
+  if (actx && actx.state === 'suspended') actx.resume();
 }
-export function tone(f = 440, d = 0.1, t = "sine", v = 1, w = 0) {
+export function tone(f = 440, d = 0.1, t = 'sine', v = 1, w = 0) {
   if (!actx || muted) return;
   ensureRunning();
   const o = actx.createOscillator(),
@@ -37,42 +37,42 @@ export function sfx(n) {
   (
     ({
       start: () => {
-        tone(520, 0.08, "triangle", 0.7, 0);
-        tone(780, 0.09, "triangle", 0.6, 0.08);
+        tone(520, 0.08, 'triangle', 0.7, 0);
+        tone(780, 0.09, 'triangle', 0.6, 0.08);
       },
       play: () => {
-        tone(420, 0.07, "sine", 0.7, 0);
-        tone(560, 0.08, "sine", 0.6, 0.06);
+        tone(420, 0.07, 'sine', 0.7, 0);
+        tone(560, 0.08, 'sine', 0.6, 0.06);
       },
       defense: () => {
-        tone(280, 0.09, "square", 0.6, 0);
-        tone(200, 0.12, "sine", 0.5, 0.08);
+        tone(280, 0.09, 'square', 0.6, 0);
+        tone(200, 0.12, 'sine', 0.5, 0.08);
       },
       attack: () => {
-        tone(300, 0.06, "sawtooth", 0.7, 0);
-        tone(220, 0.06, "sawtooth", 0.6, 0.05);
+        tone(300, 0.06, 'sawtooth', 0.7, 0);
+        tone(220, 0.06, 'sawtooth', 0.6, 0.05);
       },
       hit: () => {
-        tone(160, 0.07, "square", 0.6, 0);
+        tone(160, 0.07, 'square', 0.6, 0);
       },
       overflow: () => {
-        tone(600, 0.1, "triangle", 0.6, 0);
+        tone(600, 0.1, 'triangle', 0.6, 0);
       },
       death: () => {
-        tone(420, 0.08, "sawtooth", 0.6, 0);
-        tone(260, 0.12, "sawtooth", 0.55, 0.06);
+        tone(420, 0.08, 'sawtooth', 0.6, 0);
+        tone(260, 0.12, 'sawtooth', 0.55, 0.06);
       },
       end: () => {
-        tone(600, 0.06, "triangle", 0.6, 0);
-        tone(400, 0.06, "triangle", 0.5, 0.05);
+        tone(600, 0.06, 'triangle', 0.6, 0);
+        tone(400, 0.06, 'triangle', 0.5, 0.05);
       },
       crit: () => {
-        tone(120, 0.08, "square", 0.75, 0);
-        tone(90, 0.12, "square", 0.7, 0.06);
+        tone(120, 0.08, 'square', 0.75, 0);
+        tone(90, 0.12, 'square', 0.7, 0.06);
       },
       error: () => {
-        tone(140, 0.05, "square", 0.6, 0);
-        tone(140, 0.05, "square", 0.6, 0.06);
+        tone(140, 0.05, 'square', 0.6, 0);
+        tone(140, 0.05, 'square', 0.6, 0.06);
       },
     })[n] || (() => {})
   )();
@@ -81,54 +81,54 @@ export function sfx(n) {
 let musicGain = null,
   musicLoopId = null,
   musicOn = false,
-  musicPreset = "menu";
+  musicPreset = 'menu';
 const MUSIC = {
   menu: {
     bpm: 84,
     leadBase: 196,
     bassBase: 98,
-    leadWave: "triangle",
-    bassWave: "sine",
+    leadWave: 'triangle',
+    bassWave: 'sine',
     scale: [0, 3, 5, 7, 5, 3, 0, -5],
   },
   vikings: {
     bpm: 76,
     leadBase: 174.61,
     bassBase: 87.31,
-    leadWave: "sawtooth",
-    bassWave: "sine",
+    leadWave: 'sawtooth',
+    bassWave: 'sine',
     scale: [0, 3, 5, 7, 10, 7, 5, 3],
   },
   animais: {
     bpm: 90,
     leadBase: 220,
     bassBase: 110,
-    leadWave: "square",
-    bassWave: "sine",
+    leadWave: 'square',
+    bassWave: 'sine',
     scale: [0, 2, 5, 7, 9, 7, 5, 2],
   },
   pescadores: {
     bpm: 96,
     leadBase: 196,
     bassBase: 98,
-    leadWave: "triangle",
-    bassWave: "triangle",
+    leadWave: 'triangle',
+    bassWave: 'triangle',
     scale: [0, 2, 4, 7, 9, 7, 4, 2],
   },
   floresta: {
     bpm: 68,
     leadBase: 207.65,
     bassBase: 103.83,
-    leadWave: "sine",
-    bassWave: "sine",
+    leadWave: 'sine',
+    bassWave: 'sine',
     scale: [0, 3, 5, 10, 5, 3, 0, -2],
   },
   combat: {
     bpm: 118,
     leadBase: 220,
     bassBase: 110,
-    leadWave: "sawtooth",
-    bassWave: "square",
+    leadWave: 'sawtooth',
+    bassWave: 'square',
     scale: [0, 2, 3, 5, 7, 8, 7, 5],
     perc: true,
     ac: 4,
@@ -141,14 +141,14 @@ export function startMenuMusic(preset) {
   if (preset && preset !== musicPreset && musicOn) {
     stopMenuMusic();
   }
-  musicPreset = preset || musicPreset || "menu";
+  musicPreset = preset || musicPreset || 'menu';
   if (musicOn) return;
   musicOn = true;
   const P = MUSIC[musicPreset] || MUSIC.menu;
   musicGain = actx.createGain();
   musicGain.gain.value = 0.0001;
   musicGain.connect(master);
-  const tgt = musicPreset === "combat" ? 0.22 : 0.18;
+  const tgt = musicPreset === 'combat' ? 0.22 : 0.18;
   musicGain.gain.exponentialRampToValueAtTime(tgt, actx.currentTime + 0.4);
   const beat = 60 / P.bpm,
     steps = P.scale.length;
@@ -163,7 +163,7 @@ export function startMenuMusic(preset) {
       o.frequency.setValueAtTime(f, t + i * beat);
       g.gain.setValueAtTime(0.0001, t + i * beat);
       g.gain.exponentialRampToValueAtTime(
-        musicPreset === "combat" ? 0.13 : 0.11,
+        musicPreset === 'combat' ? 0.13 : 0.11,
         t + i * beat + 0.01,
       );
       g.gain.exponentialRampToValueAtTime(0.0001, t + i * beat + beat * 0.92);
@@ -179,7 +179,7 @@ export function startMenuMusic(preset) {
       o.frequency.setValueAtTime(P.bassBase, t + i * beat);
       g.gain.setValueAtTime(0.0001, t + i * beat);
       g.gain.exponentialRampToValueAtTime(
-        musicPreset === "combat" ? 0.1 : 0.09,
+        musicPreset === 'combat' ? 0.1 : 0.09,
         t + i * beat + 0.01,
       );
       g.gain.exponentialRampToValueAtTime(0.0001, t + i * beat + beat * 0.96);
@@ -192,14 +192,11 @@ export function startMenuMusic(preset) {
       for (let i = 0; i < steps; i++) {
         const h = actx.createOscillator(),
           hg = actx.createGain();
-        h.type = "square";
+        h.type = 'square';
         h.frequency.setValueAtTime(1600, t + i * beat);
         hg.gain.setValueAtTime(0.0001, t + i * beat);
         hg.gain.exponentialRampToValueAtTime(0.07, t + i * beat + 0.005);
-        hg.gain.exponentialRampToValueAtTime(
-          0.0001,
-          t + i * beat + beat * 0.2,
-        );
+        hg.gain.exponentialRampToValueAtTime(0.0001, t + i * beat + beat * 0.2);
         h.connect(hg);
         hg.connect(musicGain);
         h.start(t + i * beat);
@@ -207,7 +204,7 @@ export function startMenuMusic(preset) {
         if (P.ac && i % P.ac === 0) {
           const k = actx.createOscillator(),
             kg = actx.createGain();
-          k.type = "sine";
+          k.type = 'sine';
           k.frequency.setValueAtTime(120, t + i * beat);
           kg.gain.setValueAtTime(0.0001, t + i * beat);
           kg.gain.exponentialRampToValueAtTime(0.12, t + i * beat + 0.01);
@@ -256,13 +253,13 @@ export function tryStartMenuMusicImmediate() {
     ensureRunning();
   } catch (e) {}
   try {
-    startMenuMusic("menu");
+    startMenuMusic('menu');
   } catch (e) {}
-  if (actx && actx.state !== "running") {
+  if (actx && actx.state !== 'running') {
     try {
       actx
         .resume()
-        .then(() => startMenuMusic("menu"))
+        .then(() => startMenuMusic('menu'))
         .catch(() => {});
     } catch (e) {}
   }
@@ -277,7 +274,7 @@ export function tryStartMenuMusicImmediate() {
       try {
         initAudio();
         ensureRunning();
-        startMenuMusic("menu");
+        startMenuMusic('menu');
       } catch (e) {}
     }, 800);
   }
@@ -287,5 +284,5 @@ export function toggleMute(btn) {
   muted = !muted;
   if (master) master.gain.value = muted ? 0 : 0.18;
   if (musicGain) musicGain.gain.value = muted ? 0 : 0.18;
-  if (btn) btn.textContent = muted ? "🔇 Mudo" : "🔊 Som";
+  if (btn) btn.textContent = muted ? '🔇 Mudo' : '🔊 Som';
 }

@@ -1,9 +1,39 @@
 (function (global) {
-  if(typeof global.io === 'undefined'){
+  if (typeof global.io === 'undefined') {
     // Socket.io not available: provide a safe no-op NET to avoid crashing in offline/local mode
-    const noop = ()=>{};
-    const NET = { host:noop, join:noop, listRooms:noop, isHost:()=>false, deckChoice:noop, startReady:noop, sendMove:noop, sendTurn:noop, sendEmoji:noop, setName:noop, requestRematch:noop, resign:noop,
-      onOpponentDeckConfirmed:noop,onStartGame:noop,onMove:noop,onTurn:noop,onEmoji:noop,onHosted:noop,onJoined:noop,onGuestJoined:noop,onJoinError:noop,onRooms:noop,onOpponentLeft:noop,onOpponentDisconnected:noop,onOpponentReconnected:noop,onOpponentResigned:noop,onOpponentName:noop,onRematch:noop,onConnectionError:noop,disconnect:noop };
+    const noop = () => {};
+    const NET = {
+      host: noop,
+      join: noop,
+      listRooms: noop,
+      isHost: () => false,
+      deckChoice: noop,
+      startReady: noop,
+      sendMove: noop,
+      sendTurn: noop,
+      sendEmoji: noop,
+      setName: noop,
+      requestRematch: noop,
+      resign: noop,
+      onOpponentDeckConfirmed: noop,
+      onStartGame: noop,
+      onMove: noop,
+      onTurn: noop,
+      onEmoji: noop,
+      onHosted: noop,
+      onJoined: noop,
+      onGuestJoined: noop,
+      onJoinError: noop,
+      onRooms: noop,
+      onOpponentLeft: noop,
+      onOpponentDisconnected: noop,
+      onOpponentReconnected: noop,
+      onOpponentResigned: noop,
+      onOpponentName: noop,
+      onRematch: noop,
+      onConnectionError: noop,
+      disconnect: noop,
+    };
     global.NET = NET;
     global.showReconnect = noop;
     global.hideReconnect = noop;
@@ -88,9 +118,9 @@
     sendEmoji(emoji) {
       socket.emit('emoji', emoji);
     },
-    setName(name){
+    setName(name) {
       connectIfNeeded();
-      socket.emit('setName',name);
+      socket.emit('setName', name);
     },
     requestRematch() {
       socket.emit('rematch');
@@ -140,8 +170,8 @@
     onOpponentResigned(handler) {
       socket.on('opponentResigned', handler);
     },
-    onOpponentName(handler){
-      socket.on('opponentName',handler);
+    onOpponentName(handler) {
+      socket.on('opponentName', handler);
     },
     onRematch(handler) {
       socket.on('rematch', handler);

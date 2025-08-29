@@ -17,81 +17,111 @@ document.addEventListener('DOMContentLoaded', () => {
   const diffLabel = document.querySelector('label[for="difficulty"]');
   const diffSelect = document.getElementById('difficulty');
 
-  if (storyBtn) storyBtn.addEventListener('click', () => {
-    if (titleMenu) titleMenu.style.display = 'none';
-    if (deckScreen) deckScreen.style.display = 'grid';
-    if (diffLabel) diffLabel.style.display = 'none';
-    if (diffSelect) diffSelect.style.display = 'none';
-    const startBtn = document.getElementById('startGame');
-    if (startBtn){startBtn.textContent='Iniciar História';startBtn.disabled=true;}
-    window.currentGameMode = 'story';
-  });
+  if (storyBtn)
+    storyBtn.addEventListener('click', () => {
+      if (titleMenu) titleMenu.style.display = 'none';
+      if (deckScreen) deckScreen.style.display = 'grid';
+      if (diffLabel) diffLabel.style.display = 'none';
+      if (diffSelect) diffSelect.style.display = 'none';
+      const startBtn = document.getElementById('startGame');
+      if (startBtn) {
+        startBtn.textContent = 'Iniciar História';
+        startBtn.disabled = true;
+      }
+      window.currentGameMode = 'story';
+    });
 
-  if (soloBtn) soloBtn.addEventListener('click', () => {
-    if (titleMenu) titleMenu.style.display = 'none';
-    if (deckScreen) deckScreen.style.display = 'grid';
-    if (diffLabel) diffLabel.style.display = '';
-    if (diffSelect) diffSelect.style.display = '';
-    const startBtn = document.getElementById('startGame');
-    if (startBtn){startBtn.textContent='Jogar';startBtn.disabled=true;}
-    window.currentGameMode = 'solo';
-  });
+  if (soloBtn)
+    soloBtn.addEventListener('click', () => {
+      if (titleMenu) titleMenu.style.display = 'none';
+      if (deckScreen) deckScreen.style.display = 'grid';
+      if (diffLabel) diffLabel.style.display = '';
+      if (diffSelect) diffSelect.style.display = '';
+      const startBtn = document.getElementById('startGame');
+      if (startBtn) {
+        startBtn.textContent = 'Jogar';
+        startBtn.disabled = true;
+      }
+      window.currentGameMode = 'solo';
+    });
 
-  if (multiBtn) multiBtn.addEventListener('click', () => {
-    if (titleMenu) titleMenu.style.display = 'none';
-    if (multiMenu) multiMenu.style.display = 'grid';
-  });
+  if (multiBtn)
+    multiBtn.addEventListener('click', () => {
+      if (titleMenu) titleMenu.style.display = 'none';
+      if (multiMenu) multiMenu.style.display = 'grid';
+    });
 
-  if (optBtn) optBtn.addEventListener('click', () => {
-  if (optionsMenu) optionsMenu.classList.add('show');
-  });
+  if (optBtn)
+    optBtn.addEventListener('click', () => {
+      if (optionsMenu) optionsMenu.classList.add('show');
+    });
 
-  if (testBtn) testBtn.addEventListener('click', () => {
-  if (testModal) testModal.classList.add('show');
-  });
+  if (testBtn)
+    testBtn.addEventListener('click', () => {
+      if (testModal) testModal.classList.add('show');
+    });
 
-  if (backToMenu) backToMenu.addEventListener('click', () => {
-    if (deckScreen) deckScreen.style.display = 'none';
-    if (titleMenu) titleMenu.style.display = 'grid';
-    const startBtn = document.getElementById('startGame');
-    if (startBtn){startBtn.textContent='Jogar';startBtn.disabled=true;}
-    window.currentGameMode = null;
-  });
+  if (backToMenu)
+    backToMenu.addEventListener('click', () => {
+      if (deckScreen) deckScreen.style.display = 'none';
+      if (titleMenu) titleMenu.style.display = 'grid';
+      const startBtn = document.getElementById('startGame');
+      if (startBtn) {
+        startBtn.textContent = 'Jogar';
+        startBtn.disabled = true;
+      }
+      window.currentGameMode = null;
+    });
 
-  if (closeOptions) closeOptions.addEventListener('click', () => {
-  if (optionsMenu) optionsMenu.classList.remove('show');
-  });
+  if (closeOptions)
+    closeOptions.addEventListener('click', () => {
+      if (optionsMenu) optionsMenu.classList.remove('show');
+    });
 
-  if (closeTest) closeTest.addEventListener('click', () => {
-  if (testModal) testModal.classList.remove('show');
-  });
+  if (closeTest)
+    closeTest.addEventListener('click', () => {
+      if (testModal) testModal.classList.remove('show');
+    });
 
-  if (testShopBtn) testShopBtn.addEventListener('click', () => {
-    if (window.openShop) openShop({ faction: 'random', gold: 30, unlimited: true });
-  });
+  if (testShopBtn)
+    testShopBtn.addEventListener('click', () => {
+      if (window.openShop)
+        openShop({ faction: 'random', gold: 30, unlimited: true });
+    });
 
-  if (testTotemBtn) testTotemBtn.addEventListener('click', () => {
-    if (testModal) testModal.style.display = 'none';
-    if (window.startTotemTest) startTotemTest();
-  });
+  if (testTotemBtn)
+    testTotemBtn.addEventListener('click', () => {
+      if (testModal) testModal.style.display = 'none';
+      if (window.startTotemTest) startTotemTest();
+    });
 
   const musicVol = document.getElementById('musicVol');
   const sfxVol = document.getElementById('sfxVol');
   const disableAnims = document.getElementById('disableAnims');
-  if (musicVol) musicVol.addEventListener('input', e => {
-    if (window.setMusicVolume) window.setMusicVolume(parseFloat(e.target.value));
-  });
-  if (sfxVol) sfxVol.addEventListener('input', e => {
-    if (window.setSfxVolume) window.setSfxVolume(parseFloat(e.target.value));
-  });
+  if (musicVol)
+    musicVol.addEventListener('input', (e) => {
+      if (window.setMusicVolume)
+        window.setMusicVolume(parseFloat(e.target.value));
+    });
+  if (sfxVol)
+    sfxVol.addEventListener('input', (e) => {
+      if (window.setSfxVolume) window.setSfxVolume(parseFloat(e.target.value));
+    });
   // Animations toggle
-  try{
+  try {
     const stored = localStorage.getItem('fff_disable_anims');
-    if(stored!==null){ window.animationsDisabled = (stored==='1'); if(disableAnims) disableAnims.checked = window.animationsDisabled; }
-  }catch(_){ }
-  if(disableAnims){
-    disableAnims.addEventListener('change', e=>{
-      const v = !!e.target.checked; window.animationsDisabled = v; try{ localStorage.setItem('fff_disable_anims', v?'1':'0'); }catch(_){ }
+    if (stored !== null) {
+      window.animationsDisabled = stored === '1';
+      if (disableAnims) disableAnims.checked = window.animationsDisabled;
+    }
+  } catch (_) {}
+  if (disableAnims) {
+    disableAnims.addEventListener('change', (e) => {
+      const v = !!e.target.checked;
+      window.animationsDisabled = v;
+      try {
+        localStorage.setItem('fff_disable_anims', v ? '1' : '0');
+      } catch (_) {}
     });
   }
 });

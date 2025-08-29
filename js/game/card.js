@@ -50,9 +50,10 @@ export class Card {
     this.subclasse = subclasse;
     this.tipo = tipo;
     // custo pode ser número (mana) ou objeto { mana, colheita }
-    this.custo = typeof custo === 'number'
-      ? { mana: custo, colheita: 0 }
-      : { mana: custo.mana ?? 0, colheita: custo.colheita ?? 0 };
+    this.custo =
+      typeof custo === 'number'
+        ? { mana: custo, colheita: 0 }
+        : { mana: custo.mana ?? 0, colheita: custo.colheita ?? 0 };
     this.atributos = {
       ataque: atributos.ataque ?? 0,
       defesa: atributos.defesa ?? 0,

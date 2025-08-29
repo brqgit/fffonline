@@ -3,6 +3,7 @@
 Lista de 100 nomes de inimigos seguindo a lore de Fjörnburg e suas facções correspondentes.
 
 ## Vikings
+
 - Ceifador do Fiorde
 - Guardião das Runas
 - Berserker do Arado
@@ -21,10 +22,11 @@ Lista de 100 nomes de inimigos seguindo a lore de Fjörnburg e suas facções co
 - Guardião da Aldeia
 - Batalhador do Cais
 - Escudeiro da Aurora
-- Jarl da Tempestade *(Boss)*
-- Lorde da Colheita Sombria *(Boss)*
+- Jarl da Tempestade _(Boss)_
+- Lorde da Colheita Sombria _(Boss)_
 
 ## Animais
+
 - Lobo Cinzento Alfa
 - Urso do Gelo
 - Javali das Neves
@@ -43,10 +45,11 @@ Lista de 100 nomes de inimigos seguindo a lore de Fjörnburg e suas facções co
 - Ursão Guardião
 - Bisão Boreal
 - Esquilo Rápido
-- Fenrir Desperto *(Boss)*
-- Urso Rúnico Antigo *(Boss)*
+- Fenrir Desperto _(Boss)_
+- Urso Rúnico Antigo _(Boss)_
 
 ## Pescadores
+
 - Arpoador Tempestuoso
 - Marinheiro do Gelo
 - Grumete das Ondas
@@ -65,10 +68,11 @@ Lista de 100 nomes de inimigos seguindo a lore de Fjörnburg e suas facções co
 - Vigia das Profundezas
 - Guardião das Docas
 - Caçador de Tesouros
-- Senhor do Maelstrom *(Boss)*
-- Kraken do Fiorde *(Boss)*
+- Senhor do Maelstrom _(Boss)_
+- Kraken do Fiorde _(Boss)_
 
 ## Floresta
+
 - Guardião Musgoso
 - Raposa da Névoa
 - Cervo Rúnico
@@ -87,10 +91,11 @@ Lista de 100 nomes de inimigos seguindo a lore de Fjörnburg e suas facções co
 - Serpente do Bosque
 - Centauro das Brumas
 - Javali de Runas
-- Avatar do Carvalho Ancestral *(Boss)*
-- Espírito do Cervo Estelar *(Boss)*
+- Avatar do Carvalho Ancestral _(Boss)_
+- Espírito do Cervo Estelar _(Boss)_
 
 ## Convergentes
+
 - Neófito Prismático
 - Assimilador Rúnico
 - Guardião Quimérico
@@ -109,5 +114,5 @@ Lista de 100 nomes de inimigos seguindo a lore de Fjörnburg e suas facções co
 - Avatar Mutagênico
 - Capataz de Runas
 - Essência Convergente
-- Catalisador da Aurora *(Boss)*
-- Entidade Transmutante *(Boss)*
+- Catalisador da Aurora _(Boss)_
+- Entidade Transmutante _(Boss)_

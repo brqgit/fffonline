@@ -19,7 +19,7 @@ export const ENEMY_NAMES = {
     { name: 'Batalhador do Cais' },
     { name: 'Escudeiro da Aurora' },
     { name: 'Jarl da Tempestade', boss: true },
-    { name: 'Lorde da Colheita Sombria', boss: true }
+    { name: 'Lorde da Colheita Sombria', boss: true },
   ],
   animais: [
     { name: 'Lobo Cinzento Alfa' },
@@ -41,7 +41,7 @@ export const ENEMY_NAMES = {
     { name: 'Bisão Boreal' },
     { name: 'Esquilo Rápido' },
     { name: 'Fenrir Desperto', boss: true },
-    { name: 'Urso Rúnico Antigo', boss: true }
+    { name: 'Urso Rúnico Antigo', boss: true },
   ],
   pescadores: [
     { name: 'Arpoador Tempestuoso' },
@@ -63,7 +63,7 @@ export const ENEMY_NAMES = {
     { name: 'Guardião das Docas' },
     { name: 'Caçador de Tesouros' },
     { name: 'Senhor do Maelstrom', boss: true },
-    { name: 'Kraken do Fiorde', boss: true }
+    { name: 'Kraken do Fiorde', boss: true },
   ],
   floresta: [
     { name: 'Guardião Musgoso' },
@@ -85,7 +85,7 @@ export const ENEMY_NAMES = {
     { name: 'Centauro das Brumas' },
     { name: 'Javali de Runas' },
     { name: 'Avatar do Carvalho Ancestral', boss: true },
-    { name: 'Espírito do Cervo Estelar', boss: true }
+    { name: 'Espírito do Cervo Estelar', boss: true },
   ],
   convergentes: [
     { name: 'Neófito Prismático' },
@@ -107,6 +107,6 @@ export const ENEMY_NAMES = {
     { name: 'Capataz de Runas' },
     { name: 'Essência Convergente' },
     { name: 'Catalisador da Aurora', boss: true },
-    { name: 'Entidade Transmutante', boss: true }
-  ]
+    { name: 'Entidade Transmutante', boss: true },
+  ],
 };

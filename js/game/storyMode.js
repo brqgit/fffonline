@@ -22,13 +22,24 @@ export class StoryMode {
     const isBoss = this.round % this.bossInterval === 0;
     const isElite = !isBoss && this.round % this.eliteEvery === 0;
     const isShop = this.round % this.shopEvery === 0;
-    this.currentEncounter = isBoss ? 'boss' : isElite ? 'elite' : isShop ? 'shop' : 'normal';
+    this.currentEncounter = isBoss
+      ? 'boss'
+      : isElite
+        ? 'elite'
+        : isShop
+          ? 'shop'
+          : 'normal';
     return { isBoss, isElite, isShop };
   }
 
   handleVictory() {
     // Grant XP based on encounter type
-    const xpGain = this.currentEncounter === 'boss' ? 20 : this.currentEncounter === 'elite' ? 10 : 5;
+    const xpGain =
+      this.currentEncounter === 'boss'
+        ? 20
+        : this.currentEncounter === 'elite'
+          ? 10
+          : 5;
     this.xp += xpGain;
     const leveled = this.checkLevelUp();
     return { leveled, rewards: this.rewardOptions() };
