@@ -3,7 +3,7 @@
     // Socket.io not available: provide a safe no-op NET to avoid crashing in offline/local mode
     const noop = ()=>{};
     const NET = { host:noop, join:noop, listRooms:noop, isHost:()=>false, deckChoice:noop, startReady:noop, sendMove:noop, sendTurn:noop, sendEmoji:noop, setName:noop, requestRematch:noop, resign:noop,
-      onOpponentDeckConfirmed:noop,onStartGame:noop,onMove:noop,onTurn:noop,onEmoji:noop,onHosted:noop,onJoined:noop,onGuestJoined:noop,onJoinError:noop,onRooms:noop,onOpponentLeft:noop,onOpponentDisconnected:noop,onOpponentReconnected:noop,onOpponentResigned:noop,onOpponentName:noop,onRematch:noop,onConnectionError:noop,disconnect:noop };
+      onOpponentDeckConfirmed:noop,onStartGame:noop,onMove:noop,onTurn:noop,onEmoji:noop,onHosted:noop,onJoined:noop,onGuestJoined:noop,onJoinError:noop,onNameError:noop,onRooms:noop,onOpponentLeft:noop,onOpponentDisconnected:noop,onOpponentReconnected:noop,onOpponentResigned:noop,onOpponentName:noop,onRematch:noop,onConnectionError:noop,disconnect:noop };
     global.NET = NET;
     global.showReconnect = noop;
     global.hideReconnect = noop;
@@ -124,6 +124,9 @@
     },
     onJoinError(handler) {
       socket.on('joinError', handler);
+    },
+    onNameError(handler) {
+      socket.on('nameError', handler);
     },
     onRooms(handler) {
       socket.on('rooms', handler);
