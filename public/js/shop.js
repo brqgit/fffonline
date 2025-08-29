@@ -30,12 +30,8 @@ let rerolled = false;
 const shuffle = arr => arr.sort(() => Math.random() - 0.5);
 
 const slug = str => str.toLowerCase().replace(/[^a-z0-9]+/g,'-');
-function withImg(it){
-  if(['unit','spell','totem'].includes(it.type)){
-  return { ...it, img:`img/cards/${slug(it.name)}.png` };
-  }
-  return it;
-}
+// Do not force non-existent images; let card renderer pick deck placeholders/emoji
+function withImg(it){ return it; }
 
 function genShopOffers(){
   // produce up to 12 offers, preferring faction pool when available
@@ -51,7 +47,6 @@ function genShopOffers(){
   if(pool.length < 6){ pool = pool.concat(otherCandidates.slice(0, 6 - pool.length)); }
   const offers = pool.slice(0, maxOffers).map(it => {
     const base = Object.assign({}, it);
-  if(['unit','spell','totem'].includes(base.type) && !base.img){ base.img = `img/cards/${slug(base.name)}.png`; }
     // if player deck choice exists, hint renderer to prefer that deck for art
     if(window && window.G && window.G.playerDeckChoice && !base.deck){ base.deck = window.G.playerDeckChoice; }
     return withImg(base);
@@ -72,7 +67,8 @@ function renderShop(){
     if(['unit','spell','totem'].includes(it.type) && window.cardNode){
       // normalize data for cardNode: prefer deck/icon or img
       const nodeData = Object.assign({}, it);
-      if(nodeData.img && !nodeData.icon) nodeData.icon = nodeData.icon || '';
+      // clear img if present to avoid 404s; let game.js choose a safe deck placeholder
+      if(nodeData.img) delete nodeData.img;
       if(!nodeData.deck && window && window.G && window.G.playerDeckChoice) nodeData.deck = window.G.playerDeckChoice;
       const node = window.cardNode(nodeData,'player');
       node.classList.add('shop-preview');

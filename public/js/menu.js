@@ -77,10 +77,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const musicVol = document.getElementById('musicVol');
   const sfxVol = document.getElementById('sfxVol');
+  const disableAnims = document.getElementById('disableAnims');
   if (musicVol) musicVol.addEventListener('input', e => {
     if (window.setMusicVolume) window.setMusicVolume(parseFloat(e.target.value));
   });
   if (sfxVol) sfxVol.addEventListener('input', e => {
     if (window.setSfxVolume) window.setSfxVolume(parseFloat(e.target.value));
   });
+  // Animations toggle
+  try{
+    const stored = localStorage.getItem('fff_disable_anims');
+    if(stored!==null){ window.animationsDisabled = (stored==='1'); if(disableAnims) disableAnims.checked = window.animationsDisabled; }
+  }catch(_){ }
+  if(disableAnims){
+    disableAnims.addEventListener('change', e=>{
+      const v = !!e.target.checked; window.animationsDisabled = v; try{ localStorage.setItem('fff_disable_anims', v?'1':'0'); }catch(_){ }
+    });
+  }
 });

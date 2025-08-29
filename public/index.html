@@ -48,7 +48,6 @@
         <button class="btn" id="saveDeck">Salvar Deck</button>
       </div>
       <div class="footer">
-        <span class="sub" style="margin:0">Dicas: Clique numa carta da mão para jogar e escolha <b>Ataque</b> ou <b>Defesa</b>. Em <b>Defesa</b>, o oponente deve focá-la.</span>
         <div class="controls">
           <label for="difficulty" class="sub">Dificuldade:</label>
           <select id="difficulty" class="difficulty">
@@ -83,6 +82,7 @@
       <h2>Opções</h2>
       <label>Música <input type="range" id="musicVol" min="0" max="1" step="0.01" value="1"></label>
       <label>Efeitos <input type="range" id="sfxVol" min="0" max="1" step="0.01" value="1"></label>
+      <label><input type="checkbox" id="disableAnims"> Desativar animações</label>
       <button class="btn-ghost" id="closeOptions">Fechar</button>
     </div>
   </div>
@@ -121,7 +121,7 @@
 
   <!-- Game area -->
   <div class="" id="gameWrap" style="display:none">
-    <h1>FFF Farm Fight Formula</h1>
+    <div class="mid-mana" id="midMana"></div>
     <div class="hud">
       <div class="meter"><b>Seu HP</b><span class="value" id="playerHP">30</span><div class="bar"><div class="fill" id="barPlayerHP"></div></div></div>
       <div class="center-hud"><div class="meter mana"><b>Mana</b><span class="value" id="mana">0/0</span><div class="bar"><div class="fill" id="barMana"></div></div></div><button class="btn-ghost" id="muteBtn" title="Som">🔊 Som</button><button class="btn-ghost" id="openMenuBtn" title="Menu">☰ Menu</button></div>
