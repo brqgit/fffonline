@@ -198,17 +198,28 @@ io.on('connection', (socket) => {
   });
 
   socket.on('setName', (name) => {
-    socket.data.name = name;
+    name = String(name || '').trim();
+    const cleaned = name.replace(/[^\w\s-]/g, '');
+    if (!cleaned || cleaned.length > 16 || cleaned !== name) {
+      socket.emit('nameError', 'Nome inválido');
+      return;
+    }
+    socket.data.name = cleaned;
     const room = socket.data.room;
     if (!room) return;
     const info = rooms.get(room);
     if (!info) return;
-    if (info.host === socket.id) info.hostName = name;
-    else if (info.guest === socket.id) info.guestName = name;
-    socket.to(room).emit('opponentName', name);
+    if (info.host === socket.id) info.hostName = cleaned;
+    else if (info.guest === socket.id) info.guestName = cleaned;
+    socket.to(room).emit('opponentName', cleaned);
   });
 });
 
-server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+if (require.main === module) {
+  server.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+}
+
+module.exports = { app, server };
+

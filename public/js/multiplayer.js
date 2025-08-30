@@ -9,11 +9,28 @@ document.addEventListener('DOMContentLoaded', () => {
   const joinBtn = document.getElementById('joinBtn');
   const joinCodeInput = document.getElementById('joinCode');
   const statusEl = document.getElementById('mpStatus');
+  const nameInput = document.getElementById('playerName');
 
   window.isMultiplayer = false;
   window.mpState = null;
   let playerNamed=false;
-  function ensureName(){if(!playerNamed){const n=prompt('Seu nome?')||'Jogador';window.playerName=n;playerNamed=true;window.NET&&NET.setName(n);}}
+  function ensureName(showError=true){
+    if(playerNamed) return true;
+    if(!nameInput) return false;
+    const n=nameInput.value.trim();
+    if(!n){
+      if(showError) statusEl.textContent='Nome obrigatório.';
+      return false;
+    }
+    if(!/^[A-Za-z0-9 _-]{1,16}$/.test(n)){
+      if(showError) statusEl.textContent='Nome inválido. Use até 16 caracteres alfanuméricos.';
+      return false;
+    }
+    window.playerName=n;
+    playerNamed=true;
+    window.NET&&NET.setName(n);
+    return true;
+  }
 
   function showDeckSelect() {
     mpMenu.style.display = 'none';
@@ -33,7 +50,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (openBtn) {
     openBtn.addEventListener('click', () => {
-      ensureName();
+      ensureName(false);
       if (startScreen) startScreen.style.display = 'none';
       if (mpMenu) mpMenu.style.display = 'grid';
       if (roomList) roomList.style.display = 'none';
@@ -60,7 +77,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (hostBtn) {
     hostBtn.addEventListener('click', () => {
-      ensureName();
+      if (!ensureName()) return;
       if (window.NET) {
         NET.host();
       }
@@ -72,7 +89,7 @@ document.addEventListener('DOMContentLoaded', () => {
     joinBtn.addEventListener('click', () => {
       const code = joinCodeInput.value.trim();
       if (code) {
-        ensureName();
+        if (!ensureName()) return;
         if (window.NET) {
           NET.join(code);
         }
@@ -109,6 +126,11 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     NET.onJoinError((msg) => {
+      statusEl.textContent = msg;
+    });
+
+    NET.onNameError((msg) => {
+      playerNamed = false;
       statusEl.textContent = msg;
     });
 
@@ -160,7 +182,7 @@ document.addEventListener('DOMContentLoaded', () => {
             b.className = 'btn';
             b.textContent = 'Entrar';
             b.addEventListener('click', () => {
-            ensureName();
+            if(!ensureName()) return;
             NET.join(r.code);
             statusEl.textContent = 'Conectando...';
           });
