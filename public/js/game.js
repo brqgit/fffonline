@@ -973,7 +973,13 @@ function checkWin(){
         openShop({
           faction:G.playerDeckChoice,
           gold:G.story.gold,
-          onClose:state=>{G.story.gold=state.gold;proceed();}
+          onClose: async state => {
+            if(state.pending && state.pending.length){
+              try { await Promise.all(state.pending); } catch(_){ }
+            }
+            G.story.gold = state.gold;
+            proceed();
+          }
         });
       }else{
         proceed();

@@ -16,7 +16,27 @@ const VALID_DECKS = new Set(['vikings', 'animais', 'pescadores', 'floresta', 'co
 // Informações sobre salas em memória
 const rooms = new Map();
 
+// Informações de jogadores (ex.: saldo de ouro) em memória
+const players = new Map();
+
+app.use(express.json());
+
 app.use(express.static(path.join(__dirname, 'public')));
+
+// Endpoint simples para registrar compras da loja
+app.post('/api/purchase', (req, res) => {
+  const { playerId, itemId, cost, gold } = req.body || {};
+  if (!playerId || !itemId || typeof cost !== 'number') {
+    return res.status(400).json({ error: 'Dados inválidos' });
+  }
+  // Usa o ouro informado caso seja a primeira interação do jogador
+  const currentGold = players.has(playerId)
+    ? players.get(playerId)
+    : typeof gold === 'number' ? gold : 0;
+  const newGold = currentGold - cost;
+  players.set(playerId, newGold);
+  res.json({ gold: newGold });
+});
 
 
 io.on('connection', (socket) => {
