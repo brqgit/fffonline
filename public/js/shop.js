@@ -24,7 +24,7 @@ const NEUTRAL = [
   { name: 'Totem do Carvalho', type: 'totem', desc: '+1 HP', cost: 9 }
 ];
 
-let shopState = { faction: '', gold: 0, onClose: null, unlimited: false, purchased: [] };
+let shopState = { faction: '', gold: 0, onClose: null, onPurchase: null, unlimited: false, purchased: [] };
 let rerolled = false;
 
 function showShopMsg(msg){
@@ -98,17 +98,19 @@ function renderShop(){
       btn.disabled = true;
       btn.textContent = '✔';
       shopState.purchased.push(it);
+      if (shopState.onPurchase) shopState.onPurchase(it);
     };
     card.appendChild(btn);
     wrap.appendChild(card);
   });
 }
 
-function openShop({ faction, gold, onClose, unlimited=false }){
+function openShop({ faction, gold, onClose, onPurchase, unlimited=false }){
   const map = { vikings:'Furioso', animais:'Furioso', pescadores:'Sombras', floresta:'Percepcao', convergentes:'Percepcao' };
   shopState.faction = map[faction] || faction || 'Furioso';
   shopState.gold = gold;
   shopState.onClose = onClose;
+  shopState.onPurchase = onPurchase;
   shopState.unlimited = unlimited;
   shopState.purchased = [];
   rerolled = false;
