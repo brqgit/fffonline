@@ -2,26 +2,26 @@ const $ = sel => document.querySelector(sel);
 
 const FACTIONS = {
   Furioso: { pool: [
-    { name: 'Ceifeira Ágil', type: 'unit', atk: 3, hp: 2, cost: 9 },
-    { name: 'Grito de Guerra', type: 'spell', desc: '+1 ATK a uma unidade', cost: 6 },
-    { name: 'Totem da Fúria', type: 'totem', desc: '+1 ATK a 1–3 unidades', cost: 12 }
+    { name: 'Ceifeira Ágil', type: 'unit', atk: 3, hp: 2, cost: 9, rarity: 'common' },
+    { name: 'Grito de Guerra', type: 'spell', desc: '+1 ATK a uma unidade', cost: 6, rarity: 'common' },
+    { name: 'Totem da Fúria', type: 'totem', desc: '+1 ATK a 1–3 unidades', cost: 12, rarity: 'rare' }
   ]},
   Sombras: { pool: [
-    { name: 'Sombras Encapuçado', type: 'unit', atk: 3, hp: 5, cost: 10 },
-    { name: 'Dreno Sombrio', type: 'spell', desc: 'Drena 2 de HP', cost: 7 },
-    { name: 'Totem da Lua Nova', type: 'totem', desc: '+1 HP a 1–3 unidades', cost: 11 }
+    { name: 'Sombras Encapuçado', type: 'unit', atk: 3, hp: 5, cost: 10, rarity: 'common' },
+    { name: 'Dreno Sombrio', type: 'spell', desc: 'Drena 2 de HP', cost: 7, rarity: 'common' },
+    { name: 'Totem da Lua Nova', type: 'totem', desc: '+1 HP a 1–3 unidades', cost: 11, rarity: 'rare' }
   ]},
   Percepcao: { pool: [
-    { name: 'Guardião do Bosque', type: 'unit', atk: 2, hp: 4, cost: 8 },
-    { name: 'Insight', type: 'spell', desc: 'Compre 2 cartas', cost: 7 },
-    { name: 'Totem do Olho Antigo', type: 'totem', desc: '+1/+1 a 1–3 unidades', cost: 13 }
+    { name: 'Guardião do Bosque', type: 'unit', atk: 2, hp: 4, cost: 8, rarity: 'common' },
+    { name: 'Insight', type: 'spell', desc: 'Compre 2 cartas', cost: 7, rarity: 'common' },
+    { name: 'Totem do Olho Antigo', type: 'totem', desc: '+1/+1 a 1–3 unidades', cost: 13, rarity: 'rare' }
   ]}
 };
 
 const NEUTRAL = [
-  { name: 'Aldeão Valente', type: 'unit', atk: 1, hp: 2, cost: 5 },
-  { name: 'Afiar Lâminas', type: 'spell', desc: '+1 ATK', cost: 5 },
-  { name: 'Totem do Carvalho', type: 'totem', desc: '+1 HP', cost: 9 }
+  { name: 'Aldeão Valente', type: 'unit', atk: 1, hp: 2, cost: 5, rarity: 'common' },
+  { name: 'Afiar Lâminas', type: 'spell', desc: '+1 ATK', cost: 5, rarity: 'common' },
+  { name: 'Totem do Carvalho', type: 'totem', desc: '+1 HP', cost: 9, rarity: 'rare' }
 ];
 
 let shopState = { faction: '', gold: 0, onClose: null, unlimited: false, purchased: [] };
@@ -34,34 +34,67 @@ function showShopMsg(msg){
   clearTimeout(showShopMsg._t);
   showShopMsg._t = setTimeout(() => { el.textContent = ''; }, 2000);
 }
-
-const shuffle = arr => arr.sort(() => Math.random() - 0.5);
+function fisherYatesShuffle(arr){
+  const a = arr.slice();
+  for(let i = a.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
 
 const slug = str => str.toLowerCase().replace(/[^a-z0-9]+/g,'-');
 // Do not force non-existent images; let card renderer pick deck placeholders/emoji
 function withImg(it){ return it; }
 
-function genShopOffers(){
-  // produce up to 12 offers, preferring faction pool when available
-  const maxOffers = 12;
+function genShopOffers(rarityCounts = { rare: 1, common: 3 }, rolls = 3){
+  // generate offers based on rarity weights (e.g. 1 rare, 3 commons per roll)
+  const perRollTotal = Object.values(rarityCounts).reduce((a, b) => a + b, 0);
+  const maxOffers = perRollTotal * rolls;
+
   const factionPool = (shopState.faction && FACTIONS[shopState.faction]) ? FACTIONS[shopState.faction].pool.slice() : [];
   const neutralPool = NEUTRAL.slice();
-  let pool = [];
-  if(factionPool.length){
-    pool = pool.concat(shuffle(factionPool).slice(0, Math.ceil(maxOffers/2)));
+  const allOthers = [].concat(neutralPool, ...Object.values(FACTIONS).map(f => f.pool)).filter(it => !factionPool.includes(it));
+
+  const factionByRarity = {};
+  const otherByRarity = {};
+  const addToPool = (map, item) => {
+    const r = item.rarity || 'common';
+    (map[r] ||= []).push(item);
+  };
+  factionPool.forEach(it => addToPool(factionByRarity, it));
+  allOthers.forEach(it => addToPool(otherByRarity, it));
+
+  Object.keys(factionByRarity).forEach(r => {
+    factionByRarity[r] = fisherYatesShuffle(factionByRarity[r]);
+  });
+  Object.keys(otherByRarity).forEach(r => {
+    otherByRarity[r] = fisherYatesShuffle(otherByRarity[r]);
+  });
+
+  const offers = [];
+  for(let roll = 0; roll < rolls; roll++){
+    for(const [rarity, count] of Object.entries(rarityCounts)){
+      for(let i = 0; i < count; i++){
+        let item = factionByRarity[rarity]?.shift();
+        if(!item) item = otherByRarity[rarity]?.shift();
+        if(item) offers.push(item);
+      }
+    }
   }
-  const otherCandidates = shuffle([].concat(neutralPool, ...Object.values(FACTIONS).map(f=>f.pool)));
-  for(const it of otherCandidates){ if(pool.length>=maxOffers) break; if(!pool.includes(it)) pool.push(it); }
-  if(pool.length < 6){ pool = pool.concat(otherCandidates.slice(0, 6 - pool.length)); }
-  const offers = pool.slice(0, maxOffers).map(it => {
+
+  const remaining = [].concat(...Object.values(factionByRarity), ...Object.values(otherByRarity));
+  for(const it of remaining){ if(offers.length >= maxOffers) break; offers.push(it); }
+
+  const mapped = offers.map(it => {
     const base = Object.assign({}, it);
     // if player deck choice exists, hint renderer to prefer that deck for art
     if(window && window.G && window.G.playerDeckChoice && !base.deck){ base.deck = window.G.playerDeckChoice; }
     return withImg(base);
   });
   // add a consumable if there's room
-  if(offers.length < maxOffers) offers.push(withImg({ name: 'Elixir de Força', type: 'buff', desc: '+1 ATK a suas unidades neste round', cost: 7 }));
-  return offers.slice(0, maxOffers);
+  if(mapped.length < maxOffers) mapped.push(withImg({ name: 'Elixir de Força', type: 'buff', desc: '+1 ATK a suas unidades neste round', cost: 7 }));
+  return mapped.slice(0, maxOffers);
 }
 
 function renderShop(){
