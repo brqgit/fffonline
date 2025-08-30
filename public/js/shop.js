@@ -41,18 +41,66 @@ const slug = str => str.toLowerCase().replace(/[^a-z0-9]+/g,'-');
 // Do not force non-existent images; let card renderer pick deck placeholders/emoji
 function withImg(it){ return it; }
 
+// --- tooltip ---
+const tooltip = (() => {
+  const el = document.createElement('div');
+  el.id = 'shopTooltip';
+  el.style.position = 'absolute';
+  el.style.display = 'none';
+  el.style.background = 'rgba(0,0,0,0.85)';
+  el.style.color = '#fff';
+  el.style.padding = '6px';
+  el.style.borderRadius = '4px';
+  el.style.pointerEvents = 'none';
+  el.style.zIndex = '1000';
+  document.body.appendChild(el);
+  function hide(){ el.style.display = 'none'; }
+  function show(data, target){
+    if(!target) return;
+    const parts = [];
+    if(data.desc) parts.push(`<div>${data.desc}</div>`);
+    if(typeof data.atk === 'number' && typeof data.hp === 'number'){
+      parts.push(`<div>ATK/HP: ${data.atk}/${data.hp}</div>`);
+    }
+    if(data.faction){ parts.push(`<div>Sinergia: ${data.faction}</div>`); }
+    const inDeck = window && window.G && Array.isArray(window.G.playerDeck)
+      && window.G.playerDeck.some(c => c.name === data.name);
+    if(inDeck) parts.push('<div style="color: #ffd700;">Já no deck</div>');
+    el.innerHTML = parts.join('');
+    el.style.display = 'block';
+    const r = target.getBoundingClientRect();
+    el.style.left = (r.right + 6 + window.scrollX) + 'px';
+    el.style.top = (r.top + window.scrollY) + 'px';
+  }
+  document.addEventListener('click', hide);
+  return { show, hide };
+})();
+
 function genShopOffers(){
   // produce up to 12 offers, preferring faction pool when available
   const maxOffers = 12;
-  const factionPool = (shopState.faction && FACTIONS[shopState.faction]) ? FACTIONS[shopState.faction].pool.slice() : [];
-  const neutralPool = NEUTRAL.slice();
+  const factionPool = (shopState.faction && FACTIONS[shopState.faction])
+    ? FACTIONS[shopState.faction].pool.map(c => Object.assign({ faction: shopState.faction }, c))
+    : [];
+  const neutralPool = NEUTRAL.map(c => Object.assign({ faction: 'Neutro' }, c));
   let pool = [];
   if(factionPool.length){
     pool = pool.concat(shuffle(factionPool).slice(0, Math.ceil(maxOffers/2)));
   }
-  const otherCandidates = shuffle([].concat(neutralPool, ...Object.values(FACTIONS).map(f=>f.pool)));
-  for(const it of otherCandidates){ if(pool.length>=maxOffers) break; if(!pool.includes(it)) pool.push(it); }
-  if(pool.length < 6){ pool = pool.concat(otherCandidates.slice(0, 6 - pool.length)); }
+  const allPools = Object.entries(FACTIONS).flatMap(([fac, obj]) =>
+    obj.pool.map(c => Object.assign({ faction: fac }, c))
+  );
+  const otherCandidates = shuffle([].concat(neutralPool, allPools));
+  for(const it of otherCandidates){
+    if(pool.length>=maxOffers) break;
+    if(!pool.some(p => p.name === it.name)) pool.push(it);
+  }
+  if(pool.length < 6){
+    for(const cand of otherCandidates){
+      if(pool.length >= 6) break;
+      if(!pool.some(p => p.name === cand.name)) pool.push(cand);
+    }
+  }
   const offers = pool.slice(0, maxOffers).map(it => {
     const base = Object.assign({}, it);
     // if player deck choice exists, hint renderer to prefer that deck for art
@@ -68,6 +116,7 @@ function renderShop(){
   const wrap = $('#shopChoices');
   if(!wrap) return;
   wrap.innerHTML = '';
+  tooltip.hide();
   genShopOffers().forEach(it => {
     const card = document.createElement('div');
     card.className = 'shop-card';
@@ -100,6 +149,11 @@ function renderShop(){
       shopState.purchased.push(it);
     };
     card.appendChild(btn);
+
+    card.addEventListener('mouseenter', () => tooltip.show(it, card));
+    card.addEventListener('mouseleave', () => tooltip.hide());
+    card.addEventListener('click', ev => { ev.stopPropagation(); tooltip.show(it, card); });
+
     wrap.appendChild(card);
   });
 }
@@ -131,6 +185,7 @@ function closeShop(){
     modal.classList.remove('show');
     modal.style.display = 'none';
   }
+  tooltip.hide();
   if(shopState.onClose) shopState.onClose(shopState);
 }
 
