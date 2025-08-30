@@ -24,8 +24,16 @@ const NEUTRAL = [
   { name: 'Totem do Carvalho', type: 'totem', desc: '+1 HP', cost: 9 }
 ];
 
-let shopState = { faction: '', gold: 0, onClose: null, unlimited: false };
+let shopState = { faction: '', gold: 0, onClose: null, unlimited: false, purchased: [] };
 let rerolled = false;
+
+function showShopMsg(msg){
+  const el = $('#shopMsg');
+  if(!el) return;
+  el.textContent = msg;
+  clearTimeout(showShopMsg._t);
+  showShopMsg._t = setTimeout(() => { el.textContent = ''; }, 2000);
+}
 
 const shuffle = arr => arr.sort(() => Math.random() - 0.5);
 
@@ -84,11 +92,12 @@ function renderShop(){
     btn.className = 'btn price-btn';
   btn.innerHTML = `${it.cost}<img src="img/ui/coin.png" class="coin-icon" alt="moeda">`;
     btn.onclick = () => {
-      if(shopState.gold < it.cost){ alert('Sem ouro.'); return; }
+      if(shopState.gold < it.cost){ showShopMsg('Sem ouro.'); return; }
       shopState.gold -= it.cost;
       $('#shopGold').textContent = shopState.gold;
       btn.disabled = true;
       btn.textContent = '✔';
+      shopState.purchased.push(it);
     };
     card.appendChild(btn);
     wrap.appendChild(card);
@@ -101,29 +110,18 @@ function openShop({ faction, gold, onClose, unlimited=false }){
   shopState.gold = gold;
   shopState.onClose = onClose;
   shopState.unlimited = unlimited;
+  shopState.purchased = [];
   rerolled = false;
   $('#btnReroll').disabled = false;
   $('#shopGold').textContent = shopState.gold;
+  $('#shopMsg').textContent = '';
   renderShop();
   // ensure the close button is enabled and clickable
   const closeBtn = document.getElementById('closeShop');
   if(closeBtn){ closeBtn.disabled = false; }
-  // attach delegated click to modal root as a safety net
   const modal = document.getElementById('shopModal');
   if(modal){
     modal.style.display = 'grid';
-    modal.addEventListener('click', function delegatedClose(ev){
-      // if user clicks the backdrop (outside .box) or the explicit close button
-      const box = modal.querySelector('.box');
-      if(!box) return;
-      if(ev.target === modal){
-        // click on backdrop
-        closeShop();
-      }
-      if(ev.target && ev.target.id === 'closeShop'){
-        closeShop();
-      }
-    });
   }
 }
 
@@ -132,19 +130,23 @@ function closeShop(){
   if(modal){
     modal.classList.remove('show');
     modal.style.display = 'none';
-    // try to remove delegated listener if present by cloning node
-    try{
-      const clone = modal.cloneNode(true);
-      modal.parentNode.replaceChild(clone, modal);
-    }catch(_){ }
   }
   if(shopState.onClose) shopState.onClose(shopState);
 }
 
 window.openShop = openShop;
 
+const shopModal = document.getElementById('shopModal');
+shopModal?.addEventListener('click', ev => {
+  const box = shopModal.querySelector('.box');
+  if(!box) return;
+  if(ev.target === shopModal || ev.target.id === 'closeShop'){
+    closeShop();
+  }
+});
+
 document.getElementById('btnReroll')?.addEventListener('click', () => {
-  if(!shopState.unlimited && rerolled){ alert('Sem re-rolagens.'); return; }
+  if(!shopState.unlimited && rerolled){ showShopMsg('Sem re-rolagens.'); return; }
   rerolled = true;
   if(!shopState.unlimited) document.getElementById('btnReroll').disabled = true;
   renderShop();
