@@ -153,13 +153,13 @@ convergentes:[
   ["Avatar Mutagênico","","Convergente",6,6,6,"","M"],
 ]};
 class StoryMode{
-  constructor({level=1}={}){this.level=level;this.round=0;this.totems=[];this.scaling=0;this.xp=0;this.gold=30;this.bossInterval=10;this.eliteEvery=5;this.currentEncounter='normal';}
+  constructor({level=1}={}){this.level=level;this.round=0;this.totems=[];this.deck=[];this.scaling=0;this.xp=0;this.gold=30;this.bossInterval=10;this.eliteEvery=5;this.currentEncounter='normal';}
   nextRound(){this.round+=1;this.scaling=Math.floor(this.round/2)+(this.level-1);const isBoss=this.round%this.bossInterval===0;const isElite=!isBoss&&this.round%this.eliteEvery===0;this.currentEncounter=isBoss?'boss':isElite?'elite':'normal';return{isBoss,isElite};}
   handleVictory(){const xpGain=this.currentEncounter==='boss'?20:this.currentEncounter==='elite'?10:5;const goldGain=this.currentEncounter==='boss'?20:this.currentEncounter==='elite'?10:5;this.xp+=xpGain;this.gold+=goldGain;const leveled=this.checkLevelUp();return{leveled,rewards:this.rewardOptions(),goldGain};}
   rewardOptions(){return['Nova carta','Evoluir carta','Ganhar Totem','Buff permanente'];}
   checkLevelUp(){const need=this.level*50;if(this.xp>=need){this.level+=1;this.xp-=need;return true}return false}
   addTotem(t){if(this.totems.length>=3)return false;this.totems.push(t);return true}
-  reset(){this.round=0;this.totems=[];this.xp=0;this.gold=30;this.currentEncounter='normal';}
+  reset(){this.round=0;this.totems=[];this.deck=[];this.xp=0;this.gold=30;this.currentEncounter='normal';}
 }
 const ALL_DECKS=Object.keys(TEMPLATES);
 const G={playerHP:30,aiHP:30,turn:0,playerMana:0,playerManaCap:0,aiMana:0,aiManaCap:0,current:'player',playerDeck:[],aiDeck:[],playerHand:[],aiHand:[],playerBoard:[],aiBoard:[],playerDiscard:[],aiDiscard:[],chosen:null,playerDeckChoice:'vikings',aiDeckChoice:rand(ALL_DECKS),customDeck:null,mode:'solo',story:null,enemyScaling:0,maxHandSize:5,totems:[]};
@@ -678,6 +678,14 @@ function startGame(opts='player') {
       const t = makeCard(["Totem de Força", "🗿", "Totem", 0, 0, 2, "Ative: +1/+1 em um aliado"]);
       t.type = 'totem';
       G.playerDeck.push(t);
+      if (G.story && G.story.deck && G.story.deck.length) {
+        G.story.deck.forEach(it => {
+          const raw = [it.name, '', '', it.atk || 0, it.hp || 0, it.cost || 0, it.desc || ''];
+          const c = makeCard(raw);
+          if (it.type) c.type = it.type;
+          G.playerDeck.push(c);
+        });
+      }
     }
     shuffle(G.playerDeck);
   }
@@ -973,7 +981,13 @@ function checkWin(){
         openShop({
           faction:G.playerDeckChoice,
           gold:G.story.gold,
-          onClose:state=>{G.story.gold=state.gold;proceed();}
+          onClose: async state => {
+            if(state.pending && state.pending.length){
+              try { await Promise.all(state.pending); } catch(_){ }
+            }
+            G.story.gold = state.gold;
+            proceed();
+          }
         });
       }else{
         proceed();

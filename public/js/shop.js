@@ -2,29 +2,42 @@ const $ = sel => document.querySelector(sel);
 
 const FACTIONS = {
   Furioso: { pool: [
-    { name: 'Ceifeira Ágil', type: 'unit', atk: 3, hp: 2, cost: 9 },
-    { name: 'Grito de Guerra', type: 'spell', desc: '+1 ATK a uma unidade', cost: 6 },
-    { name: 'Totem da Fúria', type: 'totem', desc: '+1 ATK a 1–3 unidades', cost: 12 }
+    { name: 'Ceifeira Ágil', type: 'unit', atk: 3, hp: 2, cost: 9, rarity: 'common' },
+    { name: 'Grito de Guerra', type: 'spell', desc: '+1 ATK a uma unidade', cost: 6, rarity: 'common' },
+    { name: 'Totem da Fúria', type: 'totem', desc: '+1 ATK a 1–3 unidades', cost: 12, rarity: 'rare' }
   ]},
   Sombras: { pool: [
-    { name: 'Sombras Encapuçado', type: 'unit', atk: 3, hp: 5, cost: 10 },
-    { name: 'Dreno Sombrio', type: 'spell', desc: 'Drena 2 de HP', cost: 7 },
-    { name: 'Totem da Lua Nova', type: 'totem', desc: '+1 HP a 1–3 unidades', cost: 11 }
+    { name: 'Sombras Encapuçado', type: 'unit', atk: 3, hp: 5, cost: 10, rarity: 'common' },
+    { name: 'Dreno Sombrio', type: 'spell', desc: 'Drena 2 de HP', cost: 7, rarity: 'common' },
+    { name: 'Totem da Lua Nova', type: 'totem', desc: '+1 HP a 1–3 unidades', cost: 11, rarity: 'rare' }
   ]},
   Percepcao: { pool: [
-    { name: 'Guardião do Bosque', type: 'unit', atk: 2, hp: 4, cost: 8 },
-    { name: 'Insight', type: 'spell', desc: 'Compre 2 cartas', cost: 7 },
-    { name: 'Totem do Olho Antigo', type: 'totem', desc: '+1/+1 a 1–3 unidades', cost: 13 }
+    { name: 'Guardião do Bosque', type: 'unit', atk: 2, hp: 4, cost: 8, rarity: 'common' },
+    { name: 'Insight', type: 'spell', desc: 'Compre 2 cartas', cost: 7, rarity: 'common' },
+    { name: 'Totem do Olho Antigo', type: 'totem', desc: '+1/+1 a 1–3 unidades', cost: 13, rarity: 'rare' }
   ]}
 };
 
 const NEUTRAL = [
-  { name: 'Aldeão Valente', type: 'unit', atk: 1, hp: 2, cost: 5 },
-  { name: 'Afiar Lâminas', type: 'spell', desc: '+1 ATK', cost: 5 },
-  { name: 'Totem do Carvalho', type: 'totem', desc: '+1 HP', cost: 9 }
+  { name: 'Aldeão Valente', type: 'unit', atk: 1, hp: 2, cost: 5, rarity: 'common' },
+  { name: 'Afiar Lâminas', type: 'spell', desc: '+1 ATK', cost: 5, rarity: 'common' },
+  { name: 'Totem do Carvalho', type: 'totem', desc: '+1 HP', cost: 9, rarity: 'rare' }
 ];
 
-let shopState = { faction: '', gold: 0, onClose: null, unlimited: false, purchased: [] };
+const PLAYER_ID = (() => {
+  try {
+    let id = localStorage.getItem('playerId');
+    if (!id) {
+      id = Math.random().toString(36).slice(2);
+      localStorage.setItem('playerId', id);
+    }
+    return id;
+  } catch (_) {
+    return 'anon';
+  }
+})();
+
+let shopState = { faction: '', gold: 0, onClose: null, unlimited: false, purchased: [], pending: [] };
 let rerolled = false;
 
 function showShopMsg(msg){
@@ -34,8 +47,14 @@ function showShopMsg(msg){
   clearTimeout(showShopMsg._t);
   showShopMsg._t = setTimeout(() => { el.textContent = ''; }, 2000);
 }
-
-const shuffle = arr => arr.sort(() => Math.random() - 0.5);
+function fisherYatesShuffle(arr){
+  const a = arr.slice();
+  for(let i = a.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
 
 const slug = str => str.toLowerCase().replace(/[^a-z0-9]+/g,'-');
 // Do not force non-existent images; let card renderer pick deck placeholders/emoji
@@ -108,8 +127,8 @@ function genShopOffers(){
     return withImg(base);
   });
   // add a consumable if there's room
-  if(offers.length < maxOffers) offers.push(withImg({ name: 'Elixir de Força', type: 'buff', desc: '+1 ATK a suas unidades neste round', cost: 7 }));
-  return offers.slice(0, maxOffers);
+  if(mapped.length < maxOffers) mapped.push(withImg({ name: 'Elixir de Força', type: 'buff', desc: '+1 ATK a suas unidades neste round', cost: 7 }));
+  return mapped.slice(0, maxOffers);
 }
 
 function renderShop(){
@@ -142,11 +161,35 @@ function renderShop(){
   btn.innerHTML = `${it.cost}<img src="img/ui/coin.png" class="coin-icon" alt="moeda">`;
     btn.onclick = () => {
       if(shopState.gold < it.cost){ showShopMsg('Sem ouro.'); return; }
-      shopState.gold -= it.cost;
-      $('#shopGold').textContent = shopState.gold;
       btn.disabled = true;
-      btn.textContent = '✔';
-      shopState.purchased.push(it);
+      const currentGold = shopState.gold;
+      const req = fetch('/api/purchase', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          playerId: PLAYER_ID,
+          itemId: slug(it.name),
+          cost: it.cost,
+          gold: currentGold,
+        })
+      })
+      .then(r => r.json())
+      .then(data => {
+        if(data && typeof data.gold === 'number'){
+          shopState.gold = data.gold;
+          $('#shopGold').textContent = shopState.gold;
+          btn.textContent = '✔';
+          shopState.purchased.push(it);
+        } else {
+          throw new Error('Resposta inválida');
+        }
+      })
+      .catch(err => {
+        console.error('purchase error', err);
+        showShopMsg('Erro ao registrar compra');
+        btn.disabled = false;
+      });
+      shopState.pending.push(req);
     };
     card.appendChild(btn);
 
@@ -158,13 +201,15 @@ function renderShop(){
   });
 }
 
-function openShop({ faction, gold, onClose, unlimited=false }){
+function openShop({ faction, gold, onClose, onPurchase, unlimited=false }){
   const map = { vikings:'Furioso', animais:'Furioso', pescadores:'Sombras', floresta:'Percepcao', convergentes:'Percepcao' };
   shopState.faction = map[faction] || faction || 'Furioso';
   shopState.gold = gold;
   shopState.onClose = onClose;
+  shopState.onPurchase = onPurchase;
   shopState.unlimited = unlimited;
   shopState.purchased = [];
+  shopState.pending = [];
   rerolled = false;
   $('#btnReroll').disabled = false;
   $('#shopGold').textContent = shopState.gold;
