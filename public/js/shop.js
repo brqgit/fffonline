@@ -141,11 +141,12 @@ function renderShop(){
   });
 }
 
-function openShop({ faction, gold, onClose, unlimited=false }){
+function openShop({ faction, gold, onClose, onPurchase, unlimited=false }){
   const map = { vikings:'Furioso', animais:'Furioso', pescadores:'Sombras', floresta:'Percepcao', convergentes:'Percepcao' };
   shopState.faction = map[faction] || faction || 'Furioso';
   shopState.gold = gold;
   shopState.onClose = onClose;
+  shopState.onPurchase = onPurchase;
   shopState.unlimited = unlimited;
   shopState.purchased = [];
   shopState.pending = [];
