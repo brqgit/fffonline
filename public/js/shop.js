@@ -226,6 +226,7 @@ function openShop({ faction, gold, onClose, unlimited=false }){
   if(closeBtn){ closeBtn.disabled = false; }
   const modal = document.getElementById('shopModal');
   if(modal){
+    modal.classList.add('show');
     modal.style.display = 'grid';
   }
 }

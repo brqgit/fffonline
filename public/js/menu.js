@@ -67,12 +67,18 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   if (testShopBtn) testShopBtn.addEventListener('click', () => {
-    if (testModal) testModal.classList.remove('show');
-    if (window.openShop) openShop({ faction: 'random', gold: 30, unlimited: true });
+    if (testModal){
+      testModal.classList.remove('show');
+      testModal.style.display = 'none';
+    }
+    if (window.openShop) window.openShop({ faction: 'random', gold: 30, unlimited: true });
   });
 
   if (testTotemBtn) testTotemBtn.addEventListener('click', () => {
-    if (testModal) testModal.classList.remove('show');
+    if (testModal){
+      testModal.classList.remove('show');
+      testModal.style.display = 'none';
+    }
     if (window.startTotemTest) startTotemTest();
   });
 
