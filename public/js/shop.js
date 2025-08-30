@@ -24,21 +24,8 @@ const NEUTRAL = [
   { name: 'Totem do Carvalho', type: 'totem', desc: '+1 HP', cost: 9, rarity: 'rare' }
 ];
 
-const PLAYER_ID = (() => {
-  try {
-    let id = localStorage.getItem('playerId');
-    if (!id) {
-      id = Math.random().toString(36).slice(2);
-      localStorage.setItem('playerId', id);
-    }
-    return id;
-  } catch (_) {
-    return 'anon';
-  }
-})();
-
-let shopState = { faction: '', gold: 0, onClose: null, unlimited: false, purchased: [], pending: [] };
-let rerolled = false;
+let shopState = { faction: '', gold: 0, onClose: null, unlimited: false, purchased: [] };
+let rerollCount = 0;
 
 function showShopMsg(msg){
   const el = $('#shopMsg');
@@ -201,7 +188,27 @@ function renderShop(){
   });
 }
 
-function openShop({ faction, gold, onClose, onPurchase, unlimited=false }){
+function updateRerollBtn(){
+  const btn = document.getElementById('btnReroll');
+  if(!btn) return;
+  const cost = 5 * (rerollCount + 1);
+  if(!shopState.unlimited){
+    const remaining = Math.max(0, 1 - rerollCount);
+    if(remaining <= 0){
+      btn.disabled = true;
+      btn.innerHTML = 'Re-rolar (0 restantes)';
+      return;
+    }
+    btn.disabled = false;
+    btn.innerHTML = `Re-rolar (${cost}<img src="img/ui/coin.png" class="coin-icon" alt="moeda">, ${remaining} restantes)`;
+  }else{
+    btn.disabled = false;
+    btn.innerHTML = `Re-rolar (${cost}<img src="img/ui/coin.png" class="coin-icon" alt="moeda">)`;
+  }
+}
+
+function openShop({ faction, gold, onClose, unlimited=false }){
+
   const map = { vikings:'Furioso', animais:'Furioso', pescadores:'Sombras', floresta:'Percepcao', convergentes:'Percepcao' };
   shopState.faction = map[faction] || faction || 'Furioso';
   shopState.gold = gold;
@@ -209,9 +216,8 @@ function openShop({ faction, gold, onClose, onPurchase, unlimited=false }){
   shopState.onPurchase = onPurchase;
   shopState.unlimited = unlimited;
   shopState.purchased = [];
-  shopState.pending = [];
-  rerolled = false;
-  $('#btnReroll').disabled = false;
+  rerollCount = 0;
+  updateRerollBtn();
   $('#shopGold').textContent = shopState.gold;
   $('#shopMsg').textContent = '';
   renderShop();
@@ -246,9 +252,13 @@ shopModal?.addEventListener('click', ev => {
 });
 
 document.getElementById('btnReroll')?.addEventListener('click', () => {
-  if(!shopState.unlimited && rerolled){ showShopMsg('Sem re-rolagens.'); return; }
-  rerolled = true;
-  if(!shopState.unlimited) document.getElementById('btnReroll').disabled = true;
+  const cost = 5 * (rerollCount + 1);
+  if(!shopState.unlimited && rerollCount >= 1){ showShopMsg('Sem re-rolagens.'); return; }
+  if(shopState.gold < cost){ showShopMsg('Sem ouro.'); return; }
+  shopState.gold -= cost;
+  $('#shopGold').textContent = shopState.gold;
+  rerollCount++;
   renderShop();
+  updateRerollBtn();
 });
 document.getElementById('closeShop')?.addEventListener('click', closeShop);
