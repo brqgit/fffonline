@@ -1631,7 +1631,20 @@ els.muteBtn.addEventListener("click", () => {
   toggleMute(els.muteBtn);
 });
 window.addEventListener("keydown", (e) => {
-  if (e.key === "Escape") cancelTargeting();
+  if (e.key !== "Escape") return;
+  if (G.chosen) {
+    cancelTargeting();
+    return;
+  }
+  if (!els.gameMenu) return;
+  const isOpen = els.gameMenu.classList.contains("show");
+  if (isOpen) {
+    els.gameMenu.classList.remove("show");
+  } else {
+    els.gameMenu.classList.add("show");
+    if (els.restartBtn)
+      els.restartBtn.style.display = window.isMultiplayer ? "none" : "block";
+  }
 });
 document.addEventListener(
   "click",
