@@ -114,8 +114,8 @@ function genShopOffers(){
     return withImg(base);
   });
   // add a consumable if there's room
-  if(mapped.length < maxOffers) mapped.push(withImg({ name: 'Elixir de Força', type: 'buff', desc: '+1 ATK a suas unidades neste round', cost: 7 }));
-  return mapped.slice(0, maxOffers);
+  if(offers.length < maxOffers) offers.push(withImg({ name: 'Elixir de Força', type: 'buff', desc: '+1 ATK a suas unidades neste round', cost: 7 }));
+  return offers.slice(0, maxOffers);
 }
 
 function renderShop(){
@@ -213,9 +213,9 @@ function openShop({ faction, gold, onClose, unlimited=false }){
   shopState.faction = map[faction] || faction || 'Furioso';
   shopState.gold = gold;
   shopState.onClose = onClose;
-  shopState.onPurchase = onPurchase;
   shopState.unlimited = unlimited;
   shopState.purchased = [];
+  shopState.pending = [];
   rerollCount = 0;
   updateRerollBtn();
   $('#shopGold').textContent = shopState.gold;
