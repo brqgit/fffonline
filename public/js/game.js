@@ -981,9 +981,14 @@ function checkWin(){
         openShop({
           faction:G.playerDeckChoice,
           gold:G.story.gold,
-          onPurchase:item=>{if(!G.story.deck)G.story.deck=[];G.story.deck.push(item);const raw=[item.name,'','',item.atk||0,item.hp||0,item.cost||0,item.desc||''];const c=makeCard(raw);if(item.type)c.type=item.type;G.playerDeck.push(c);},
-          onClose:state=>{G.story.gold=state.gold;proceed();}
-          });
+          onClose: async state => {
+            if(state.pending && state.pending.length){
+              try { await Promise.all(state.pending); } catch(_){ }
+            }
+            G.story.gold = state.gold;
+            proceed();
+          }
+        });
       }else{
         proceed();
       }

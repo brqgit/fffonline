@@ -24,7 +24,20 @@ const NEUTRAL = [
   { name: 'Totem do Carvalho', type: 'totem', desc: '+1 HP', cost: 9 }
 ];
 
-let shopState = { faction: '', gold: 0, onClose: null, onPurchase: null, unlimited: false, purchased: [] };
+const PLAYER_ID = (() => {
+  try {
+    let id = localStorage.getItem('playerId');
+    if (!id) {
+      id = Math.random().toString(36).slice(2);
+      localStorage.setItem('playerId', id);
+    }
+    return id;
+  } catch (_) {
+    return 'anon';
+  }
+})();
+
+let shopState = { faction: '', gold: 0, onClose: null, unlimited: false, purchased: [], pending: [] };
 let rerolled = false;
 
 function showShopMsg(msg){
@@ -93,12 +106,35 @@ function renderShop(){
   btn.innerHTML = `${it.cost}<img src="img/ui/coin.png" class="coin-icon" alt="moeda">`;
     btn.onclick = () => {
       if(shopState.gold < it.cost){ showShopMsg('Sem ouro.'); return; }
-      shopState.gold -= it.cost;
-      $('#shopGold').textContent = shopState.gold;
       btn.disabled = true;
-      btn.textContent = '✔';
-      shopState.purchased.push(it);
-      if (shopState.onPurchase) shopState.onPurchase(it);
+      const currentGold = shopState.gold;
+      const req = fetch('/api/purchase', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          playerId: PLAYER_ID,
+          itemId: slug(it.name),
+          cost: it.cost,
+          gold: currentGold,
+        })
+      })
+      .then(r => r.json())
+      .then(data => {
+        if(data && typeof data.gold === 'number'){
+          shopState.gold = data.gold;
+          $('#shopGold').textContent = shopState.gold;
+          btn.textContent = '✔';
+          shopState.purchased.push(it);
+        } else {
+          throw new Error('Resposta inválida');
+        }
+      })
+      .catch(err => {
+        console.error('purchase error', err);
+        showShopMsg('Erro ao registrar compra');
+        btn.disabled = false;
+      });
+      shopState.pending.push(req);
     };
     card.appendChild(btn);
     wrap.appendChild(card);
@@ -113,6 +149,7 @@ function openShop({ faction, gold, onClose, onPurchase, unlimited=false }){
   shopState.onPurchase = onPurchase;
   shopState.unlimited = unlimited;
   shopState.purchased = [];
+  shopState.pending = [];
   rerolled = false;
   $('#btnReroll').disabled = false;
   $('#shopGold').textContent = shopState.gold;
