@@ -60,46 +60,67 @@ const slug = str => str.toLowerCase().replace(/[^a-z0-9]+/g,'-');
 // Do not force non-existent images; let card renderer pick deck placeholders/emoji
 function withImg(it){ return it; }
 
-function genShopOffers(rarityCounts = { rare: 1, common: 3 }, rolls = 3){
-  // generate offers based on rarity weights (e.g. 1 rare, 3 commons per roll)
-  const perRollTotal = Object.values(rarityCounts).reduce((a, b) => a + b, 0);
-  const maxOffers = perRollTotal * rolls;
+// --- tooltip ---
+const tooltip = (() => {
+  const el = document.createElement('div');
+  el.id = 'shopTooltip';
+  el.style.position = 'absolute';
+  el.style.display = 'none';
+  el.style.background = 'rgba(0,0,0,0.85)';
+  el.style.color = '#fff';
+  el.style.padding = '6px';
+  el.style.borderRadius = '4px';
+  el.style.pointerEvents = 'none';
+  el.style.zIndex = '1000';
+  document.body.appendChild(el);
+  function hide(){ el.style.display = 'none'; }
+  function show(data, target){
+    if(!target) return;
+    const parts = [];
+    if(data.desc) parts.push(`<div>${data.desc}</div>`);
+    if(typeof data.atk === 'number' && typeof data.hp === 'number'){
+      parts.push(`<div>ATK/HP: ${data.atk}/${data.hp}</div>`);
+    }
+    if(data.faction){ parts.push(`<div>Sinergia: ${data.faction}</div>`); }
+    const inDeck = window && window.G && Array.isArray(window.G.playerDeck)
+      && window.G.playerDeck.some(c => c.name === data.name);
+    if(inDeck) parts.push('<div style="color: #ffd700;">Já no deck</div>');
+    el.innerHTML = parts.join('');
+    el.style.display = 'block';
+    const r = target.getBoundingClientRect();
+    el.style.left = (r.right + 6 + window.scrollX) + 'px';
+    el.style.top = (r.top + window.scrollY) + 'px';
+  }
+  document.addEventListener('click', hide);
+  return { show, hide };
+})();
 
-  const factionPool = (shopState.faction && FACTIONS[shopState.faction]) ? FACTIONS[shopState.faction].pool.slice() : [];
-  const neutralPool = NEUTRAL.slice();
-  const allOthers = [].concat(neutralPool, ...Object.values(FACTIONS).map(f => f.pool)).filter(it => !factionPool.includes(it));
-
-  const factionByRarity = {};
-  const otherByRarity = {};
-  const addToPool = (map, item) => {
-    const r = item.rarity || 'common';
-    (map[r] ||= []).push(item);
-  };
-  factionPool.forEach(it => addToPool(factionByRarity, it));
-  allOthers.forEach(it => addToPool(otherByRarity, it));
-
-  Object.keys(factionByRarity).forEach(r => {
-    factionByRarity[r] = fisherYatesShuffle(factionByRarity[r]);
-  });
-  Object.keys(otherByRarity).forEach(r => {
-    otherByRarity[r] = fisherYatesShuffle(otherByRarity[r]);
-  });
-
-  const offers = [];
-  for(let roll = 0; roll < rolls; roll++){
-    for(const [rarity, count] of Object.entries(rarityCounts)){
-      for(let i = 0; i < count; i++){
-        let item = factionByRarity[rarity]?.shift();
-        if(!item) item = otherByRarity[rarity]?.shift();
-        if(item) offers.push(item);
-      }
+function genShopOffers(){
+  // produce up to 12 offers, preferring faction pool when available
+  const maxOffers = 12;
+  const factionPool = (shopState.faction && FACTIONS[shopState.faction])
+    ? FACTIONS[shopState.faction].pool.map(c => Object.assign({ faction: shopState.faction }, c))
+    : [];
+  const neutralPool = NEUTRAL.map(c => Object.assign({ faction: 'Neutro' }, c));
+  let pool = [];
+  if(factionPool.length){
+    pool = pool.concat(shuffle(factionPool).slice(0, Math.ceil(maxOffers/2)));
+  }
+  const allPools = Object.entries(FACTIONS).flatMap(([fac, obj]) =>
+    obj.pool.map(c => Object.assign({ faction: fac }, c))
+  );
+  const otherCandidates = shuffle([].concat(neutralPool, allPools));
+  for(const it of otherCandidates){
+    if(pool.length>=maxOffers) break;
+    if(!pool.some(p => p.name === it.name)) pool.push(it);
+  }
+  if(pool.length < 6){
+    for(const cand of otherCandidates){
+      if(pool.length >= 6) break;
+      if(!pool.some(p => p.name === cand.name)) pool.push(cand);
     }
   }
-
-  const remaining = [].concat(...Object.values(factionByRarity), ...Object.values(otherByRarity));
-  for(const it of remaining){ if(offers.length >= maxOffers) break; offers.push(it); }
-
-  const mapped = offers.map(it => {
+  const offers = pool.slice(0, maxOffers).map(it => {
     const base = Object.assign({}, it);
     // if player deck choice exists, hint renderer to prefer that deck for art
     if(window && window.G && window.G.playerDeckChoice && !base.deck){ base.deck = window.G.playerDeckChoice; }
@@ -114,6 +135,7 @@ function renderShop(){
   const wrap = $('#shopChoices');
   if(!wrap) return;
   wrap.innerHTML = '';
+  tooltip.hide();
   genShopOffers().forEach(it => {
     const card = document.createElement('div');
     card.className = 'shop-card';
@@ -170,6 +192,11 @@ function renderShop(){
       shopState.pending.push(req);
     };
     card.appendChild(btn);
+
+    card.addEventListener('mouseenter', () => tooltip.show(it, card));
+    card.addEventListener('mouseleave', () => tooltip.hide());
+    card.addEventListener('click', ev => { ev.stopPropagation(); tooltip.show(it, card); });
+
     wrap.appendChild(card);
   });
 }
@@ -203,6 +230,7 @@ function closeShop(){
     modal.classList.remove('show');
     modal.style.display = 'none';
   }
+  tooltip.hide();
   if(shopState.onClose) shopState.onClose(shopState);
 }
 
