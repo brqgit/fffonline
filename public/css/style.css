@@ -103,7 +103,6 @@ width:0;
 background:linear-gradient(90deg,var(--good),var(--accent));
 transition:width .25s ease}
 .meter.mana .fill{background:linear-gradient(90deg,var(--accent2),var(--accent))}
-.meter.mana{display:none}
 .meter.enemy .fill{background:linear-gradient(90deg,var(--bad),var(--accent2))}
 
 /* ensure enemy hp bar has room */
