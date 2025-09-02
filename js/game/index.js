@@ -1870,6 +1870,7 @@ els.menuBtn.addEventListener("click", () => {
 initCommanderHud();
 els.playerCommander &&
   els.playerCommander.addEventListener("click", openCommanderHud);
+els.pAva && els.pAva.addEventListener("click", openCommanderHud);
 document.addEventListener("DOMContentLoaded", tryStartMenuMusicImmediate);
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "visible") tryStartMenuMusicImmediate();
