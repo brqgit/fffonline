@@ -1870,10 +1870,6 @@ els.menuBtn.addEventListener("click", () => {
 initCommanderHud();
 els.playerCommander &&
   els.playerCommander.addEventListener("click", openCommanderHud);
-els.pAva && els.pAva.addEventListener("click", openCommanderHud);
-// expose core state and controls for other modules loaded separately
-window.G = G;
-window.startGame = startGame;
 document.addEventListener("DOMContentLoaded", tryStartMenuMusicImmediate);
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "visible") tryStartMenuMusicImmediate();
