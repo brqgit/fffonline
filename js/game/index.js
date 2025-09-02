@@ -12,6 +12,7 @@ import { aiTurn } from "../ai/index.js";
 import { Keyword } from "./card.js";
 import { ENEMY_NAMES } from "./enemyNames.js";
 import { StoryMode } from "./storyMode.js";
+import { ITEMS } from "./items.js";
 
 const rand = (a) => a[Math.floor(Math.random() * a.length)];
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -545,6 +546,24 @@ const TEMPLATES = {
   ],
 };
 const ALL_DECKS = Object.keys(TEMPLATES);
+export const COMMANDERS = {
+  vikings: {
+    name: "Chefe Viking",
+    classe: "dps",
+    deck: "vikings",
+    weapon: ITEMS.weapons[0],
+    armor: ITEMS.armors[0],
+    spell: ITEMS.spells[0],
+  },
+  floresta: {
+    name: "Guardião da Floresta",
+    classe: "support",
+    deck: "floresta",
+    weapon: ITEMS.weapons[1],
+    armor: ITEMS.armors[1],
+    spell: ITEMS.spells[1],
+  },
+};
 const G = {
   playerHP: 30,
   aiHP: 30,
@@ -569,6 +588,8 @@ const G = {
   chosen: null,
   playerDeckChoice: "vikings",
   aiDeckChoice: rand(ALL_DECKS),
+  playerCommander: COMMANDERS.vikings,
+  aiCommander: COMMANDERS.floresta,
   customDeck: null,
   mode: "solo",
   story: null,
@@ -848,6 +869,7 @@ function renderTotems() {
   }
 }
 function renderBoard() {
+  applyCommanderItemBuffs();
   validateChosen();
   els.pBoard.innerHTML = "";
   for (const c of G.playerBoard) {
@@ -978,6 +1000,8 @@ export function startGame(opts = {}) {
     return c;
   };
   const continuing = opts.continueStory;
+  G.playerCommander = COMMANDERS[G.playerDeckChoice] || COMMANDERS.vikings;
+  G.aiCommander = COMMANDERS[G.aiDeckChoice] || COMMANDERS.vikings;
   G.mode = window.currentGameMode === "story" ? "story" : "solo";
   if (G.mode === "story") {
     if (!G.story) G.story = new StoryMode({ level: 1 });
@@ -1116,6 +1140,28 @@ function applyTotemBuffs() {
       if (t.buffs.hp) u.hp += t.buffs.hp;
     });
   });
+}
+
+function applyCommanderItemBuffs() {
+  const apply = (board, commander) => {
+    if (!board.length || !commander) return;
+    board.forEach((u) => {
+      if (typeof u.itemAtk === "number") u.atk -= u.itemAtk;
+      if (typeof u.itemHp === "number") u.hp -= u.itemHp;
+      const bonusAtk =
+        (commander.weapon?.atk || 0) +
+        (commander.spell?.buff?.atk || 0);
+      const bonusHp =
+        (commander.armor?.hp || 0) +
+        (commander.spell?.buff?.hp || 0);
+      u.itemAtk = bonusAtk;
+      u.itemHp = bonusHp;
+      u.atk += bonusAtk;
+      u.hp += bonusHp;
+    });
+  };
+  apply(G.playerBoard, G.playerCommander);
+  apply(G.aiBoard, G.aiCommander);
 }
 function newTurn(prev) {
   if (prev) applyEndTurnEffects(prev);
@@ -1494,13 +1540,17 @@ function attackCard(attacker, target) {
     const isP = G.playerBoard.includes(attacker);
     sfx("overflow");
     if (isP) {
-      G.aiHP = clamp(G.aiHP - overflow, 0, 99);
+      const reduction = G.aiCommander?.armor?.hp || 0;
+      const faceDmg = Math.max(0, overflow - reduction);
+      G.aiHP = clamp(G.aiHP - faceDmg, 0, 99);
       log(
         `${attacker.name} excedeu em ${overflow} e causou dano direto ao Inimigo!`,
       );
       particleOnFace("ai", "attack");
     } else {
-      G.playerHP = clamp(G.playerHP - overflow, 0, 99);
+      const reduction = G.playerCommander?.armor?.hp || 0;
+      const faceDmg = Math.max(0, overflow - reduction);
+      G.playerHP = clamp(G.playerHP - faceDmg, 0, 99);
       log(
         `${attacker.name} excedeu em ${overflow} e causou dano direto a Você!`,
       );
@@ -1527,7 +1577,9 @@ function attackFace(attacker, face) {
   }
   animateAttack(attacker.id, null);
   particleOnFace(face, "attack");
-  const dmg = attacker.atk;
+  const commander = face === "ai" ? G.aiCommander : G.playerCommander;
+  const reduction = commander?.armor?.hp || 0;
+  const dmg = Math.max(0, attacker.atk - reduction);
   attacker.canAttack = false;
   if (face === "ai") {
     fxTextOnFace("ai", "-" + dmg, "dmg");
@@ -1715,6 +1767,8 @@ $$(".deckbtn").forEach((btn) => {
     G.aiDeckChoice = rand(
       ALL_DECKS.filter((d) => d !== pick),
     );
+    G.playerCommander = COMMANDERS[pick] || COMMANDERS.vikings;
+    G.aiCommander = COMMANDERS[G.aiDeckChoice] || COMMANDERS.vikings;
     startMenuMusic(pick);
     $$(".deckbtn").forEach((b) => (b.style.outline = "none"));
     btn.style.outline = "2px solid var(--accent)";
