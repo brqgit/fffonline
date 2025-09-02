@@ -24,6 +24,15 @@ const NEUTRAL = [
   { name: 'Totem do Carvalho', type: 'totem', desc: '+1 HP', cost: 9, rarity: 'rare' }
 ];
 
+function getPlayerId(){
+  if(window && window.PLAYER_ID) return window.PLAYER_ID;
+  const fallback = window.crypto && window.crypto.randomUUID
+    ? window.crypto.randomUUID()
+    : String(Date.now()) + Math.random().toString(16).slice(2);
+  if(window) window.PLAYER_ID = fallback;
+  return fallback;
+}
+
 let shopState = { faction: '', gold: 0, onClose: null, unlimited: false, purchased: [] };
 let rerollCount = 0;
 
@@ -41,6 +50,11 @@ function fisherYatesShuffle(arr){
     [a[i], a[j]] = [a[j], a[i]];
   }
   return a;
+}
+
+// alias to maintain existing shuffle calls
+function shuffle(arr){
+  return fisherYatesShuffle(arr);
 }
 
 const slug = str => str.toLowerCase().replace(/[^a-z0-9]+/g,'-');
@@ -154,7 +168,7 @@ function renderShop(){
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          playerId: PLAYER_ID,
+          playerId: getPlayerId(),
           itemId: slug(it.name),
           cost: it.cost,
           gold: currentGold,
@@ -238,6 +252,8 @@ function closeShop(){
     modal.style.display = 'none';
   }
   tooltip.hide();
+  // reset any in-flight purchase tracking on close
+  shopState.pending = [];
   if(shopState.onClose) shopState.onClose(shopState);
 }
 

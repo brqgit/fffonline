@@ -360,9 +360,9 @@ align-items:center}
 .game-menu{position:fixed;inset:0;display:none;place-items:center;z-index:50;background:rgba(0,0,0,.7);pointer-events:none}
 .game-menu.show{display:grid !important;pointer-events:auto !important}
 .game-menu .panel{text-align:center;display:flex;flex-direction:column;gap:12px}
-.emoji-bar{position:fixed;bottom:8px;left:8px;display:none;gap:6px;z-index:30}
+.emoji-bar{position:fixed;bottom:8px;left:8px;display:none;gap:6px;z-index:1001}
 .emoji-bar .emoji-btn{background:#fff;border:none;border-radius:6px;padding:2px 4px;font-size:24px;cursor:pointer}
-.emoji-popup{position:fixed;z-index:30;font-size:32px;opacity:0;transition:opacity .3s ease}
+.emoji-popup{position:fixed;z-index:1002;font-size:32px;opacity:0;transition:opacity .3s ease}
 .emoji-popup.player{bottom:60px;left:20px}
 .emoji-popup.opponent{top:60px;right:20px}
 .emoji-popup.show{opacity:1}
