@@ -159,7 +159,7 @@ function renderShop(){
 
     const btn = document.createElement('button');
     btn.className = 'btn price-btn';
-  btn.innerHTML = `${it.cost}<img src="img/ui/coin.png" class="coin-icon" alt="moeda">`;
+  btn.innerHTML = `${it.cost}<span class="coin-icon"></span>`;
     btn.onclick = () => {
       if(shopState.gold < it.cost){ showShopMsg('Sem ouro.'); return; }
       btn.disabled = true;
@@ -214,10 +214,10 @@ function updateRerollBtn(){
       return;
     }
     btn.disabled = false;
-    btn.innerHTML = `Re-rolar (${cost}<img src="img/ui/coin.png" class="coin-icon" alt="moeda">, ${remaining} restantes)`;
+    btn.innerHTML = `Re-rolar (${cost}<span class="coin-icon"></span>, ${remaining} restantes)`;
   }else{
     btn.disabled = false;
-    btn.innerHTML = `Re-rolar (${cost}<img src="img/ui/coin.png" class="coin-icon" alt="moeda">)`;
+    btn.innerHTML = `Re-rolar (${cost}<span class="coin-icon"></span>)`;
   }
 }
 
