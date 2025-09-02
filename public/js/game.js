@@ -794,6 +794,7 @@ function summon(side,c,st='attack',skipBC=false){
   c.canAttack = (st==='attack') && c.kw.includes('Furioso');
   c.summonTurn = G.turn;
   board.push(c);
+  particleOnCard(c.id,'summon');
   log(`${side==='player'?'Você':'Inimigo'} jogou ${c.name} em modo ${st==='defense'?'defesa':'ataque'}.`);
   let effects = [];
   if(!skipBC){
