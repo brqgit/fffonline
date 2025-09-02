@@ -171,7 +171,6 @@ width:calc(5*var(--card-w) + 4*14px + 24px)}
 /* Ensure flip overlay doesn't block clicks: only the front face should receive pointer events */
 .card .flip-inner, .card .face.back{pointer-events:none}
 .card .face.front, .card .face.front *{pointer-events:auto}
-.img-missing{width:96px;height:96px;display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg,#0e1435,#09102a);border-radius:8px;color:var(--muted);font-weight:700}
 .card .head-bar{background:linear-gradient(180deg,rgba(0,0,0,.6),rgba(0,0,0,.2));padding:2px 4px;border-radius:6px;display:flex;flex-direction:column;gap:2px}
 .card .head-bar .name{font-weight:800;font-size:clamp(12px,1.6vw,14px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:linear-gradient(180deg,rgba(0,0,0,.7),rgba(0,0,0,.3));padding:0 4px;border-radius:4px}
 .card .head-bar .cost-bar{display:flex;justify-content:flex-start;align-items:center;gap:4px;position:relative}
@@ -827,10 +826,6 @@ display:block}
 .fx.fx-summon{width:calc(var(--card-w)*0.4);height:calc(var(--card-w)*0.4);background:url('../img/particles/Sakuras.png') no-repeat center/contain;filter:invert(1) sepia(1) saturate(5) hue-rotate(120deg);opacity:0;animation:healPop .6s ease-out forwards}
 #encounterTransition.show{opacity:1}
 /* Totem slot tooltip */
-.totem-slot[data-tip]{position:relative}
-.totem-slot[data-tip]::after{content:attr(data-tip);position:absolute;left:50%;bottom:100%;transform:translate(-50%,-8px);background:#0e1435;border:1px solid #2b3a86;border-radius:10px;padding:8px 10px;box-shadow:0 12px 30px rgba(0,0,0,.45);font-size:12px;line-height:1.4;color:#cfe3ff;max-width:260px;min-width:180px;white-space:normal;text-align:center;opacity:0;pointer-events:none;z-index:50;transition:opacity .15s ease,transform .15s ease}
-.totem-slot[data-tip]:hover::after{opacity:1;transform:translate(-50%,-10px)}
-/* Tooltip for totem slots */
 .totem-slot[data-tip]{position:relative}
 .totem-slot[data-tip]::after{content:attr(data-tip);position:absolute;left:50%;bottom:100%;transform:translate(-50%,-8px);background:#0e1435;border:1px solid #2b3a86;border-radius:10px;padding:8px 10px;box-shadow:0 12px 30px rgba(0,0,0,.45);font-size:12px;line-height:1.4;color:#cfe3ff;max-width:260px;min-width:180px;white-space:normal;text-align:center;opacity:0;pointer-events:none;z-index:50;transition:opacity .15s ease,transform .15s ease}
 .totem-slot[data-tip]:hover::after{opacity:1;transform:translate(-50%,-10px)}
