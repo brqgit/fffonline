@@ -24,7 +24,8 @@ const NEUTRAL = [
   { name: 'Totem do Carvalho', type: 'totem', desc: '+1 HP', cost: 9, rarity: 'rare' }
 ];
 
-let shopState = { faction: '', gold: 0, onClose: null, unlimited: false, purchased: [] };
+// Track shop state including any in-flight purchase promises
+let shopState = { faction: '', gold: 0, onClose: null, unlimited: false, purchased: [], pending: [] };
 let rerollCount = 0;
 
 function showShopMsg(msg){
@@ -238,6 +239,8 @@ function closeShop(){
     modal.style.display = 'none';
   }
   tooltip.hide();
+  // reset any in-flight purchase tracking on close
+  shopState.pending = [];
   if(shopState.onClose) shopState.onClose(shopState);
 }
 
