@@ -12,6 +12,7 @@ import { aiTurn } from "../ai/index.js";
 import { Keyword } from "./card.js";
 import { ENEMY_NAMES } from "./enemyNames.js";
 import { StoryMode } from "./storyMode.js";
+import { initCommanderHud, openCommanderHud } from "../ui/commanderHud.js";
 
 const rand = (a) => a[Math.floor(Math.random() * a.length)];
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -607,6 +608,7 @@ const els = {
   rematchBtn: $("#rematchBtn"),
   menuBtn: $("#menuBtn"),
   totemBar: $("#totemBar"),
+  playerCommander: $("#playerCommander"),
 };
 // deck builder DOM (may be null if builder UI not present)
 const poolEl = $("#pool"),
@@ -1755,6 +1757,9 @@ els.menuBtn.addEventListener("click", () => {
   els.start.style.display = "grid";
   startMenuMusic("menu");
 });
+initCommanderHud();
+els.playerCommander &&
+  els.playerCommander.addEventListener("click", openCommanderHud);
 document.addEventListener("DOMContentLoaded", tryStartMenuMusicImmediate);
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "visible") tryStartMenuMusicImmediate();
