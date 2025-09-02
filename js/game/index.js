@@ -1434,7 +1434,7 @@ function particleOnCard(cid, name) {
   screenParticle(name, r.left + r.width / 2, r.top + r.height / 2);
 }
 function particleOnFace(side, name) {
-  const el = side === "ai" ? els.aHP2 : els.pHP2;
+  const el = side === "ai" ? (els.barAHP || els.aHP2) : (els.barPHP || els.pHP2);
   if (!el) return;
   const r = el.getBoundingClientRect();
   screenParticle(name, r.left + r.width / 2, r.top + r.height / 2);
@@ -1443,6 +1443,18 @@ function fxTextOnCard(cid, text, cls) {
   const n = document.querySelector(`.card[data-id="${cid}"]`);
   if (!n) return;
   const r = n.getBoundingClientRect();
+  const fx = document.createElement("div");
+  fx.className = "fx-float " + (cls || "");
+  fx.textContent = text;
+  fx.style.left = r.left + r.width / 2 + "px";
+  fx.style.top = r.top + r.height / 2 + "px";
+  document.body.appendChild(fx);
+  setTimeout(() => fx.remove(), 950);
+}
+function fxTextOnFace(side, text, cls) {
+  const el = side === "ai" ? (els.barAHP || els.aHP2) : (els.barPHP || els.pHP2);
+  if (!el) return;
+  const r = el.getBoundingClientRect();
   const fx = document.createElement("div");
   fx.className = "fx-float " + (cls || "");
   fx.textContent = text;
@@ -1507,10 +1519,12 @@ function attackFace(attacker, face) {
   const dmg = attacker.atk;
   attacker.canAttack = false;
   if (face === "ai") {
+    fxTextOnFace("ai", "-" + dmg, "dmg");
     G.aiHP = clamp(G.aiHP - dmg, 0, 99);
     log(`${attacker.name} causou ${dmg} ao Inimigo!`);
     sfx("crit");
   } else {
+    fxTextOnFace("player", "-" + dmg, "dmg");
     G.playerHP = clamp(G.playerHP - dmg, 0, 99);
     log(`${attacker.name} causou ${dmg} a Você!`);
     sfx("hit");
@@ -1523,6 +1537,7 @@ function attackFace(attacker, face) {
 }
 function damageMinion(m, amt) {
   if (!m || typeof amt !== "number") return;
+  fxTextOnCard(m.id, "-" + amt, "dmg");
   m.hp = clamp(m.hp - amt, 0, 99);
   if (m.hp <= 0) setTimeout(checkDeaths, 10);
 }
