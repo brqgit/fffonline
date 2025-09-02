@@ -551,46 +551,45 @@ const COMMANDERS = {
     classe: "Guerreiro",
     base: { atk: 2, hp: 30 },
     slots: { weapon: 1, armor: 1, trinket: 1 },
+    icon: "🧔‍🌾",
   },
   animais: {
     name: "Mãe da Alcateia",
     classe: "Druida",
     base: { atk: 1, hp: 30 },
     slots: { companion: 3 },
+    icon: "🐺",
   },
   pescadores: {
     name: "Capitão do Porto",
     classe: "Navegador",
     base: { atk: 1, hp: 30 },
     slots: { weapon: 1, armor: 1 },
+    icon: "🎣",
   },
   floresta: {
     name: "Guardiã da Floresta",
     classe: "Totêmico",
     base: { atk: 1, hp: 30 },
     slots: { totem: 2, charm: 1 },
+    icon: "🦌",
   },
   convergentes: {
     name: "Avatar Prismal",
     classe: "Místico",
     base: { atk: 0, hp: 30 },
     slots: { essence: 3 },
+    icon: "🌀",
   },
   custom: {
     name: "Comandante",
     classe: "",
     base: { atk: 0, hp: 30 },
     slots: { weapon: 1, armor: 1, trinket: 1 },
+    icon: "👤",
   },
 };
 const ALL_DECKS = Object.keys(TEMPLATES);
-const COMMANDERS = {
-  vikings: { nome: "Patriarca da Fazenda", classe: "support", icon: "🧔‍🌾" },
-  animais: { nome: "Lobo Alfa", classe: "dps", icon: "🐺" },
-  pescadores: { nome: "Capitão do Fiorde", classe: "support", icon: "🎣" },
-  floresta: { nome: "Cervo Rúnico", classe: "tank", icon: "🦌" },
-  convergentes: { nome: "Avatar da Aurora", classe: "control", icon: "🌀" },
-};
 const G = {
   playerHP: 30,
   aiHP: 30,
@@ -612,21 +611,18 @@ const G = {
   aiBoard: [],
   playerDiscard: [],
   aiDiscard: [],
-  playerCommander: null,
-  aiCommander: null,
+  playerCommander: COMMANDERS.vikings,
+  aiCommander: COMMANDERS.floresta,
+  commanderBuffsDirty: true,
   chosen: null,
   playerDeckChoice: "vikings",
   aiDeckChoice: rand(ALL_DECKS),
-  playerCommander: COMMANDERS.vikings,
-  aiCommander: COMMANDERS.floresta,
   customDeck: null,
   mode: "solo",
   story: null,
   maxHandSize: 5,
   totems: [],
   enemyScaling: 0,
-  playerCommander: null,
-  aiCommander: null,
 };
 const els = {
   pHP: $("#playerHP"),
@@ -919,7 +915,10 @@ function renderCommanders() {
   }
 }
 function renderBoard() {
-  applyCommanderItemBuffs();
+  if (G.commanderBuffsDirty) {
+    applyCommanderItemBuffs();
+    G.commanderBuffsDirty = false;
+  }
   validateChosen();
   els.pBoard.innerHTML = "";
   for (const c of G.playerBoard) {
@@ -1050,8 +1049,6 @@ export function startGame(opts = {}) {
     return c;
   };
   const continuing = opts.continueStory;
-  G.playerCommander = COMMANDERS[G.playerDeckChoice] || COMMANDERS.vikings;
-  G.aiCommander = COMMANDERS[G.aiDeckChoice] || COMMANDERS.vikings;
   G.mode = window.currentGameMode === "story" ? "story" : "solo";
   if (G.mode === "story") {
     if (!G.story) G.story = new StoryMode({ level: 1 });
@@ -1091,6 +1088,7 @@ export function startGame(opts = {}) {
   G.playerItems = [];
   G.aiCommander = { ...COMMANDERS[G.aiDeckChoice] };
   G.aiItems = [];
+  G.commanderBuffsDirty = true;
   shuffle(G.playerDeck);
   G.playerDeck.forEach((c) => {
     sanitize(c);
@@ -1185,8 +1183,6 @@ function burnCard(c) {
 function setCommanderAvatars() {
   const pc = COMMANDERS[G.playerDeckChoice] || {};
   const ac = COMMANDERS[G.aiDeckChoice] || {};
-  G.playerCommander = pc;
-  G.aiCommander = ac;
   if (els.pAva) els.pAva.textContent = pc.icon || "👤";
   if (els.aAva) els.aAva.textContent = ac.icon || "🧿";
 }
@@ -1695,12 +1691,6 @@ function checkDeaths() {
   }
   els.discardCount.textContent = G.playerDiscard.length;
 }
-      attackFace(a, "player");
-    }
-    setTimeout(next, 500);
-  }
-  setTimeout(next, 500);
-}
 function fireworks(win) {
   const b = document.createElement("div");
   b.className = "boom";
@@ -1833,11 +1823,13 @@ $$(".deckbtn").forEach((btn) => {
     G.aiDeckChoice = rand(
       ALL_DECKS.filter((d) => d !== pick),
     );
-    G.playerCommander = COMMANDERS[pick] || COMMANDERS.vikings;
-    G.aiCommander = COMMANDERS[G.aiDeckChoice] || COMMANDERS.vikings;
+    G.playerCommander = { ...(COMMANDERS[pick] || COMMANDERS.vikings) };
+    G.aiCommander = { ...(COMMANDERS[G.aiDeckChoice] || COMMANDERS.vikings) };
+    G.commanderBuffsDirty = true;
     startMenuMusic(pick);
     $$(".deckbtn").forEach((b) => (b.style.outline = "none"));
     btn.style.outline = "2px solid var(--accent)";
+    els.startGame.disabled = false;
   });
   const book = btn.querySelector(".view-cards");
   book &&
@@ -1878,6 +1870,10 @@ els.menuBtn.addEventListener("click", () => {
 initCommanderHud();
 els.playerCommander &&
   els.playerCommander.addEventListener("click", openCommanderHud);
+els.pAva && els.pAva.addEventListener("click", openCommanderHud);
+// expose core state and controls for other modules loaded separately
+window.G = G;
+window.startGame = startGame;
 document.addEventListener("DOMContentLoaded", tryStartMenuMusicImmediate);
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "visible") tryStartMenuMusicImmediate();
