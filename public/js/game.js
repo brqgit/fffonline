@@ -426,7 +426,7 @@ function renderAll(){
   }
   els.drawCount.textContent=G.playerDeck.length;
   els.discardCount.textContent=G.playerDiscard.length;
-  updateMeters();updateOpponentLabel();renderHand();renderBoard();renderTotems()
+  updateMeters();updateOpponentLabel();renderHand();renderBoard();renderCommanders();renderTotems()
 }
 function renderHand(){
   els.pHand.innerHTML='';
@@ -1206,6 +1206,22 @@ function renderTotems(){
     slot.className='totem-slot';
     if(G.totems[i]){ const t=G.totems[i]; slot.textContent=totemIcon(t); try{ slot.setAttribute('data-tip', `${t.name||'Totem'} — ${describeTotem(t)}`);}catch(_){ } }
     bar.appendChild(slot);
+  }
+}
+function renderCommanders(){
+  if(els.playerCommander){
+    els.playerCommander.innerHTML='';
+    if(G.playerCommander){
+      const d=cardNode(G.playerCommander,'player');
+      els.playerCommander.appendChild(d);
+    }
+  }
+  if(els.aiCommander){
+    els.aiCommander.innerHTML='';
+    if(G.aiCommander){
+      const d=cardNode(G.aiCommander,'ai');
+      els.aiCommander.appendChild(d);
+    }
   }
 }
 document.addEventListener('pointerdown',()=>{tryStartMenuMusicImmediate()},{once:true});
