@@ -584,23 +584,12 @@ const COMMANDERS = {
   },
 };
 const ALL_DECKS = Object.keys(TEMPLATES);
-export const COMMANDERS = {
-  vikings: {
-    name: "Chefe Viking",
-    classe: "dps",
-    deck: "vikings",
-    weapon: ITEMS.weapons[0],
-    armor: ITEMS.armors[0],
-    spell: ITEMS.spells[0],
-  },
-  floresta: {
-    name: "Guardião da Floresta",
-    classe: "support",
-    deck: "floresta",
-    weapon: ITEMS.weapons[1],
-    armor: ITEMS.armors[1],
-    spell: ITEMS.spells[1],
-  },
+const COMMANDERS = {
+  vikings: { nome: "Patriarca da Fazenda", classe: "support", icon: "🧔‍🌾" },
+  animais: { nome: "Lobo Alfa", classe: "dps", icon: "🐺" },
+  pescadores: { nome: "Capitão do Fiorde", classe: "support", icon: "🎣" },
+  floresta: { nome: "Cervo Rúnico", classe: "tank", icon: "🦌" },
+  convergentes: { nome: "Avatar da Aurora", classe: "control", icon: "🌀" },
 };
 const G = {
   playerHP: 30,
@@ -638,8 +627,6 @@ const G = {
   enemyScaling: 0,
   playerCommander: null,
   aiCommander: null,
-  playerItems: [],
-  aiItems: [],
 };
 const els = {
   pHP: $("#playerHP"),
@@ -652,6 +639,7 @@ const els = {
   aBoard: $("#aiBoard"),
   endBtn: $("#endTurnBtn"),
   muteBtn: $("#muteBtn"),
+  pAva: $("#playerAvatar"),
   aAva: $("#aiAvatar"),
   drawCount: $("#drawCount"),
   discardCount: $("#discardCount"),
@@ -1121,6 +1109,7 @@ export function startGame(opts = {}) {
     }
   });
   shuffle(G.aiDeck);
+  setCommanderAvatars();
   G.playerDiscard = [];
   G.aiDiscard = [];
   G.playerHand = [];
@@ -1192,6 +1181,15 @@ function draw(who, n = 1) {
 function burnCard(c) {
   log(`${c.name} queimou por mão cheia!`);
   screenParticle("explosion", window.innerWidth / 2, window.innerHeight / 2);
+}
+
+function setCommanderAvatars() {
+  const pc = COMMANDERS[G.playerDeckChoice] || {};
+  const ac = COMMANDERS[G.aiDeckChoice] || {};
+  G.playerCommander = pc;
+  G.aiCommander = ac;
+  if (els.pAva) els.pAva.textContent = pc.icon || "👤";
+  if (els.aAva) els.aAva.textContent = ac.icon || "🧿";
 }
 function applyTotemBuffs() {
   if (!G.playerBoard.length || !G.totems.length) return;
