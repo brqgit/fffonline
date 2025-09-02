@@ -6,7 +6,7 @@ function hud() {
 
 function slots() {
   const h = hud();
-  return h ? Array.from(h.querySelectorAll(".item-slot")) : [];
+  return h ? Array.from(h.querySelectorAll(".equip-grid .item-slot")) : [];
 }
 
 function closeBtn() {
