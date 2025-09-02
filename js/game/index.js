@@ -1529,6 +1529,7 @@ function checkDeaths() {
   const deadA = G.aiBoard.filter((c) => c.hp <= 0);
   deadA.forEach((c) => {
     particleOnCard(c.id, "explosion");
+    sfx("death");
     resetCardState(c);
   });
   if (deadA.length) {
@@ -1539,6 +1540,7 @@ function checkDeaths() {
   const deadP = G.playerBoard.filter((c) => c.hp <= 0);
   deadP.forEach((c) => {
     particleOnCard(c.id, "explosion");
+    sfx("death");
     resetCardState(c);
   });
   if (deadP.length) {
