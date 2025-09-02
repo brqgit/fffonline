@@ -1829,6 +1829,7 @@ $$(".deckbtn").forEach((btn) => {
     startMenuMusic(pick);
     $$(".deckbtn").forEach((b) => (b.style.outline = "none"));
     btn.style.outline = "2px solid var(--accent)";
+    els.startGame.disabled = false;
   });
   const book = btn.querySelector(".view-cards");
   book &&
