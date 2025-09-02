@@ -162,10 +162,10 @@ class StoryMode{
   reset(){this.round=0;this.totems=[];this.deck=[];this.xp=0;this.gold=30;this.currentEncounter='normal';}
 }
 const ALL_DECKS=Object.keys(TEMPLATES);
-const G={playerHP:30,aiHP:30,turn:0,playerMana:0,playerManaCap:0,aiMana:0,aiManaCap:0,current:'player',playerDeck:[],aiDeck:[],playerHand:[],aiHand:[],playerBoard:[],aiBoard:[],playerDiscard:[],aiDiscard:[],chosen:null,playerDeckChoice:'vikings',aiDeckChoice:rand(ALL_DECKS),customDeck:null,mode:'solo',story:null,enemyScaling:0,maxHandSize:5,totems:[]};
+const G={playerHP:30,aiHP:30,turn:0,playerMana:0,playerManaCap:0,aiMana:0,aiManaCap:0,current:'player',playerDeck:[],aiDeck:[],playerHand:[],aiHand:[],playerBoard:[],aiBoard:[],playerDiscard:[],aiDiscard:[],chosen:null,playerDeckChoice:'vikings',aiDeckChoice:rand(ALL_DECKS),customDeck:null,mode:'solo',story:null,enemyScaling:0,maxHandSize:5,totems:[],playerCommander:null,aiCommander:null};
 // expose for helpers that run outside this closure
 try{ window.G = G; }catch(_){ }
-const els={pHP:$('#playerHP'),pHP2:$('#playerHP2'),aHP:$('#aiHP'),aHP2:$('#aiHP2'),opponentLabel:$('#opponentLabel'),mana:$('#mana'),pHand:$('#playerHand'),pBoard:$('#playerBoard'),aBoard:$('#aiBoard'),endBtn:$('#endTurnBtn'),muteBtn:$('#muteBtn'),aAva:$('#aiAvatar'),drawCount:$('#drawCount'),discardCount:$('#discardCount'),barPHP:$('#barPlayerHP'),barAHP:$('#barAiHP'),barMana:$('#barMana'),wrap:$('#gameWrap'),start:$('#start'),openEncy:$('#openEncy'),ency:$('#ency'),encyGrid:$('#encyGrid'),encyFilters:$('#encyFilters'),closeEncy:$('#closeEncy'),startGame:$('#startGame'),endOverlay:$('#endOverlay'),endMsg:$('#endMsg'),endSub:$('#endSub'),playAgainBtn:$('#playAgainBtn'),rematchBtn:$('#rematchBtn'),menuBtn:$('#menuBtn'),openMenuBtn:$('#openMenuBtn'),gameMenu:$('#gameMenu'),closeMenuBtn:$('#closeMenuBtn'),resignBtn:$('#resignBtn'),restartBtn:$('#restartBtn'),mainMenuBtn:$('#mainMenuBtn'),turnIndicator:$('#turnIndicator'),emojiBar:$('#emojiBar'),playerEmoji:$('#playerEmoji'),opponentEmoji:$('#opponentEmoji'),deckBuilder:$('#deckBuilder'),saveDeck:$('#saveDeck'),midMana:$('#midMana')};
+const els={pHP:$('#playerHP'),pHP2:$('#playerHP2'),aHP:$('#aiHP'),aHP2:$('#aiHP2'),opponentLabel:$('#opponentLabel'),mana:$('#mana'),pHand:$('#playerHand'),pBoard:$('#playerBoard'),aBoard:$('#aiBoard'),endBtn:$('#endTurnBtn'),muteBtn:$('#muteBtn'),pAva:$('#playerAvatar'),aAva:$('#aiAvatar'),drawCount:$('#drawCount'),discardCount:$('#discardCount'),barPHP:$('#barPlayerHP'),barAHP:$('#barAiHP'),barMana:$('#barMana'),wrap:$('#gameWrap'),start:$('#start'),openEncy:$('#openEncy'),ency:$('#ency'),encyGrid:$('#encyGrid'),encyFilters:$('#encyFilters'),closeEncy:$('#closeEncy'),startGame:$('#startGame'),endOverlay:$('#endOverlay'),endMsg:$('#endMsg'),endSub:$('#endSub'),playAgainBtn:$('#playAgainBtn'),rematchBtn:$('#rematchBtn'),menuBtn:$('#menuBtn'),openMenuBtn:$('#openMenuBtn'),gameMenu:$('#gameMenu'),closeMenuBtn:$('#closeMenuBtn'),resignBtn:$('#resignBtn'),restartBtn:$('#restartBtn'),mainMenuBtn:$('#mainMenuBtn'),turnIndicator:$('#turnIndicator'),emojiBar:$('#emojiBar'),playerEmoji:$('#playerEmoji'),opponentEmoji:$('#opponentEmoji'),deckBuilder:$('#deckBuilder'),saveDeck:$('#saveDeck'),midMana:$('#midMana')};
 els.startGame.disabled=true;
 
 function updateCardSize(){
@@ -186,6 +186,13 @@ function updateCardSize(){
 }
 window.addEventListener('resize',updateCardSize);
 const DECK_TITLES={vikings:'Fazendeiros Vikings',animais:'Bestas do Norte',pescadores:'Pescadores do Fiorde',floresta:'Feras da Floresta',convergentes:'Convergentes da Aurora',custom:'Custom'};
+const COMMANDERS={
+  vikings:{nome:'Patriarca da Fazenda',classe:'support',icon:'🧔‍🌾'},
+  animais:{nome:'Lobo Alfa',classe:'dps',icon:'🐺'},
+  pescadores:{nome:'Capitão do Fiorde',classe:'support',icon:'🎣'},
+  floresta:{nome:'Cervo Rúnico',classe:'tank',icon:'🦌'},
+  convergentes:{nome:'Avatar da Aurora',classe:'control',icon:'🌀'}
+};
 const DECK_ASSETS={
   vikings:{folder:'farm-vikings',back:'fv',dbExt:'png',cbExt:'webp'},
   pescadores:{folder:'fJord-fishers',back:'jf',dbExt:'webp',cbExt:'webp'},
@@ -254,6 +261,15 @@ function setDeckBacks(){
   };
   apply(G.playerDeckChoice,'drawPile','discardPile');
   apply(G.aiDeckChoice,'aiDrawPile','aiDiscardPile');
+}
+
+function setCommanderAvatars(){
+  const pc=COMMANDERS[G.playerDeckChoice]||{};
+  const ac=COMMANDERS[G.aiDeckChoice]||{};
+  G.playerCommander=pc;
+  G.aiCommander=ac;
+  if(els.pAva)els.pAva.textContent=pc.icon||'👤';
+  if(els.aAva)els.aAva.textContent=ac.icon||'🧿';
 }
 
 // deck builder DOM (may be null if builder UI not present)
@@ -715,6 +731,7 @@ function startGame(opts='player') {
   }
   els.emojiBar && (els.emojiBar.style.display = window.isMultiplayer ? 'flex' : 'none');
   setDeckBacks();
+  setCommanderAvatars();
   if (first === 'player') draw('player', 5); else draw('ai', 5);
   newTurn(true);
   renderAll();
