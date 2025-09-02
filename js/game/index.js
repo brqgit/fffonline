@@ -604,6 +604,8 @@ const G = {
   aiBoard: [],
   playerDiscard: [],
   aiDiscard: [],
+  playerCommander: null,
+  aiCommander: null,
   chosen: null,
   playerDeckChoice: "vikings",
   aiDeckChoice: rand(ALL_DECKS),
@@ -649,6 +651,8 @@ const els = {
   rematchBtn: $("#rematchBtn"),
   menuBtn: $("#menuBtn"),
   totemBar: $("#totemBar"),
+  playerCommander: $("#playerCommander"),
+  aiCommander: $("#aiCommander"),
 };
 // deck builder DOM (may be null if builder UI not present)
 const poolEl = $("#pool"),
@@ -819,6 +823,7 @@ function renderAll() {
   updateMeters();
   renderHand();
   renderBoard();
+  renderCommanders();
   renderTotems();
 }
 function renderHand() {
@@ -887,6 +892,22 @@ function renderTotems() {
     slot.className = "totem-slot";
     if (G.totems[i]) slot.textContent = "🗿";
     els.totemBar.appendChild(slot);
+  }
+}
+function renderCommanders() {
+  if (els.playerCommander) {
+    els.playerCommander.innerHTML = "";
+    if (G.playerCommander) {
+      const d = cardNode(G.playerCommander, "player");
+      els.playerCommander.appendChild(d);
+    }
+  }
+  if (els.aiCommander) {
+    els.aiCommander.innerHTML = "";
+    if (G.aiCommander) {
+      const d = cardNode(G.aiCommander, "ai");
+      els.aiCommander.appendChild(d);
+    }
   }
 }
 function renderBoard() {
