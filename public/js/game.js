@@ -162,10 +162,10 @@ class StoryMode{
   reset(){this.round=0;this.totems=[];this.deck=[];this.xp=0;this.gold=30;this.currentEncounter='normal';}
 }
 const ALL_DECKS=Object.keys(TEMPLATES);
-const G={playerHP:30,aiHP:30,turn:0,playerMana:0,playerManaCap:0,aiMana:0,aiManaCap:0,current:'player',playerDeck:[],aiDeck:[],playerHand:[],aiHand:[],playerBoard:[],aiBoard:[],playerDiscard:[],aiDiscard:[],chosen:null,playerDeckChoice:'vikings',aiDeckChoice:rand(ALL_DECKS),customDeck:null,mode:'solo',story:null,enemyScaling:0,maxHandSize:5,totems:[]};
+const G={playerHP:30,aiHP:30,turn:0,playerMana:0,playerManaCap:0,aiMana:0,aiManaCap:0,current:'player',playerDeck:[],aiDeck:[],playerHand:[],aiHand:[],playerBoard:[],aiBoard:[],playerDiscard:[],aiDiscard:[],playerCommander:null,aiCommander:null,chosen:null,playerDeckChoice:'vikings',aiDeckChoice:rand(ALL_DECKS),customDeck:null,mode:'solo',story:null,enemyScaling:0,maxHandSize:5,totems:[]};
 // expose for helpers that run outside this closure
 try{ window.G = G; }catch(_){ }
-const els={pHP:$('#playerHP'),pHP2:$('#playerHP2'),aHP:$('#aiHP'),aHP2:$('#aiHP2'),opponentLabel:$('#opponentLabel'),mana:$('#mana'),pHand:$('#playerHand'),pBoard:$('#playerBoard'),aBoard:$('#aiBoard'),endBtn:$('#endTurnBtn'),muteBtn:$('#muteBtn'),aAva:$('#aiAvatar'),drawCount:$('#drawCount'),discardCount:$('#discardCount'),barPHP:$('#barPlayerHP'),barAHP:$('#barAiHP'),barMana:$('#barMana'),wrap:$('#gameWrap'),start:$('#start'),openEncy:$('#openEncy'),ency:$('#ency'),encyGrid:$('#encyGrid'),encyFilters:$('#encyFilters'),closeEncy:$('#closeEncy'),startGame:$('#startGame'),endOverlay:$('#endOverlay'),endMsg:$('#endMsg'),endSub:$('#endSub'),playAgainBtn:$('#playAgainBtn'),rematchBtn:$('#rematchBtn'),menuBtn:$('#menuBtn'),openMenuBtn:$('#openMenuBtn'),gameMenu:$('#gameMenu'),closeMenuBtn:$('#closeMenuBtn'),resignBtn:$('#resignBtn'),restartBtn:$('#restartBtn'),mainMenuBtn:$('#mainMenuBtn'),turnIndicator:$('#turnIndicator'),emojiBar:$('#emojiBar'),playerEmoji:$('#playerEmoji'),opponentEmoji:$('#opponentEmoji'),deckBuilder:$('#deckBuilder'),saveDeck:$('#saveDeck'),midMana:$('#midMana')};
+const els={pHP:$('#playerHP'),pHP2:$('#playerHP2'),aHP:$('#aiHP'),aHP2:$('#aiHP2'),opponentLabel:$('#opponentLabel'),mana:$('#mana'),pHand:$('#playerHand'),pBoard:$('#playerBoard'),aBoard:$('#aiBoard'),endBtn:$('#endTurnBtn'),muteBtn:$('#muteBtn'),aAva:$('#aiAvatar'),drawCount:$('#drawCount'),discardCount:$('#discardCount'),barPHP:$('#barPlayerHP'),barAHP:$('#barAiHP'),barMana:$('#barMana'),wrap:$('#gameWrap'),start:$('#start'),openEncy:$('#openEncy'),ency:$('#ency'),encyGrid:$('#encyGrid'),encyFilters:$('#encyFilters'),closeEncy:$('#closeEncy'),startGame:$('#startGame'),endOverlay:$('#endOverlay'),endMsg:$('#endMsg'),endSub:$('#endSub'),playAgainBtn:$('#playAgainBtn'),rematchBtn:$('#rematchBtn'),menuBtn:$('#menuBtn'),openMenuBtn:$('#openMenuBtn'),gameMenu:$('#gameMenu'),closeMenuBtn:$('#closeMenuBtn'),resignBtn:$('#resignBtn'),restartBtn:$('#restartBtn'),mainMenuBtn:$('#mainMenuBtn'),turnIndicator:$('#turnIndicator'),emojiBar:$('#emojiBar'),playerEmoji:$('#playerEmoji'),opponentEmoji:$('#opponentEmoji'),deckBuilder:$('#deckBuilder'),saveDeck:$('#saveDeck'),midMana:$('#midMana'),playerCommander:$('#playerCommander'),aiCommander:$('#aiCommander')};
 els.startGame.disabled=true;
 
 function updateCardSize(){
@@ -410,7 +410,7 @@ function renderAll(){
   }
   els.drawCount.textContent=G.playerDeck.length;
   els.discardCount.textContent=G.playerDiscard.length;
-  updateMeters();updateOpponentLabel();renderHand();renderBoard();renderTotems()
+  updateMeters();updateOpponentLabel();renderHand();renderBoard();renderCommanders();renderTotems()
 }
 function renderHand(){
   els.pHand.innerHTML='';
@@ -1189,6 +1189,22 @@ function renderTotems(){
     slot.className='totem-slot';
     if(G.totems[i]){ const t=G.totems[i]; slot.textContent=totemIcon(t); try{ slot.setAttribute('data-tip', `${t.name||'Totem'} — ${describeTotem(t)}`);}catch(_){ } }
     bar.appendChild(slot);
+  }
+}
+function renderCommanders(){
+  if(els.playerCommander){
+    els.playerCommander.innerHTML='';
+    if(G.playerCommander){
+      const d=cardNode(G.playerCommander,'player');
+      els.playerCommander.appendChild(d);
+    }
+  }
+  if(els.aiCommander){
+    els.aiCommander.innerHTML='';
+    if(G.aiCommander){
+      const d=cardNode(G.aiCommander,'ai');
+      els.aiCommander.appendChild(d);
+    }
   }
 }
 document.addEventListener('pointerdown',()=>{tryStartMenuMusicImmediate()},{once:true});
