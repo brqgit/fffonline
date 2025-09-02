@@ -1471,16 +1471,19 @@ function attackCard(attacker, target) {
   sfx("hit");
   if (overflow > 0 && target.hp <= 0) {
     const isP = G.playerBoard.includes(attacker);
+    sfx("overflow");
     if (isP) {
       G.aiHP = clamp(G.aiHP - overflow, 0, 99);
       log(
         `${attacker.name} excedeu em ${overflow} e causou dano direto ao Inimigo!`,
       );
+      particleOnFace("ai", "attack");
     } else {
       G.playerHP = clamp(G.playerHP - overflow, 0, 99);
       log(
         `${attacker.name} excedeu em ${overflow} e causou dano direto a Você!`,
       );
+      particleOnFace("player", "attack");
     }
     checkWin();
   }
