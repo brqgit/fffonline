@@ -24,6 +24,15 @@ const NEUTRAL = [
   { name: 'Totem do Carvalho', type: 'totem', desc: '+1 HP', cost: 9, rarity: 'rare' }
 ];
 
+function getPlayerId(){
+  if(window && window.PLAYER_ID) return window.PLAYER_ID;
+  const fallback = window.crypto && window.crypto.randomUUID
+    ? window.crypto.randomUUID()
+    : String(Date.now()) + Math.random().toString(16).slice(2);
+  if(window) window.PLAYER_ID = fallback;
+  return fallback;
+}
+
 let shopState = { faction: '', gold: 0, onClose: null, unlimited: false, purchased: [] };
 let rerollCount = 0;
 
@@ -154,7 +163,7 @@ function renderShop(){
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          playerId: PLAYER_ID,
+          playerId: getPlayerId(),
           itemId: slug(it.name),
           cost: it.cost,
           gold: currentGold,
