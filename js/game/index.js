@@ -1043,6 +1043,8 @@ function flyToBoard(node, onEnd) {
   }, 450);
 }
 export function startGame(opts = {}) {
+  const wrap = document.getElementById("gameWrap");
+  if (wrap) wrap.style.display = "block";
   const sanitize = (c) => {
     if (c.hp < 1) c.hp = 1;
     if (c.atk < 0) c.atk = 0;
@@ -1840,6 +1842,8 @@ $$(".deckbtn").forEach((btn) => {
 });
 els.startGame.addEventListener("click", () => {
   els.start.style.display = "none";
+  const wrap = document.getElementById("gameWrap");
+  if (wrap) wrap.style.display = "block";
   initAudio();
   ensureRunning();
   stopMenuMusic();
@@ -1865,12 +1869,17 @@ els.rematchBtn.addEventListener("click", () => {
 els.menuBtn.addEventListener("click", () => {
   els.endOverlay.classList.remove("show");
   els.start.style.display = "grid";
+  const wrap = document.getElementById("gameWrap");
+  if (wrap) wrap.style.display = "none";
   startMenuMusic("menu");
 });
 initCommanderHud();
 els.playerCommander &&
   els.playerCommander.addEventListener("click", openCommanderHud);
 els.pAva && els.pAva.addEventListener("click", openCommanderHud);
+// expose core state and controls for other modules loaded separately
+window.G = G;
+window.startGame = startGame;
 document.addEventListener("DOMContentLoaded", tryStartMenuMusicImmediate);
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "visible") tryStartMenuMusicImmediate();
