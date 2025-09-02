@@ -1200,6 +1200,7 @@ function summon(side, c, st = "attack") {
     c.hp += G.enemyScaling;
   }
   board.push(c);
+  particleOnCard(c.id, "summon");
   log(
     `${side === "player" ? "Você" : "Inimigo"} jogou ${c.name} em modo ${st === "defense" ? "defesa" : "ataque"}.`,
   );
