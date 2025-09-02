@@ -130,15 +130,17 @@
       <div class="meter enemy" style="justify-self:end"><b>HP Inimigo</b><span class="opp-label" id="opponentLabel"></span><span class="value" id="aiHP">30</span><div class="enemy-img" id="aiAvatar">🧿</div><div class="bar"><div class="fill" id="barAiHP"></div></div></div>
     </div>
     <div class="row enemy-row">
-  <div class="pile" id="aiDrawPile"><img src="img/decks/fJord-fishers/deck-backs/jf-db-default.webp" alt="deck"><div class="pile-label">DECK</div></div>
+      <div id="aiCommander" class="commander"></div>
+      <div class="pile" id="aiDrawPile"><img src="img/decks/fJord-fishers/deck-backs/jf-db-default.webp" alt="deck"><div class="pile-label">DECK</div></div>
       <div class="board" id="aiBoard"></div>
-  <div class="pile" id="aiDiscardPile"><img src="img/decks/fJord-fishers/deck-backs/jf-db-default.webp" alt="discard"><div class="pile-label">DESCARTE</div></div>
+      <div class="pile" id="aiDiscardPile"><img src="img/decks/fJord-fishers/deck-backs/jf-db-default.webp" alt="discard"><div class="pile-label">DESCARTE</div></div>
     </div>
     <div class="turn-bar"><div class="turn-indicator" id="turnIndicator"></div><button class="btn" id="endTurnBtn">Encerrar turno</button></div>
     <div class="row">
-  <div class="pile" id="drawPile"><img src="img/decks/fJord-fishers/deck-backs/jf-db-default.webp" alt="deck"><div class="count" id="drawCount">0</div><div class="pile-label">SEU DECK</div></div>
+      <div id="playerCommander" class="commander"></div>
+      <div class="pile" id="drawPile"><img src="img/decks/fJord-fishers/deck-backs/jf-db-default.webp" alt="deck"><div class="count" id="drawCount">0</div><div class="pile-label">SEU DECK</div></div>
       <div class="board" id="playerBoard"></div>
-  <div class="pile" id="discardPile"><img src="img/decks/fJord-fishers/deck-backs/jf-db-default.webp" alt="discard"><div class="count" id="discardCount">0</div><div class="pile-label">DESCARTE</div></div>
+      <div class="pile" id="discardPile"><img src="img/decks/fJord-fishers/deck-backs/jf-db-default.webp" alt="discard"><div class="count" id="discardCount">0</div><div class="pile-label">DESCARTE</div></div>
       <div class="log-wrap"><div class="zone-title">Registro</div><div class="log" id="log"></div></div>
     </div>
     <div class="totem-bar" id="totemBar"></div>
@@ -198,6 +200,21 @@
       <div class="shop-grid" id="shopChoices"></div>
       <div style="margin-top:12px;text-align:right">
         <button id="closeShop" class="btn">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Commander HUD -->
+  <div id="commanderHud" class="modal">
+    <div class="box">
+      <div class="slots">
+        <div class="item-slot" data-slot="0"></div>
+        <div class="item-slot" data-slot="1"></div>
+        <div class="item-slot" data-slot="2"></div>
+        <div class="item-slot" data-slot="3"></div>
+      </div>
+      <div style="text-align:right;margin-top:12px">
+        <button id="closeCommanderHud" class="btn">Fechar</button>
       </div>
     </div>
   </div>
