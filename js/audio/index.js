@@ -1,7 +1,9 @@
 const AudioCtx = window.AudioContext || window.webkitAudioContext;
 let actx = null,
   master = null,
-  muted = false;
+  muted = false,
+  currentMaster = 0.18,
+  currentMusic = 0.18;
 export function initAudio() {
   if (!AudioCtx) return;
   if (!actx) {
@@ -289,7 +291,18 @@ export function tryStartMenuMusicImmediate() {
 
 export function toggleMute(btn) {
   muted = !muted;
-  if (master) master.gain.value = muted ? 0 : 0.18;
-  if (musicGain) musicGain.gain.value = muted ? 0 : 0.18;
+  if (muted) {
+    if (master) {
+      currentMaster = master.gain.value;
+      master.gain.value = 0;
+    }
+    if (musicGain) {
+      currentMusic = musicGain.gain.value;
+      musicGain.gain.value = 0;
+    }
+  } else {
+    if (master) master.gain.value = currentMaster;
+    if (musicGain) musicGain.gain.value = currentMusic;
+  }
   if (btn) btn.textContent = muted ? "🔇 Mudo" : "🔊 Som";
 }
