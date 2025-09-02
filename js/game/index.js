@@ -544,6 +544,44 @@ const TEMPLATES = {
     ],
   ],
 };
+const COMMANDERS = {
+  vikings: {
+    name: "Eirik",
+    classe: "Guerreiro",
+    base: { atk: 2, hp: 30 },
+    slots: { weapon: 1, armor: 1, trinket: 1 },
+  },
+  animais: {
+    name: "Mãe da Alcateia",
+    classe: "Druida",
+    base: { atk: 1, hp: 30 },
+    slots: { companion: 3 },
+  },
+  pescadores: {
+    name: "Capitão do Porto",
+    classe: "Navegador",
+    base: { atk: 1, hp: 30 },
+    slots: { weapon: 1, armor: 1 },
+  },
+  floresta: {
+    name: "Guardiã da Floresta",
+    classe: "Totêmico",
+    base: { atk: 1, hp: 30 },
+    slots: { totem: 2, charm: 1 },
+  },
+  convergentes: {
+    name: "Avatar Prismal",
+    classe: "Místico",
+    base: { atk: 0, hp: 30 },
+    slots: { essence: 3 },
+  },
+  custom: {
+    name: "Comandante",
+    classe: "",
+    base: { atk: 0, hp: 30 },
+    slots: { weapon: 1, armor: 1, trinket: 1 },
+  },
+};
 const ALL_DECKS = Object.keys(TEMPLATES);
 const G = {
   playerHP: 30,
@@ -575,6 +613,10 @@ const G = {
   maxHandSize: 5,
   totems: [],
   enemyScaling: 0,
+  playerCommander: null,
+  aiCommander: null,
+  playerItems: [],
+  aiItems: [],
 };
 const els = {
   pHP: $("#playerHP"),
@@ -1011,6 +1053,12 @@ export function startGame(opts = {}) {
       G.playerDeck.push(t);
     }
   }
+  const playerCmdKey =
+    G.playerDeckChoice === "custom" ? "custom" : G.playerDeckChoice;
+  G.playerCommander = { ...COMMANDERS[playerCmdKey] };
+  G.playerItems = [];
+  G.aiCommander = { ...COMMANDERS[G.aiDeckChoice] };
+  G.aiItems = [];
   shuffle(G.playerDeck);
   G.playerDeck.forEach((c) => {
     sanitize(c);
