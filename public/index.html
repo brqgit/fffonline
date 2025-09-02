@@ -125,7 +125,7 @@
   <div class="" id="gameWrap" style="display:none">
     <div class="mid-mana" id="midMana"></div>
     <div class="hud">
-      <div class="meter"><b>Seu HP</b><span class="value" id="playerHP">30</span><div class="bar"><div class="fill" id="barPlayerHP"></div></div></div>
+      <div class="meter player"><b>Seu HP</b><span class="value" id="playerHP">30</span><div class="player-img" id="playerAvatar">👤</div><div class="bar"><div class="fill" id="barPlayerHP"></div></div></div>
       <div class="center-hud"><div class="meter mana"><b>Mana</b><span class="value" id="mana">0/0</span><div class="bar"><div class="fill" id="barMana"></div></div></div><button class="btn-ghost" id="muteBtn" title="Som">🔊 Som</button><button class="btn-ghost" id="openMenuBtn" title="Menu">☰ Menu</button></div>
       <div class="meter enemy" style="justify-self:end"><b>HP Inimigo</b><span class="opp-label" id="opponentLabel"></span><span class="value" id="aiHP">30</span><div class="enemy-img" id="aiAvatar">🧿</div><div class="bar"><div class="fill" id="barAiHP"></div></div></div>
     </div>
@@ -194,6 +194,7 @@
   <span style="margin-left:auto"><img src="img/ui/coin.png" class="coin-icon" alt="moeda"> <b id="shopGold">0</b></span>
         <button class="btn" id="btnReroll">Re-rolar</button>
       </div>
+      <div id="shopMsg" class="shop-msg" aria-live="polite"></div>
       <div class="shop-grid" id="shopChoices"></div>
       <div style="margin-top:12px;text-align:right">
         <button id="closeShop" class="btn">Fechar</button>

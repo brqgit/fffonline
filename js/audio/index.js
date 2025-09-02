@@ -44,6 +44,10 @@ export function sfx(n) {
         tone(420, 0.07, "sine", 0.7, 0);
         tone(560, 0.08, "sine", 0.6, 0.06);
       },
+      draw: () => {
+        tone(660, 0.06, "square", 0.6, 0);
+        tone(880, 0.08, "triangle", 0.5, 0.04);
+      },
       defense: () => {
         tone(280, 0.09, "square", 0.6, 0);
         tone(200, 0.12, "sine", 0.5, 0.08);

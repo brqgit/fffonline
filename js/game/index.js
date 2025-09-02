@@ -1079,6 +1079,14 @@ function draw(who, n = 1) {
         burnCard(c);
       } else {
         hand.push(c);
+        if (who === "player") {
+          sfx("draw");
+          const deckEl = document.getElementById("drawPile");
+          if (deckEl) {
+            const r = deckEl.getBoundingClientRect();
+            screenParticle("magic", r.left + r.width / 2, r.top + r.height / 2);
+          }
+        }
       }
     }
   }
@@ -1200,6 +1208,7 @@ function summon(side, c, st = "attack") {
     c.hp += G.enemyScaling;
   }
   board.push(c);
+  particleOnCard(c.id, "summon");
   log(
     `${side === "player" ? "Você" : "Inimigo"} jogou ${c.name} em modo ${st === "defense" ? "defesa" : "ataque"}.`,
   );
@@ -1433,7 +1442,7 @@ function particleOnCard(cid, name) {
   screenParticle(name, r.left + r.width / 2, r.top + r.height / 2);
 }
 function particleOnFace(side, name) {
-  const el = side === "ai" ? els.aHP2 : els.pHP2;
+  const el = side === "ai" ? (els.barAHP || els.aHP2) : (els.barPHP || els.pHP2);
   if (!el) return;
   const r = el.getBoundingClientRect();
   screenParticle(name, r.left + r.width / 2, r.top + r.height / 2);
@@ -1442,6 +1451,18 @@ function fxTextOnCard(cid, text, cls) {
   const n = document.querySelector(`.card[data-id="${cid}"]`);
   if (!n) return;
   const r = n.getBoundingClientRect();
+  const fx = document.createElement("div");
+  fx.className = "fx-float " + (cls || "");
+  fx.textContent = text;
+  fx.style.left = r.left + r.width / 2 + "px";
+  fx.style.top = r.top + r.height / 2 + "px";
+  document.body.appendChild(fx);
+  setTimeout(() => fx.remove(), 950);
+}
+function fxTextOnFace(side, text, cls) {
+  const el = side === "ai" ? (els.barAHP || els.aHP2) : (els.barPHP || els.pHP2);
+  if (!el) return;
+  const r = el.getBoundingClientRect();
   const fx = document.createElement("div");
   fx.className = "fx-float " + (cls || "");
   fx.textContent = text;
@@ -1471,16 +1492,19 @@ function attackCard(attacker, target) {
   sfx("hit");
   if (overflow > 0 && target.hp <= 0) {
     const isP = G.playerBoard.includes(attacker);
+    sfx("overflow");
     if (isP) {
       G.aiHP = clamp(G.aiHP - overflow, 0, 99);
       log(
         `${attacker.name} excedeu em ${overflow} e causou dano direto ao Inimigo!`,
       );
+      particleOnFace("ai", "attack");
     } else {
       G.playerHP = clamp(G.playerHP - overflow, 0, 99);
       log(
         `${attacker.name} excedeu em ${overflow} e causou dano direto a Você!`,
       );
+      particleOnFace("player", "attack");
     }
     checkWin();
   }
@@ -1506,10 +1530,12 @@ function attackFace(attacker, face) {
   const dmg = attacker.atk;
   attacker.canAttack = false;
   if (face === "ai") {
+    fxTextOnFace("ai", "-" + dmg, "dmg");
     G.aiHP = clamp(G.aiHP - dmg, 0, 99);
     log(`${attacker.name} causou ${dmg} ao Inimigo!`);
     sfx("crit");
   } else {
+    fxTextOnFace("player", "-" + dmg, "dmg");
     G.playerHP = clamp(G.playerHP - dmg, 0, 99);
     log(`${attacker.name} causou ${dmg} a Você!`);
     sfx("hit");
@@ -1522,6 +1548,7 @@ function attackFace(attacker, face) {
 }
 function damageMinion(m, amt) {
   if (!m || typeof amt !== "number") return;
+  fxTextOnCard(m.id, "-" + amt, "dmg");
   m.hp = clamp(m.hp - amt, 0, 99);
   if (m.hp <= 0) setTimeout(checkDeaths, 10);
 }
@@ -1529,6 +1556,7 @@ function checkDeaths() {
   const deadA = G.aiBoard.filter((c) => c.hp <= 0);
   deadA.forEach((c) => {
     particleOnCard(c.id, "explosion");
+    sfx("death");
     resetCardState(c);
   });
   if (deadA.length) {
@@ -1539,6 +1567,7 @@ function checkDeaths() {
   const deadP = G.playerBoard.filter((c) => c.hp <= 0);
   deadP.forEach((c) => {
     particleOnCard(c.id, "explosion");
+    sfx("death");
     resetCardState(c);
   });
   if (deadP.length) {
@@ -1631,7 +1660,20 @@ els.muteBtn.addEventListener("click", () => {
   toggleMute(els.muteBtn);
 });
 window.addEventListener("keydown", (e) => {
-  if (e.key === "Escape") cancelTargeting();
+  if (e.key !== "Escape") return;
+  if (G.chosen) {
+    cancelTargeting();
+    return;
+  }
+  if (!els.gameMenu) return;
+  const isOpen = els.gameMenu.classList.contains("show");
+  if (isOpen) {
+    els.gameMenu.classList.remove("show");
+  } else {
+    els.gameMenu.classList.add("show");
+    if (els.restartBtn)
+      els.restartBtn.style.display = window.isMultiplayer ? "none" : "block";
+  }
 });
 document.addEventListener(
   "click",
