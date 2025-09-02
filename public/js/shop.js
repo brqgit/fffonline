@@ -52,6 +52,11 @@ function fisherYatesShuffle(arr){
   return a;
 }
 
+// alias to maintain existing shuffle calls
+function shuffle(arr){
+  return fisherYatesShuffle(arr);
+}
+
 const slug = str => str.toLowerCase().replace(/[^a-z0-9]+/g,'-');
 // Do not force non-existent images; let card renderer pick deck placeholders/emoji
 function withImg(it){ return it; }
@@ -247,6 +252,8 @@ function closeShop(){
     modal.style.display = 'none';
   }
   tooltip.hide();
+  // reset any in-flight purchase tracking on close
+  shopState.pending = [];
   if(shopState.onClose) shopState.onClose(shopState);
 }
 

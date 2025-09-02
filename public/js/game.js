@@ -730,7 +730,6 @@ async function draw(who,n=1){
         disc = who==='player'?G.playerDiscard:G.aiDiscard;
   const deckEl = document.getElementById('drawPile');
   const handEl = els.pHand;
-  const newlyDrawnIds = [];
   for(let i=0;i<n;i++){
     if(deck.length===0 && disc.length){
       disc.forEach(resetCardState);
@@ -747,13 +746,18 @@ async function draw(who,n=1){
         log(`${c.name} queimou por excesso de cartas.`);
       } else {
         if(who==='player'){
-          // animate first, then add to hand and render (1 by 1)
-          try{ await animateMove(deckEl,handEl); }catch(_){ }
+          // add to hand first so we can target its final position
           hand.push(c);
           renderHand();
-          await new Promise(r=>setTimeout(r,90));
+          stackHand();
+          const node=document.querySelector(`#playerHand .card[data-id='${c.id}']`)||handEl;
+          node.style.visibility='hidden';
+          try{ await animateMove(deckEl,node); }catch(_){ }
+          node.style.visibility='';
+          await animateDrawFlipOne(c.id);
+        } else {
+          hand.push(c);
         }
-        else { hand.push(c); }
       }
     }
   }
