@@ -1079,6 +1079,14 @@ function draw(who, n = 1) {
         burnCard(c);
       } else {
         hand.push(c);
+        if (who === "player") {
+          sfx("draw");
+          const deckEl = document.getElementById("drawPile");
+          if (deckEl) {
+            const r = deckEl.getBoundingClientRect();
+            screenParticle("magic", r.left + r.width / 2, r.top + r.height / 2);
+          }
+        }
       }
     }
   }
