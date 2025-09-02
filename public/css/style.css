@@ -290,6 +290,7 @@ transform:scaleX(1) rotate(var(--ang,0deg))}
 .fx.fx-attack{width:64px;height:64px;background:url("../img/particles/Sparks-Sheet.png") no-repeat center/contain;filter:invert(1) sepia(1) saturate(5) hue-rotate(0deg);opacity:0;animation:healPop .6s ease-out forwards}
 .fx.fx-magic{width:64px;height:64px;background:url("../img/particles/Holy Light Aura.png") no-repeat center/contain;filter:invert(1) sepia(1) saturate(5) hue-rotate(200deg);opacity:0;animation:healPop .6s ease-out forwards}
 .fx.fx-explosion{width:64px;height:64px;background:url("../img/particles/Splatter-Sheet.png") no-repeat center/contain;filter:invert(1) sepia(1) saturate(5) hue-rotate(20deg);opacity:0;animation:healPop .6s ease-out forwards}
+.fx.fx-summon{width:64px;height:64px;background:url("../img/particles/Sakuras.png") no-repeat center/contain;filter:invert(1) sepia(1) saturate(5) hue-rotate(120deg);opacity:0;animation:healPop .6s ease-out forwards}
 @keyframes healPop{0%{opacity:0;transform:translate(-50%,-50%) scale(.5)}50%{opacity:1}100%{opacity:0;transform:translate(-50%,-80%) scale(1)}}
 @keyframes healFrames{0%{background-position:0 0}10%{background-position:-96px 0}20%{background-position:-192px 0}30%{background-position:-288px 0}40%{background-position:-384px 0}50%{background-position:0 -96px}60%{background-position:-96px -96px}70%{background-position:-192px -96px}80%{background-position:-288px -96px}90%,100%{background-position:-384px -96px}}
 .fx-float{position:fixed;
@@ -823,6 +824,7 @@ display:block}
 .fx.fx-attack{width:calc(var(--card-w)*0.4);height:calc(var(--card-w)*0.4);background:url('../img/particles/attack.png') no-repeat center/contain;filter:invert(1) sepia(1) saturate(5) hue-rotate(0deg);opacity:0;animation:healPop .6s ease-out forwards}
 .fx.fx-magic{width:calc(var(--card-w)*0.4);height:calc(var(--card-w)*0.4);background:url('../img/particles/magic.png') no-repeat center/contain;filter:invert(1) sepia(1) saturate(5) hue-rotate(200deg);opacity:0;animation:healPop .6s ease-out forwards}
 .fx.fx-explosion{width:calc(var(--card-w)*0.45);height:calc(var(--card-w)*0.45);background:url('../img/particles/explosion.png') no-repeat center/contain;filter:invert(1) sepia(1) saturate(5) hue-rotate(20deg);opacity:0;animation:healPop .6s ease-out forwards}
+.fx.fx-summon{width:calc(var(--card-w)*0.4);height:calc(var(--card-w)*0.4);background:url('../img/particles/Sakuras.png') no-repeat center/contain;filter:invert(1) sepia(1) saturate(5) hue-rotate(120deg);opacity:0;animation:healPop .6s ease-out forwards}
 #encounterTransition.show{opacity:1}
 /* Totem slot tooltip */
 .totem-slot[data-tip]{position:relative}
