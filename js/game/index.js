@@ -1691,12 +1691,6 @@ function checkDeaths() {
   }
   els.discardCount.textContent = G.playerDiscard.length;
 }
-      attackFace(a, "player");
-    }
-    setTimeout(next, 500);
-  }
-  setTimeout(next, 500);
-}
 function fireworks(win) {
   const b = document.createElement("div");
   b.className = "boom";
