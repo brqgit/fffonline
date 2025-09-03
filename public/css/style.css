@@ -469,12 +469,6 @@ white-space:nowrap}
  border-radius:18px;
  position:relative;
  flex:0 0 var(--card-w)}
-.commander{display:grid;
- place-items:center;
- width:var(--card-w);
- height:var(--card-h);
- flex:0 0 var(--card-w);
- position:relative}
 .pile img{
  display:block;
  width:100%;
