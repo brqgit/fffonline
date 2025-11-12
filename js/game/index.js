@@ -43,6 +43,61 @@ const KW = {
     BR1: "buffRandom1",
     BA1: "buffAlliesAtk1",
   };
+const DECK_ASSET_SLUG = {
+  vikings: "farm-vikings",
+  pescadores: "fJord-fishers",
+  floresta: "forest-beasts",
+  animais: "north-beasts",
+};
+const DECK_ART_FILES = {
+  vikings: [
+    "1_Guerreiro_Loiro.png",
+    "2_Guerreiro_Esqueleto.png",
+    "3_Guerreiro_Rubro.png",
+    "4_Mago_Elder.png",
+    "5_Raider_Mascara.png",
+    "6_Guerreiro_Machado.png",
+    "7_Sombras_Encapuzado.png",
+    "8_Guerreiro_Espada.png",
+    "9_Raider_Mascara_Sombra.png",
+    "10_Mago_Elder_Sombra.png",
+  ],
+  pescadores: [
+    "1_Fogueira_Viking.png",
+    "2_Mistico_Encapuzado.png",
+    "3_Drakkar.png",
+    "4_Guerreiro_do_Escudo.png",
+    "5_Estandarte_do_Cla.png",
+    "6_Guerreiro_das_Runas.png",
+    "7_Guardiao_do_Machado.png",
+    "8_Batalhador_Duplo.png",
+    "9_Navegador.png",
+    "10_Batalhador.png",
+  ],
+  animais: [
+    "alce-bravo.png",
+    "coelho-escudeiro.png",
+    "coruja-ancia.png",
+    "coruja-sabia.png",
+    "esquilo-viking.png",
+    "guerreiro-cervo.png",
+    "morcego-noturno.png",
+    "raposa-espadachim.png",
+    "urso-guardiao.png",
+  ],
+  floresta: [
+    "Alce_Espiritual.png",
+    "Coruja_Guardiao.png",
+    "Coruja_Runica.png",
+    "Corvo_de_Odin.png",
+    "Fogueira_Sagrada.png",
+    "Bode_Sagrado.png",
+    "Esquilo_Ratatoskr.png",
+    "Lobo_Fenrir.png",
+    "Serpente_Jormungandr.png",
+  ],
+};
+const CARD_MEDIA = {};
 function deriveClassSub(name) {
   const n = name.toLowerCase();
   if (n.includes("berserker")) return { classe: "tank", subclasse: "Berserker" };
@@ -76,7 +131,7 @@ function deriveClassSub(name) {
 const makeCard = (a) => {
   const [n, e, t, atk, hp, cost, tx, k = 0, b = 0, harvest = 0] = a;
   const cls = deriveClassSub(n || "");
-  return {
+  const card = {
     name: n,
     emoji: e,
     tribe: t,
@@ -91,6 +146,11 @@ const makeCard = (a) => {
     subclasse: cls.subclasse,
     id: uid(),
   };
+  const media = CARD_MEDIA[n];
+  if (media && media.img) {
+    card.img = media.img;
+  }
+  return card;
 };
 const TEMPLATES = {
   vikings: [
@@ -545,6 +605,29 @@ const TEMPLATES = {
     ],
   ],
 };
+const assignCardMedia = () => {
+  for (const [deck, cards] of Object.entries(TEMPLATES)) {
+    const asset = DECK_ASSET_SLUG[deck];
+    const files = DECK_ART_FILES[deck];
+    if (!asset || !files || files.length === 0) continue;
+    let idx = 0;
+    cards.forEach((card) => {
+      const [name, emoji] = card;
+      if (!emoji && name) {
+        const file = files[idx];
+        CARD_MEDIA[name] = {
+          deck,
+          img: `/img/decks/${asset}/characters/${file}`,
+        };
+        idx = (idx + 1) % files.length;
+      }
+    });
+  }
+};
+assignCardMedia();
+if (typeof window !== "undefined") {
+  window.CARD_MEDIA = CARD_MEDIA;
+}
 const COMMANDERS = {
   vikings: {
     name: "Eirik",
@@ -780,6 +863,9 @@ function cardNode(c, owner) {
   d.className = `card ${owner === "player" ? "me" : "enemy"} ${c.stance === "defense" ? "defense" : ""}`;
   d.dataset.id = c.id;
   const costText = `${c.cost}${c.harvestCost ? `🌾${c.harvestCost}` : ""}`;
+  const artMarkup = c.img
+    ? `<img src="${c.img}" alt="${c.name}" loading="lazy">`
+    : c.emoji || "";
   const kwTags = (c.kw || []).map(
     (k) =>
       `<span class='keyword' data-tip='${
@@ -797,7 +883,7 @@ function cardNode(c, owner) {
   if (c.subclasse && c.classe) {
     kwTags.push(`<span class='class-tag ${c.classe}'>${c.subclasse}</span>`);
   }
-  d.innerHTML = `<div class="bg bg-${c.deck || "default"}"></div><div class="head"><span class="cost">${costText}</span><div class="name">${c.name}</div>${c.stance ? `<span class="badge ${c.stance === "defense" ? "def" : "atk"}">${c.stance === "defense" ? "🛡️" : "⚔️"}</span>` : ""}</div><div class="tribe">${c.tribe}</div><div class="art">${c.emoji}</div><div class="text">${kwTags.join(" ")} ${c.text || ""}</div><div class="stats"><span class="gem atk">⚔️ ${c.atk}</span>${c.stance ? `<span class="stance-label ${c.stance}">${c.stance === 'defense' ? '🛡️' : '⚔️'}</span>` : ''}<span class="gem hp ${c.hp <= 2 ? "low" : ""}">❤️ ${c.hp}</span></div>`;
+  d.innerHTML = `<div class="bg bg-${c.deck || "default"}"></div><div class="head"><span class="cost">${costText}</span><div class="name">${c.name}</div>${c.stance ? `<span class="badge ${c.stance === "defense" ? "def" : "atk"}">${c.stance === "defense" ? "🛡️" : "⚔️"}</span>` : ""}</div><div class="tribe">${c.tribe}</div><div class="art">${artMarkup}</div><div class="text">${kwTags.join(" ")} ${c.text || ""}</div><div class="stats"><span class="gem atk">⚔️ ${c.atk}</span>${c.stance ? `<span class="stance-label ${c.stance}">${c.stance === 'defense' ? '🛡️' : '⚔️'}</span>` : ''}<span class="gem hp ${c.hp <= 2 ? "low" : ""}">❤️ ${c.hp}</span></div>`;
   return d;
 }
 function resetCardState(c) {
@@ -1749,7 +1835,10 @@ function renderEncy(filter = "all", locked = false) {
   cards.forEach((c) => {
     const d = document.createElement("div");
     d.className = `card ency-card bg-${c.deck}`;
-    d.innerHTML = `<div class='bg bg-${c.deck}'></div><div class='head'><span class='cost'>${c.cost}${c.harvestCost ? `🌾${c.harvestCost}` : ""}</span><div class='name'>${c.name}</div></div><div class='mini'>${c.tribe} • ⚔️ ${c.atk} / ❤️ ${c.hp}</div><div class='art'>${c.emoji}</div><div class='details'><div>${(c.kw || []).map((k) => `<span class='chip' data-type='keyword' data-tip='${k === "Protetor" ? "Enquanto houver Protetor ou carta em Defesa do lado do defensor, ataques devem mirá-los." : k === "Furioso" ? "Pode atacar no turno em que é jogada." : ""}' >${k}</span>`).join(" ")}</div><div style='margin-top:6px'>${c.text || ""}</div></div>`;
+    const art = c.img
+      ? `<img src='${c.img}' alt='${c.name}' loading='lazy'>`
+      : c.emoji || "";
+    d.innerHTML = `<div class='bg bg-${c.deck}'></div><div class='head'><span class='cost'>${c.cost}${c.harvestCost ? `🌾${c.harvestCost}` : ""}</span><div class='name'>${c.name}</div></div><div class='mini'>${c.tribe} • ⚔️ ${c.atk} / ❤️ ${c.hp}</div><div class='art'>${art}</div><div class='details'><div>${(c.kw || []).map((k) => `<span class='chip' data-type='keyword' data-tip='${k === "Protetor" ? "Enquanto houver Protetor ou carta em Defesa do lado do defensor, ataques devem mirá-los." : k === "Furioso" ? "Pode atacar no turno em que é jogada." : ""}' >${k}</span>`).join(" ")}</div><div style='margin-top:6px'>${c.text || ""}</div></div>`;
     tiltify(d);
     els.encyGrid.appendChild(d);
   });

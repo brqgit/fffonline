@@ -58,8 +58,66 @@ function shuffle(arr){
 }
 
 const slug = str => str.toLowerCase().replace(/[^a-z0-9]+/g,'-');
-// Do not force non-existent images; let card renderer pick deck placeholders/emoji
-function withImg(it){ return it; }
+const DEFAULT_CARD_MEDIA = {
+  "Camponês Vigilante": { deck: 'vikings', img: '/img/decks/farm-vikings/characters/1_Guerreiro_Loiro.png' },
+  "Herbalista do Vilarejo": { deck: 'vikings', img: '/img/decks/farm-vikings/characters/2_Guerreiro_Esqueleto.png' },
+  "Batedor da Aldeia": { deck: 'vikings', img: '/img/decks/farm-vikings/characters/3_Guerreiro_Rubro.png' },
+  "Ancião do Trigo": { deck: 'vikings', img: '/img/decks/farm-vikings/characters/4_Mago_Elder.png' },
+  "Patriarca da Fazenda": { deck: 'vikings', img: '/img/decks/farm-vikings/characters/5_Raider_Mascara.png' },
+  "Rastreador do Fiorde": { deck: 'vikings', img: '/img/decks/farm-vikings/characters/6_Guerreiro_Machado.png' },
+  "Ceifeira Ágil": { deck: 'vikings', img: '/img/decks/farm-vikings/characters/7_Sombras_Encapuzado.png' },
+  "Defensor do Arado": { deck: 'vikings', img: '/img/decks/farm-vikings/characters/8_Guerreiro_Espada.png' },
+  "Runomante Rural": { deck: 'vikings', img: '/img/decks/farm-vikings/characters/9_Raider_Mascara_Sombra.png' },
+  "Guerreiro da Foice": { deck: 'vikings', img: '/img/decks/farm-vikings/characters/10_Mago_Elder_Sombra.png' },
+  "Guardiã do Celeiro": { deck: 'vikings', img: '/img/decks/farm-vikings/characters/1_Guerreiro_Loiro.png' },
+  "Senhor do Campo": { deck: 'vikings', img: '/img/decks/farm-vikings/characters/2_Guerreiro_Esqueleto.png' },
+  "Lobo Alfa": { deck: 'animais', img: '/img/decks/north-beasts/characters/alce-bravo.png' },
+  "Lince Ártico": { deck: 'animais', img: '/img/decks/north-beasts/characters/coelho-escudeiro.png' },
+  "Falcão das Montanhas": { deck: 'animais', img: '/img/decks/north-beasts/characters/coruja-ancia.png' },
+  "Caribu Selvagem": { deck: 'animais', img: '/img/decks/north-beasts/characters/coruja-sabia.png' },
+  "Texugo Ártico": { deck: 'animais', img: '/img/decks/north-beasts/characters/esquilo-viking.png' },
+  "Foca do Gelo": { deck: 'animais', img: '/img/decks/north-beasts/characters/guerreiro-cervo.png' },
+  "Lobo Uivante": { deck: 'animais', img: '/img/decks/north-beasts/characters/morcego-noturno.png' },
+  "Raposa Escarlate": { deck: 'animais', img: '/img/decks/north-beasts/characters/raposa-espadachim.png' },
+  "Touro das Neves": { deck: 'animais', img: '/img/decks/north-beasts/characters/urso-guardiao.png' },
+  "Corvo Astuto": { deck: 'animais', img: '/img/decks/north-beasts/characters/alce-bravo.png' },
+  "Fera das Cavernas": { deck: 'animais', img: '/img/decks/north-beasts/characters/coelho-escudeiro.png' },
+  "Curandeiro do Mar": { deck: 'pescadores', img: '/img/decks/fJord-fishers/characters/1_Fogueira_Viking.png' },
+  "Bardo do Porto": { deck: 'pescadores', img: '/img/decks/fJord-fishers/characters/2_Mistico_Encapuzado.png' },
+  "Caçador de Tesouros": { deck: 'pescadores', img: '/img/decks/fJord-fishers/characters/3_Drakkar.png' },
+  "Escudeiro do Convés": { deck: 'pescadores', img: '/img/decks/fJord-fishers/characters/4_Guerreiro_do_Escudo.png' },
+  "Guarda do Cais": { deck: 'pescadores', img: '/img/decks/fJord-fishers/characters/5_Estandarte_do_Cla.png' },
+  "Aprendiz de Rede": { deck: 'pescadores', img: '/img/decks/fJord-fishers/characters/6_Guerreiro_das_Runas.png' },
+  "Baleeiro Leal": { deck: 'pescadores', img: '/img/decks/fJord-fishers/characters/7_Guardiao_do_Machado.png' },
+  "Atirador do Convés": { deck: 'pescadores', img: '/img/decks/fJord-fishers/characters/8_Batalhador_Duplo.png' },
+  "Sacerdote das Ondas": { deck: 'pescadores', img: '/img/decks/fJord-fishers/characters/9_Navegador.png' },
+  "Corsário Intrépido": { deck: 'pescadores', img: '/img/decks/fJord-fishers/characters/10_Batalhador.png' },
+  "Patrulheiro Náutico": { deck: 'pescadores', img: '/img/decks/fJord-fishers/characters/1_Fogueira_Viking.png' },
+  "Almirante do Fiorde": { deck: 'pescadores', img: '/img/decks/fJord-fishers/characters/2_Mistico_Encapuzado.png' },
+  "Lince da Sombra": { deck: 'floresta', img: '/img/decks/forest-beasts/characters/Alce_Espiritual.png' },
+  "Corvo Observador": { deck: 'floresta', img: '/img/decks/forest-beasts/characters/Coruja_Guardiao.png' },
+  "Guardião Musgoso": { deck: 'floresta', img: '/img/decks/forest-beasts/characters/Coruja_Runica.png' },
+  "Cervo Rúnico": { deck: 'floresta', img: '/img/decks/forest-beasts/characters/Corvo_de_Odin.png' },
+  "Javali Voraz": { deck: 'floresta', img: '/img/decks/forest-beasts/characters/Fogueira_Sagrada.png' },
+  "Lebre da Névoa": { deck: 'floresta', img: '/img/decks/forest-beasts/characters/Bode_Sagrado.png' },
+  "Guardião da Clareira": { deck: 'floresta', img: '/img/decks/forest-beasts/characters/Esquilo_Ratatoskr.png' },
+  "Raposa Sombria": { deck: 'floresta', img: '/img/decks/forest-beasts/characters/Lobo_Fenrir.png' },
+  "Urso Musgoso": { deck: 'floresta', img: '/img/decks/forest-beasts/characters/Serpente_Jormungandr.png' },
+  "Coruja Mensageira": { deck: 'floresta', img: '/img/decks/forest-beasts/characters/Alce_Espiritual.png' },
+  "Cervo das Runas": { deck: 'floresta', img: '/img/decks/forest-beasts/characters/Coruja_Guardiao.png' },
+  "Javali Espinhoso": { deck: 'floresta', img: '/img/decks/forest-beasts/characters/Coruja_Runica.png' },
+};
+const CARD_MEDIA_MAP = (typeof window !== 'undefined' && window.CARD_MEDIA)
+  ? window.CARD_MEDIA
+  : DEFAULT_CARD_MEDIA;
+function withImg(it){
+  const media = CARD_MEDIA_MAP[it.name];
+  if(media){
+    if(media.deck) it.deck = media.deck;
+    if(media.img) it.img = media.img;
+  }
+  return it;
+}
 
 // --- tooltip ---
 const tooltip = (() => {
@@ -144,8 +202,6 @@ function renderShop(){
     if(['unit','spell','totem'].includes(it.type) && window.cardNode){
       // normalize data for cardNode: prefer deck/icon or img
       const nodeData = Object.assign({}, it);
-      // clear img if present to avoid 404s; let game.js choose a safe deck placeholder
-      if(nodeData.img) delete nodeData.img;
       if(!nodeData.deck && window && window.G && window.G.playerDeckChoice) nodeData.deck = window.G.playerDeckChoice;
       const node = window.cardNode(nodeData,'player');
       node.classList.add('shop-preview');
