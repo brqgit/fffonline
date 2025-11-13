@@ -549,15 +549,15 @@ const assignCardMedia = () => {
     if (!asset || !files || files.length === 0) continue;
     let idx = 0;
     cards.forEach((card) => {
-      const [name, emoji] = card;
-      if (!emoji && name) {
-        const file = files[idx];
-        CARD_MEDIA[name] = {
-          deck,
-          img: `/img/decks/${asset}/characters/${file}`,
-        };
-        idx = (idx + 1) % files.length;
-      }
+      const [name] = card;
+      if (!name) return;
+      const file = files[idx % files.length];
+      if (!file) return;
+      CARD_MEDIA[name] = {
+        deck,
+        img: `/img/decks/${asset}/characters/${file}`,
+      };
+      idx += 1;
     });
   }
 };
