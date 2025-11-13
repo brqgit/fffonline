@@ -549,15 +549,15 @@ const assignCardMedia = () => {
     if (!asset || !files || files.length === 0) continue;
     let idx = 0;
     cards.forEach((card) => {
-      const [name, emoji] = card;
-      if (!emoji && name) {
-        const file = files[idx];
-        CARD_MEDIA[name] = {
-          deck,
-          img: `/img/decks/${asset}/characters/${file}`,
-        };
-        idx = (idx + 1) % files.length;
-      }
+      const [name] = card;
+      if (!name) return;
+      const file = files[idx % files.length];
+      if (!file) return;
+      CARD_MEDIA[name] = {
+        deck,
+        img: `/img/decks/${asset}/characters/${file}`,
+      };
+      idx += 1;
     });
   }
 };
@@ -659,6 +659,8 @@ const els = {
   aAva: $("#aiAvatar"),
   drawCount: $("#drawCount"),
   discardCount: $("#discardCount"),
+  drawPile: $("#drawPile"),
+  aiDrawPile: $("#aiDrawPile"),
   barPHP: $("#barPlayerHP"),
   barAHP: $("#barAiHP"),
   barMana: $("#barMana"),
@@ -675,6 +677,12 @@ const els = {
   playAgainBtn: $("#playAgainBtn"),
   rematchBtn: $("#rematchBtn"),
   menuBtn: $("#menuBtn"),
+  openMenuBtn: $("#openMenuBtn"),
+  gameMenu: $("#gameMenu"),
+  closeMenuBtn: $("#closeMenuBtn"),
+  resignBtn: $("#resignBtn"),
+  restartBtn: $("#restartBtn"),
+  mainMenuBtn: $("#mainMenuBtn"),
   totemBar: $("#totemBar"),
   playerCommander: $("#playerCommander"),
 };
@@ -797,12 +805,15 @@ function tiltify(card, lift = false) {
 }
 function cardNode(c, owner) {
   const d = document.createElement("div");
-  d.className = `card ${owner === "player" ? "me" : "enemy"} ${c.stance === "defense" ? "defense" : ""}`;
+  const ownerClass = owner === "player" ? "me" : owner === "ai" ? "enemy" : "";
+  d.className = ["card", ownerClass, c.stance === "defense" ? "defense" : ""].filter(Boolean).join(" ");
   d.dataset.id = c.id;
   const costText = `${c.cost}${c.harvestCost ? `🌾${c.harvestCost}` : ""}`;
   const artMarkup = c.img
-    ? `<img src="${c.img}" alt="${c.name}" loading="lazy">`
-    : c.emoji || "";
+    ? `<img src="${c.img}" alt="${c.name}" loading="lazy" class="card-portrait">`
+    : c.emoji
+    ? `<span class="card-portrait emoji">${c.emoji}</span>`
+    : "";
   const kwTags = (c.kw || []).map(
     (k) =>
       `<span class='keyword' data-tip='${
@@ -820,7 +831,13 @@ function cardNode(c, owner) {
   if (c.subclasse && c.classe) {
     kwTags.push(`<span class='class-tag ${c.classe}'>${c.subclasse}</span>`);
   }
-  d.innerHTML = `<div class="bg bg-${c.deck || "default"}"></div><div class="head"><span class="cost">${costText}</span><div class="name">${c.name}</div>${c.stance ? `<span class="badge ${c.stance === "defense" ? "def" : "atk"}">${c.stance === "defense" ? "🛡️" : "⚔️"}</span>` : ""}</div><div class="tribe">${c.tribe}</div><div class="art">${artMarkup}</div><div class="text">${kwTags.join(" ")} ${c.text || ""}</div><div class="stats"><span class="gem atk">⚔️ ${c.atk}</span>${c.stance ? `<span class="stance-label ${c.stance}">${c.stance === 'defense' ? '🛡️' : '⚔️'}</span>` : ''}<span class="gem hp ${c.hp <= 2 ? "low" : ""}">❤️ ${c.hp}</span></div>`;
+  const kwMarkup = kwTags.length
+    ? `<div class="kw-tags">${kwTags.join("")}</div>`
+    : "";
+  const effectMarkup = c.text
+    ? `<p class="effect-text">${c.text}</p>`
+    : "";
+  d.innerHTML = `<div class="bg bg-${c.deck || "default"}"></div><div class="head"><span class="cost">${costText}</span><div class="name">${c.name}</div>${c.stance ? `<span class="badge ${c.stance === "defense" ? "def" : "atk"}">${c.stance === "defense" ? "🛡️" : "⚔️"}</span>` : ""}</div><div class="tribe">${c.tribe}</div><div class="art">${artMarkup}</div><div class="text">${kwMarkup}${effectMarkup}</div><div class="stats"><span class="gem atk">⚔️ ${c.atk}</span>${c.stance ? `<span class="stance-label ${c.stance}">${c.stance === 'defense' ? '🛡️' : '⚔️'}</span>` : ''}<span class="gem hp ${c.hp <= 2 ? "low" : ""}">❤️ ${c.hp}</span></div>`;
   return d;
 }
 function resetCardState(c) {
@@ -952,6 +969,10 @@ function renderBoard() {
       d.addEventListener("click", () => selectAttacker(c));
     }
     els.pBoard.appendChild(d);
+    if (c.justPlayed) {
+      requestAnimationFrame(() => animateCardLanding(d));
+      delete c.justPlayed;
+    }
   }
   els.aBoard.innerHTML = "";
   for (const c of G.aiBoard) {
@@ -964,6 +985,10 @@ function renderBoard() {
       }
     }
     els.aBoard.appendChild(d);
+    if (c.justPlayed) {
+      requestAnimationFrame(() => animateCardLanding(d));
+      delete c.justPlayed;
+    }
   }
   let btn = document.querySelector("#aiBoard .face-attack-btn");
   if (!btn) {
@@ -1051,7 +1076,8 @@ function flyToBoard(node, onEnd) {
     zIndex: 999,
     transition: "transform .45s ease,opacity .45s ease",
   });
-  clone.classList.add("fly");
+  clone.style.visibility = "visible";
+  clone.classList.add("fly", "card-flight");
   document.body.appendChild(clone);
   const br = els.pBoard.getBoundingClientRect();
   requestAnimationFrame(() => {
@@ -1092,6 +1118,7 @@ export function startGame(opts = {}) {
   }
   if (G.mode === "story" && continuing) {
     G.playerDeck.push(...G.playerHand, ...G.playerBoard, ...G.playerDiscard);
+    G.playerDeck.forEach(resetCardState);
     G.playerHand = [];
     G.playerBoard = [];
     G.playerDiscard = [];
@@ -1171,8 +1198,7 @@ function draw(who, n = 1) {
     disc = who === "player" ? G.playerDiscard : G.aiDiscard;
   for (let i = 0; i < n; i++) {
     if (deck.length === 0 && disc.length) {
-      disc.forEach(resetCardState);
-      deck.push(...shuffle(disc.splice(0)));
+      reshuffleDiscard(who, deck, disc);
     }
     if (deck.length) {
       const c = deck.shift();
@@ -1198,6 +1224,33 @@ function draw(who, n = 1) {
     els.drawCount.textContent = G.playerDeck.length;
     els.discardCount.textContent = G.playerDiscard.length;
   }
+}
+
+function reshuffleDiscard(who, deck, disc) {
+  if (!disc.length) return;
+  disc.forEach(resetCardState);
+  const cards = shuffle(disc.splice(0));
+  deck.push(...cards);
+  triggerShuffleFx(who);
+  if (who === "player") {
+    log("Seu deck foi reembaralhado.");
+    sfx("shuffle");
+  }
+}
+
+function triggerShuffleFx(who) {
+  const pile = who === "player" ? els.drawPile : els.aiDrawPile;
+  if (!pile) return;
+  pile.classList.add("shuffling");
+  const rect = pile.getBoundingClientRect();
+  if (rect.width && rect.height) {
+    screenParticle(
+      "magic",
+      rect.left + rect.width / 2,
+      rect.top + rect.height / 2,
+    );
+  }
+  setTimeout(() => pile.classList.remove("shuffling"), 600);
 }
 
 function burnCard(c) {
@@ -1340,6 +1393,7 @@ function summon(side, c, st = "attack") {
     c.atk += G.enemyScaling;
     c.hp += G.enemyScaling;
   }
+  c.justPlayed = true;
   board.push(c);
   particleOnCard(c.id, "summon");
   log(
@@ -1533,6 +1587,15 @@ const addAnim = (n, c, d = 400) => {
   n && n.classList.add(c);
   setTimeout(() => n && n.classList.remove(c), d);
 };
+function animateCardLanding(node) {
+  if (!node) return;
+  node.classList.add("card-landing");
+  node.addEventListener(
+    "animationend",
+    () => node.classList.remove("card-landing"),
+    { once: true },
+  );
+}
 const animateAttack = (aId, tId) => {
   const a = nodeById(aId),
     t = tId ? nodeById(tId) : null;
@@ -1770,14 +1833,17 @@ function renderEncy(filter = "all", locked = false) {
           .map(makeCard)
           .map((c) => Object.assign(c, { deck: filter }));
   cards.forEach((c) => {
-    const d = document.createElement("div");
-    d.className = `card ency-card bg-${c.deck}`;
-    const art = c.img
-      ? `<img src='${c.img}' alt='${c.name}' loading='lazy'>`
-      : c.emoji || "";
-    d.innerHTML = `<div class='bg bg-${c.deck}'></div><div class='head'><span class='cost'>${c.cost}${c.harvestCost ? `🌾${c.harvestCost}` : ""}</span><div class='name'>${c.name}</div></div><div class='mini'>${c.tribe} • ⚔️ ${c.atk} / ❤️ ${c.hp}</div><div class='art'>${art}</div><div class='details'><div>${(c.kw || []).map((k) => `<span class='chip' data-type='keyword' data-tip='${k === "Protetor" ? "Enquanto houver Protetor ou carta em Defesa do lado do defensor, ataques devem mirá-los." : k === "Furioso" ? "Pode atacar no turno em que é jogada." : ""}' >${k}</span>`).join(" ")}</div><div style='margin-top:6px'>${c.text || ""}</div></div>`;
-    tiltify(d);
-    els.encyGrid.appendChild(d);
+    const cardEl = cardNode(c);
+    cardEl.classList.add("ency-card", `bg-${c.deck || "default"}`);
+    const tribeLine = cardEl.querySelector(".tribe");
+    if (tribeLine) {
+      tribeLine.classList.add("mini");
+      tribeLine.textContent = `${c.tribe} • ⚔️ ${c.atk} / ❤️ ${c.hp}`;
+    }
+    const textBox = cardEl.querySelector(".text");
+    if (textBox) textBox.classList.add("details");
+    tiltify(cardEl);
+    els.encyGrid.appendChild(cardEl);
   });
   els.ency.classList.add("show");
   els.encyFilters.style.display = locked ? "none" : "flex";
@@ -1789,6 +1855,83 @@ function renderEncy(filter = "all", locked = false) {
     ),
   );
 }
+
+function applyHoverGlow(btn) {
+  if (!btn || btn.dataset.holoGlow === "1") return;
+  const update = (e) => {
+    const rect = btn.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    btn.style.setProperty("--px", `${x}%`);
+    btn.style.setProperty("--py", `${y}%`);
+  };
+  btn.addEventListener("pointermove", update);
+  btn.addEventListener("pointerenter", update);
+  btn.addEventListener("mouseenter", () => {
+    btn.style.setProperty("--halo", 0.7);
+    btn.style.setProperty("--shine", 0.7);
+  });
+  btn.addEventListener("mouseleave", () => {
+    btn.style.removeProperty("--halo");
+    btn.style.removeProperty("--shine");
+  });
+  btn.dataset.holoGlow = "1";
+}
+
+function syncButtonHoverEffects(target = document.body) {
+  if (typeof document === "undefined" || !target) return;
+  const nodes =
+    target instanceof Element
+      ? [
+          ...(target.matches(".btn, .btn-ghost") ? [target] : []),
+          ...target.querySelectorAll(".btn, .btn-ghost"),
+        ]
+      : Array.from(document.querySelectorAll(".btn, .btn-ghost"));
+  nodes.forEach((btn) => applyHoverGlow(btn));
+}
+
+if (typeof window !== "undefined") {
+  window.syncButtonHoverEffects = syncButtonHoverEffects;
+}
+if (typeof document !== "undefined") {
+  syncButtonHoverEffects(document.body);
+  if (typeof MutationObserver !== "undefined") {
+    const hoverObserver = new MutationObserver((mutations) => {
+      mutations.forEach((m) => {
+        m.addedNodes.forEach((node) => {
+          if (!(node instanceof Element)) return;
+          syncButtonHoverEffects(node);
+        });
+      });
+    });
+    hoverObserver.observe(document.body, { childList: true, subtree: true });
+  }
+}
+
+function toggleGameMenu(force) {
+  if (!els.gameMenu) return;
+  const isOpen = els.gameMenu.classList.contains("show");
+  const shouldOpen =
+    typeof force === "boolean" ? force : !isOpen;
+  if (shouldOpen) {
+    els.gameMenu.classList.add("show");
+    if (els.restartBtn)
+      els.restartBtn.style.display = window.isMultiplayer ? "none" : "block";
+  } else {
+    els.gameMenu.classList.remove("show");
+  }
+}
+
+function goToMainMenu() {
+  toggleGameMenu(false);
+  if (els.endOverlay) els.endOverlay.classList.remove("show");
+  if (els.start) els.start.style.display = "grid";
+  const wrap = document.getElementById("gameWrap");
+  if (wrap) wrap.style.display = "none";
+  startMenuMusic("menu");
+}
+
 els.endBtn.addEventListener("click", endTurn);
 els.muteBtn.addEventListener("click", () => {
   initAudio();
@@ -1801,15 +1944,7 @@ window.addEventListener("keydown", (e) => {
     cancelTargeting();
     return;
   }
-  if (!els.gameMenu) return;
-  const isOpen = els.gameMenu.classList.contains("show");
-  if (isOpen) {
-    els.gameMenu.classList.remove("show");
-  } else {
-    els.gameMenu.classList.add("show");
-    if (els.restartBtn)
-      els.restartBtn.style.display = window.isMultiplayer ? "none" : "block";
-  }
+  toggleGameMenu();
 });
 document.addEventListener(
   "click",
@@ -1826,25 +1961,6 @@ document.addEventListener(
   { capture: true },
 );
 $$(".deckbtn").forEach((btn) => {
-  btn.addEventListener("pointermove", (e) => {
-    const r = btn.getBoundingClientRect();
-    btn.style.setProperty(
-      "--px",
-      ((e.clientX - r.left) / r.width) * 100 + "%",
-    );
-    btn.style.setProperty(
-      "--py",
-      ((e.clientY - r.top) / r.height) * 100 + "%",
-    );
-  });
-  btn.addEventListener("mouseenter", () => {
-    btn.style.setProperty("--halo", 0.7);
-    btn.style.setProperty("--shine", 0.7);
-  });
-  btn.addEventListener("mouseleave", () => {
-    btn.style.removeProperty("--halo");
-    btn.style.removeProperty("--shine");
-  });
   btn.addEventListener("click", () => {
     const pick = btn.dataset.deck;
     G.playerDeckChoice = pick;
@@ -1866,6 +1982,31 @@ $$(".deckbtn").forEach((btn) => {
       renderEncy(btn.dataset.deck, true);
     });
 });
+if (els.openMenuBtn) {
+  els.openMenuBtn.addEventListener("click", () => {
+    initAudio();
+    ensureRunning();
+    toggleGameMenu(true);
+  });
+}
+if (els.closeMenuBtn) {
+  els.closeMenuBtn.addEventListener("click", () => toggleGameMenu(false));
+}
+if (els.resignBtn) {
+  els.resignBtn.addEventListener("click", () => {
+    toggleGameMenu(false);
+    endGame(false);
+  });
+}
+if (els.restartBtn) {
+  els.restartBtn.addEventListener("click", () => {
+    toggleGameMenu(false);
+    startGame();
+  });
+}
+if (els.mainMenuBtn) {
+  els.mainMenuBtn.addEventListener("click", () => goToMainMenu());
+}
 els.startGame.addEventListener("click", () => {
   els.start.style.display = "none";
   const wrap = document.getElementById("gameWrap");
@@ -1893,11 +2034,7 @@ els.rematchBtn.addEventListener("click", () => {
   startGame();
 });
 els.menuBtn.addEventListener("click", () => {
-  els.endOverlay.classList.remove("show");
-  els.start.style.display = "grid";
-  const wrap = document.getElementById("gameWrap");
-  if (wrap) wrap.style.display = "none";
-  startMenuMusic("menu");
+  goToMainMenu();
 });
 initCommanderHud();
 els.playerCommander &&
