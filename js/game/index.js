@@ -549,15 +549,15 @@ const assignCardMedia = () => {
     if (!asset || !files || files.length === 0) continue;
     let idx = 0;
     cards.forEach((card) => {
-      const [name, emoji] = card;
-      if (!emoji && name) {
-        const file = files[idx];
-        CARD_MEDIA[name] = {
-          deck,
-          img: `/img/decks/${asset}/characters/${file}`,
-        };
-        idx = (idx + 1) % files.length;
-      }
+      const [name] = card;
+      if (!name) return;
+      const file = files[idx % files.length];
+      if (!file) return;
+      CARD_MEDIA[name] = {
+        deck,
+        img: `/img/decks/${asset}/characters/${file}`,
+      };
+      idx += 1;
     });
   }
 };
@@ -675,6 +675,12 @@ const els = {
   playAgainBtn: $("#playAgainBtn"),
   rematchBtn: $("#rematchBtn"),
   menuBtn: $("#menuBtn"),
+  openMenuBtn: $("#openMenuBtn"),
+  gameMenu: $("#gameMenu"),
+  closeMenuBtn: $("#closeMenuBtn"),
+  resignBtn: $("#resignBtn"),
+  restartBtn: $("#restartBtn"),
+  mainMenuBtn: $("#mainMenuBtn"),
   totemBar: $("#totemBar"),
   playerCommander: $("#playerCommander"),
 };
@@ -1789,6 +1795,83 @@ function renderEncy(filter = "all", locked = false) {
     ),
   );
 }
+
+function applyHoverGlow(btn) {
+  if (!btn || btn.dataset.holoGlow === "1") return;
+  const update = (e) => {
+    const rect = btn.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    btn.style.setProperty("--px", `${x}%`);
+    btn.style.setProperty("--py", `${y}%`);
+  };
+  btn.addEventListener("pointermove", update);
+  btn.addEventListener("pointerenter", update);
+  btn.addEventListener("mouseenter", () => {
+    btn.style.setProperty("--halo", 0.7);
+    btn.style.setProperty("--shine", 0.7);
+  });
+  btn.addEventListener("mouseleave", () => {
+    btn.style.removeProperty("--halo");
+    btn.style.removeProperty("--shine");
+  });
+  btn.dataset.holoGlow = "1";
+}
+
+function syncButtonHoverEffects(target = document.body) {
+  if (typeof document === "undefined" || !target) return;
+  const nodes =
+    target instanceof Element
+      ? [
+          ...(target.matches(".btn, .btn-ghost") ? [target] : []),
+          ...target.querySelectorAll(".btn, .btn-ghost"),
+        ]
+      : Array.from(document.querySelectorAll(".btn, .btn-ghost"));
+  nodes.forEach((btn) => applyHoverGlow(btn));
+}
+
+if (typeof window !== "undefined") {
+  window.syncButtonHoverEffects = syncButtonHoverEffects;
+}
+if (typeof document !== "undefined") {
+  syncButtonHoverEffects(document.body);
+  if (typeof MutationObserver !== "undefined") {
+    const hoverObserver = new MutationObserver((mutations) => {
+      mutations.forEach((m) => {
+        m.addedNodes.forEach((node) => {
+          if (!(node instanceof Element)) return;
+          syncButtonHoverEffects(node);
+        });
+      });
+    });
+    hoverObserver.observe(document.body, { childList: true, subtree: true });
+  }
+}
+
+function toggleGameMenu(force) {
+  if (!els.gameMenu) return;
+  const isOpen = els.gameMenu.classList.contains("show");
+  const shouldOpen =
+    typeof force === "boolean" ? force : !isOpen;
+  if (shouldOpen) {
+    els.gameMenu.classList.add("show");
+    if (els.restartBtn)
+      els.restartBtn.style.display = window.isMultiplayer ? "none" : "block";
+  } else {
+    els.gameMenu.classList.remove("show");
+  }
+}
+
+function goToMainMenu() {
+  toggleGameMenu(false);
+  if (els.endOverlay) els.endOverlay.classList.remove("show");
+  if (els.start) els.start.style.display = "grid";
+  const wrap = document.getElementById("gameWrap");
+  if (wrap) wrap.style.display = "none";
+  startMenuMusic("menu");
+}
+
 els.endBtn.addEventListener("click", endTurn);
 els.muteBtn.addEventListener("click", () => {
   initAudio();
@@ -1801,15 +1884,7 @@ window.addEventListener("keydown", (e) => {
     cancelTargeting();
     return;
   }
-  if (!els.gameMenu) return;
-  const isOpen = els.gameMenu.classList.contains("show");
-  if (isOpen) {
-    els.gameMenu.classList.remove("show");
-  } else {
-    els.gameMenu.classList.add("show");
-    if (els.restartBtn)
-      els.restartBtn.style.display = window.isMultiplayer ? "none" : "block";
-  }
+  toggleGameMenu();
 });
 document.addEventListener(
   "click",
@@ -1826,25 +1901,6 @@ document.addEventListener(
   { capture: true },
 );
 $$(".deckbtn").forEach((btn) => {
-  btn.addEventListener("pointermove", (e) => {
-    const r = btn.getBoundingClientRect();
-    btn.style.setProperty(
-      "--px",
-      ((e.clientX - r.left) / r.width) * 100 + "%",
-    );
-    btn.style.setProperty(
-      "--py",
-      ((e.clientY - r.top) / r.height) * 100 + "%",
-    );
-  });
-  btn.addEventListener("mouseenter", () => {
-    btn.style.setProperty("--halo", 0.7);
-    btn.style.setProperty("--shine", 0.7);
-  });
-  btn.addEventListener("mouseleave", () => {
-    btn.style.removeProperty("--halo");
-    btn.style.removeProperty("--shine");
-  });
   btn.addEventListener("click", () => {
     const pick = btn.dataset.deck;
     G.playerDeckChoice = pick;
@@ -1866,6 +1922,31 @@ $$(".deckbtn").forEach((btn) => {
       renderEncy(btn.dataset.deck, true);
     });
 });
+if (els.openMenuBtn) {
+  els.openMenuBtn.addEventListener("click", () => {
+    initAudio();
+    ensureRunning();
+    toggleGameMenu(true);
+  });
+}
+if (els.closeMenuBtn) {
+  els.closeMenuBtn.addEventListener("click", () => toggleGameMenu(false));
+}
+if (els.resignBtn) {
+  els.resignBtn.addEventListener("click", () => {
+    toggleGameMenu(false);
+    endGame(false);
+  });
+}
+if (els.restartBtn) {
+  els.restartBtn.addEventListener("click", () => {
+    toggleGameMenu(false);
+    startGame();
+  });
+}
+if (els.mainMenuBtn) {
+  els.mainMenuBtn.addEventListener("click", () => goToMainMenu());
+}
 els.startGame.addEventListener("click", () => {
   els.start.style.display = "none";
   const wrap = document.getElementById("gameWrap");
@@ -1893,11 +1974,7 @@ els.rematchBtn.addEventListener("click", () => {
   startGame();
 });
 els.menuBtn.addEventListener("click", () => {
-  els.endOverlay.classList.remove("show");
-  els.start.style.display = "grid";
-  const wrap = document.getElementById("gameWrap");
-  if (wrap) wrap.style.display = "none";
-  startMenuMusic("menu");
+  goToMainMenu();
 });
 initCommanderHud();
 els.playerCommander &&
