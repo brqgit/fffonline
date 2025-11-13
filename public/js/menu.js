@@ -82,6 +82,47 @@ const initMenuScreens = () => {
     playPopup.style.transform = '';
   };
 
+
+  const positionPlayPopup = () => {
+    if (!playPopupOpen || !playPopup || !playBtn) return;
+    const layout = playBtn.closest('.start-layout');
+    const panel = playBtn.closest('.panel');
+    if (!layout || !panel) return;
+    const stacked = window.matchMedia('(max-width: 760px)').matches;
+    if (stacked) {
+      playPopup.style.left = '';
+      playPopup.style.top = '';
+      playPopup.style.transform = '';
+      return;
+    }
+    const panelRect = panel.getBoundingClientRect();
+    const layoutRect = layout.getBoundingClientRect();
+    const gap = 24;
+    playPopup.style.left = `${panelRect.right - layoutRect.left + gap}px`;
+    playPopup.style.top = `${panelRect.top - layoutRect.top + panelRect.height / 2}px`;
+    playPopup.style.transform = 'translateY(-50%)';
+  };
+
+  const openPlayPopup = () => {
+    if (!playPopup || playPopupOpen) return;
+    playPopup.hidden = false;
+    playPopup.classList.add('show');
+    playBtn?.setAttribute('aria-expanded', 'true');
+    playPopupOpen = true;
+    positionPlayPopup();
+  };
+
+  const closePlayPopup = () => {
+    if (!playPopup) return;
+    playPopup.classList.remove('show');
+    playPopup.hidden = true;
+    playBtn?.setAttribute('aria-expanded', 'false');
+    playPopupOpen = false;
+    playPopup.style.left = '';
+    playPopup.style.top = '';
+    playPopup.style.transform = '';
+  };
+
   const handlePlayChoice = mode => {
     if (!mode) return;
     closePlayPopup();
@@ -95,6 +136,7 @@ const initMenuScreens = () => {
     if (titleMenu) titleMenu.style.display = 'none';
     if (multiMenu) multiMenu.style.display = 'none';
     if (deckScreen) deckScreen.style.display = 'flex';
+    if (deckScreen) deckScreen.style.display = 'grid';
     if (mode === 'story') {
       setDeckScreenDifficultyVisible(false);
       updateStartButtonForMode('story');
@@ -116,6 +158,7 @@ const initMenuScreens = () => {
         } else {
           handlePlayChoice('solo');
         }
+        openPlayPopup();
       }
     });
   }
@@ -277,3 +320,4 @@ if (document.readyState === 'loading') {
 } else {
   initMenuScreens();
 }
+});
