@@ -1074,7 +1074,7 @@ function flyToBoard(node, onEnd) {
     transition: "transform .45s ease,opacity .45s ease",
   });
   clone.style.visibility = "visible";
-  clone.classList.add("fly", "card-flight");
+  clone.classList.add("fly");
   document.body.appendChild(clone);
   const br = els.pBoard.getBoundingClientRect();
   requestAnimationFrame(() => {
