@@ -63,7 +63,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!playPopup || playPopupOpen) return;
     playPopup.hidden = false;
     playPopup.classList.add('show');
-    if (playBtn) playBtn.setAttribute('aria-expanded', 'true');
+    playBtn?.setAttribute('aria-expanded', 'true');
     playPopupOpen = true;
     positionPlayPopup();
   };
@@ -72,7 +72,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!playPopup) return;
     playPopup.classList.remove('show');
     playPopup.hidden = true;
-    if (playBtn) playBtn.setAttribute('aria-expanded', 'false');
+    playBtn?.setAttribute('aria-expanded', 'false');
     playPopupOpen = false;
     playPopup.style.left = '';
     playPopup.style.top = '';
@@ -84,14 +84,12 @@ document.addEventListener('DOMContentLoaded', () => {
     closePlayPopup();
     if (mode === 'multiplayer') {
       if (titleMenu) titleMenu.style.display = 'none';
-      if (deckScreen) deckScreen.style.display = 'none';
       if (multiMenu) multiMenu.style.display = 'grid';
       window.currentGameMode = 'multi';
       return;
     }
     if (titleMenu) titleMenu.style.display = 'none';
-    if (multiMenu) multiMenu.style.display = 'none';
-    if (deckScreen) deckScreen.style.display = 'flex';
+    if (deckScreen) deckScreen.style.display = 'grid';
     if (mode === 'story') {
       setDeckScreenDifficultyVisible(false);
       updateStartButtonForMode('story');
