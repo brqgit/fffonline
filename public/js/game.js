@@ -61,11 +61,6 @@
         tone(660, 0.06, "square", 0.6, 0);
         tone(880, 0.08, "triangle", 0.5, 0.04);
       },
-      shuffle: () => {
-        tone(380, 0.08, "triangle", 0.45, 0);
-        tone(520, 0.1, "sawtooth", 0.38, 0.05);
-        tone(280, 0.08, "square", 0.4, 0.12);
-      },
       defense: () => {
         tone(280, 0.09, "square", 0.6, 0);
         tone(200, 0.12, "sine", 0.5, 0.08);
@@ -1233,8 +1228,6 @@
     aAva: $("#aiAvatar"),
     drawCount: $("#drawCount"),
     discardCount: $("#discardCount"),
-    drawPile: $("#drawPile"),
-    aiDrawPile: $("#aiDrawPile"),
     barPHP: $("#barPlayerHP"),
     barAHP: $("#barAiHP"),
     barMana: $("#barMana"),
@@ -1312,20 +1305,17 @@
   }
   function cardNode(c, owner) {
     const d = document.createElement("div");
-    const ownerClass = owner === "player" ? "me" : owner === "ai" ? "enemy" : "";
-    d.className = ["card", ownerClass, c.stance === "defense" ? "defense" : ""].filter(Boolean).join(" ");
+    d.className = `card ${owner === "player" ? "me" : "enemy"} ${c.stance === "defense" ? "defense" : ""}`;
     d.dataset.id = c.id;
     const costText = `${c.cost}${c.harvestCost ? `\u{1F33E}${c.harvestCost}` : ""}`;
-    const artMarkup = c.img ? `<img src="${c.img}" alt="${c.name}" loading="lazy" class="card-portrait">` : c.emoji ? `<span class="card-portrait emoji">${c.emoji}</span>` : "";
+    const artMarkup = c.img ? `<img src="${c.img}" alt="${c.name}" loading="lazy">` : c.emoji || "";
     const kwTags = (c.kw || []).map(
       (k) => `<span class='keyword' data-tip='${k === "Protetor" ? "Enquanto houver Protetor ou carta em Defesa do lado do defensor, ataques devem mir\xE1-los." : k === "Furioso" ? "Pode atacar no turno em que \xE9 jogada." : k === "Absorver" ? "Ao entrar, copia uma palavra-chave de um aliado." : k === "Mut\xE1vel" ? "No fim do turno, troca ATK e HP." : ""}' >${k}</span>`
     );
     if (c.subclasse && c.classe) {
       kwTags.push(`<span class='class-tag ${c.classe}'>${c.subclasse}</span>`);
     }
-    const kwMarkup = kwTags.length ? `<div class="kw-tags">${kwTags.join("")}</div>` : "";
-    const effectMarkup = c.text ? `<p class="effect-text">${c.text}</p>` : "";
-    d.innerHTML = `<div class="bg bg-${c.deck || "default"}"></div><div class="head"><span class="cost">${costText}</span><div class="name">${c.name}</div>${c.stance ? `<span class="badge ${c.stance === "defense" ? "def" : "atk"}">${c.stance === "defense" ? "\u{1F6E1}\uFE0F" : "\u2694\uFE0F"}</span>` : ""}</div><div class="tribe">${c.tribe}</div><div class="art">${artMarkup}</div><div class="text">${kwMarkup}${effectMarkup}</div><div class="stats"><span class="gem atk">\u2694\uFE0F ${c.atk}</span>${c.stance ? `<span class="stance-label ${c.stance}">${c.stance === "defense" ? "\u{1F6E1}\uFE0F" : "\u2694\uFE0F"}</span>` : ""}<span class="gem hp ${c.hp <= 2 ? "low" : ""}">\u2764\uFE0F ${c.hp}</span></div>`;
+    d.innerHTML = `<div class="bg bg-${c.deck || "default"}"></div><div class="head"><span class="cost">${costText}</span><div class="name">${c.name}</div>${c.stance ? `<span class="badge ${c.stance === "defense" ? "def" : "atk"}">${c.stance === "defense" ? "\u{1F6E1}\uFE0F" : "\u2694\uFE0F"}</span>` : ""}</div><div class="tribe">${c.tribe}</div><div class="art">${artMarkup}</div><div class="text">${kwTags.join(" ")} ${c.text || ""}</div><div class="stats"><span class="gem atk">\u2694\uFE0F ${c.atk}</span>${c.stance ? `<span class="stance-label ${c.stance}">${c.stance === "defense" ? "\u{1F6E1}\uFE0F" : "\u2694\uFE0F"}</span>` : ""}<span class="gem hp ${c.hp <= 2 ? "low" : ""}">\u2764\uFE0F ${c.hp}</span></div>`;
     return d;
   }
   function resetCardState(c) {
@@ -1448,10 +1438,6 @@
         d.addEventListener("click", () => selectAttacker(c));
       }
       els.pBoard.appendChild(d);
-      if (c.justPlayed) {
-        requestAnimationFrame(() => animateCardLanding(d));
-        delete c.justPlayed;
-      }
     }
     els.aBoard.innerHTML = "";
     for (const c of G.aiBoard) {
@@ -1464,10 +1450,6 @@
         }
       }
       els.aBoard.appendChild(d);
-      if (c.justPlayed) {
-        requestAnimationFrame(() => animateCardLanding(d));
-        delete c.justPlayed;
-      }
     }
     let btn = document.querySelector("#aiBoard .face-attack-btn");
     if (!btn) {
@@ -1551,8 +1533,7 @@
       zIndex: 999,
       transition: "transform .45s ease,opacity .45s ease"
     });
-    clone.style.visibility = "visible";
-    clone.classList.add("fly", "card-flight");
+    clone.classList.add("fly");
     document.body.appendChild(clone);
     const br = els.pBoard.getBoundingClientRect();
     requestAnimationFrame(() => {
@@ -1592,7 +1573,6 @@
     }
     if (G.mode === "story" && continuing) {
       G.playerDeck.push(...G.playerHand, ...G.playerBoard, ...G.playerDiscard);
-      G.playerDeck.forEach(resetCardState);
       G.playerHand = [];
       G.playerBoard = [];
       G.playerDiscard = [];
@@ -1666,7 +1646,8 @@
     const deck = who === "player" ? G.playerDeck : G.aiDeck, hand = who === "player" ? G.playerHand : G.aiHand, disc = who === "player" ? G.playerDiscard : G.aiDiscard;
     for (let i = 0; i < n; i++) {
       if (deck.length === 0 && disc.length) {
-        reshuffleDiscard(who, deck, disc);
+        disc.forEach(resetCardState);
+        deck.push(...shuffle(disc.splice(0)));
       }
       if (deck.length) {
         const c = deck.shift();
@@ -1693,31 +1674,6 @@
       els.discardCount.textContent = G.playerDiscard.length;
     }
   }
-  function reshuffleDiscard(who, deck, disc) {
-    if (!disc.length) return;
-    disc.forEach(resetCardState);
-    const cards = shuffle(disc.splice(0));
-    deck.push(...cards);
-    triggerShuffleFx(who);
-    if (who === "player") {
-      log("Seu deck foi reembaralhado.");
-      sfx("shuffle");
-    }
-  }
-  function triggerShuffleFx(who) {
-    const pile = who === "player" ? els.drawPile : els.aiDrawPile;
-    if (!pile) return;
-    pile.classList.add("shuffling");
-    const rect = pile.getBoundingClientRect();
-    if (rect.width && rect.height) {
-      screenParticle(
-        "magic",
-        rect.left + rect.width / 2,
-        rect.top + rect.height / 2
-      );
-    }
-    setTimeout(() => pile.classList.remove("shuffling"), 600);
-  }
   function burnCard(c) {
     log(`${c.name} queimou por m\xE3o cheia!`);
     screenParticle("explosion", window.innerWidth / 2, window.innerHeight / 2);
@@ -1731,8 +1687,9 @@
   function applyTotemBuffs() {
     if (!G.playerBoard.length || !G.totems.length) return;
     G.playerBoard.forEach((u) => {
-      u.atk = u.baseAtk ?? u.atk;
-      u.hp = u.baseHp ?? u.hp;
+      var _a, _b;
+      u.atk = (_a = u.baseAtk) != null ? _a : u.atk;
+      u.hp = (_b = u.baseHp) != null ? _b : u.hp;
       u.baseAtk = u.atk;
       u.baseHp = u.hp;
     });
@@ -1749,10 +1706,11 @@
     const apply = (board, commander) => {
       if (!board.length || !commander) return;
       board.forEach((u) => {
+        var _a, _b, _c, _d, _e, _f;
         if (typeof u.itemAtk === "number") u.atk -= u.itemAtk;
         if (typeof u.itemHp === "number") u.hp -= u.itemHp;
-        const bonusAtk = (commander.weapon?.atk || 0) + (commander.spell?.buff?.atk || 0);
-        const bonusHp = (commander.armor?.hp || 0) + (commander.spell?.buff?.hp || 0);
+        const bonusAtk = (((_a = commander.weapon) == null ? void 0 : _a.atk) || 0) + (((_c = (_b = commander.spell) == null ? void 0 : _b.buff) == null ? void 0 : _c.atk) || 0);
+        const bonusHp = (((_d = commander.armor) == null ? void 0 : _d.hp) || 0) + (((_f = (_e = commander.spell) == null ? void 0 : _e.buff) == null ? void 0 : _f.hp) || 0);
         u.itemAtk = bonusAtk;
         u.itemHp = bonusHp;
         u.atk += bonusAtk;
@@ -1851,7 +1809,6 @@
       c.atk += G.enemyScaling;
       c.hp += G.enemyScaling;
     }
-    c.justPlayed = true;
     board.push(c);
     particleOnCard(c.id, "summon");
     log(
@@ -2038,15 +1995,6 @@
     n && n.classList.add(c);
     setTimeout(() => n && n.classList.remove(c), d);
   };
-  function animateCardLanding(node) {
-    if (!node) return;
-    node.classList.add("card-landing");
-    node.addEventListener(
-      "animationend",
-      () => node.classList.remove("card-landing"),
-      { once: true }
-    );
-  }
   var animateAttack = (aId, tId) => {
     const a = nodeById(aId), t = tId ? nodeById(tId) : null;
     addAnim(a, "attack-lunge", 350);
@@ -2117,6 +2065,7 @@
     setTimeout(() => fx.remove(), 950);
   }
   function attackCard(attacker, target) {
+    var _a, _b, _c, _d;
     if (!attacker || !attacker.canAttack || attacker.stance === "defense")
       return;
     sfx("attack");
@@ -2136,7 +2085,7 @@
       const isP = G.playerBoard.includes(attacker);
       sfx("overflow");
       if (isP) {
-        const reduction = G.aiCommander?.armor?.hp || 0;
+        const reduction = ((_b = (_a = G.aiCommander) == null ? void 0 : _a.armor) == null ? void 0 : _b.hp) || 0;
         const faceDmg = Math.max(0, overflow - reduction);
         G.aiHP = clamp(G.aiHP - faceDmg, 0, 99);
         log(
@@ -2144,7 +2093,7 @@
         );
         particleOnFace("ai", "attack");
       } else {
-        const reduction = G.playerCommander?.armor?.hp || 0;
+        const reduction = ((_d = (_c = G.playerCommander) == null ? void 0 : _c.armor) == null ? void 0 : _d.hp) || 0;
         const faceDmg = Math.max(0, overflow - reduction);
         G.playerHP = clamp(G.playerHP - faceDmg, 0, 99);
         log(
@@ -2163,6 +2112,7 @@
     els.aBoard.classList.remove("face-can-attack");
   }
   function attackFace(attacker, face) {
+    var _a;
     if (!attacker || !attacker.canAttack || attacker.stance === "defense")
       return;
     sfx("attack");
@@ -2174,7 +2124,7 @@
     animateAttack(attacker.id, null);
     particleOnFace(face, "attack");
     const commander = face === "ai" ? G.aiCommander : G.playerCommander;
-    const reduction = commander?.armor?.hp || 0;
+    const reduction = ((_a = commander == null ? void 0 : commander.armor) == null ? void 0 : _a.hp) || 0;
     const dmg = Math.max(0, attacker.atk - reduction);
     attacker.canAttack = false;
     if (face === "ai") {
@@ -2272,17 +2222,12 @@
     els.encyGrid.innerHTML = "";
     const cards = filter === "all" ? allCards() : TEMPLATES[filter].map(makeCard).map((c) => Object.assign(c, { deck: filter }));
     cards.forEach((c) => {
-      const cardEl = cardNode(c);
-      cardEl.classList.add("ency-card", `bg-${c.deck || "default"}`);
-      const tribeLine = cardEl.querySelector(".tribe");
-      if (tribeLine) {
-        tribeLine.classList.add("mini");
-        tribeLine.textContent = `${c.tribe} \u2022 \u2694\uFE0F ${c.atk} / \u2764\uFE0F ${c.hp}`;
-      }
-      const textBox = cardEl.querySelector(".text");
-      if (textBox) textBox.classList.add("details");
-      tiltify(cardEl);
-      els.encyGrid.appendChild(cardEl);
+      const d = document.createElement("div");
+      d.className = `card ency-card bg-${c.deck}`;
+      const art = c.img ? `<img src='${c.img}' alt='${c.name}' loading='lazy'>` : c.emoji || "";
+      d.innerHTML = `<div class='bg bg-${c.deck}'></div><div class='head'><span class='cost'>${c.cost}${c.harvestCost ? `\u{1F33E}${c.harvestCost}` : ""}</span><div class='name'>${c.name}</div></div><div class='mini'>${c.tribe} \u2022 \u2694\uFE0F ${c.atk} / \u2764\uFE0F ${c.hp}</div><div class='art'>${art}</div><div class='details'><div>${(c.kw || []).map((k) => `<span class='chip' data-type='keyword' data-tip='${k === "Protetor" ? "Enquanto houver Protetor ou carta em Defesa do lado do defensor, ataques devem mir\xE1-los." : k === "Furioso" ? "Pode atacar no turno em que \xE9 jogada." : ""}' >${k}</span>`).join(" ")}</div><div style='margin-top:6px'>${c.text || ""}</div></div>`;
+      tiltify(d);
+      els.encyGrid.appendChild(d);
     });
     els.ency.classList.add("show");
     els.encyFilters.style.display = locked ? "none" : "flex";

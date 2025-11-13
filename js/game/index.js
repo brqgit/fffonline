@@ -1077,7 +1077,7 @@ function flyToBoard(node, onEnd) {
     transition: "transform .45s ease,opacity .45s ease",
   });
   clone.style.visibility = "visible";
-  clone.classList.add("fly", "card-flight");
+  clone.classList.add("fly");
   document.body.appendChild(clone);
   const br = els.pBoard.getBoundingClientRect();
   requestAnimationFrame(() => {
@@ -1833,17 +1833,39 @@ function renderEncy(filter = "all", locked = false) {
           .map(makeCard)
           .map((c) => Object.assign(c, { deck: filter }));
   cards.forEach((c) => {
-    const cardEl = cardNode(c);
-    cardEl.classList.add("ency-card", `bg-${c.deck || "default"}`);
-    const tribeLine = cardEl.querySelector(".tribe");
-    if (tribeLine) {
-      tribeLine.classList.add("mini");
-      tribeLine.textContent = `${c.tribe} • ⚔️ ${c.atk} / ❤️ ${c.hp}`;
+    const d = document.createElement("div");
+    d.className = `card ency-card bg-${c.deck}`;
+    const art = c.img
+      ? `<img src='${c.img}' alt='${c.name}' loading='lazy'>`
+      : c.emoji || "";
+    const kwChips = (c.kw || []).map(
+      (k) =>
+        `<span class='chip' data-type='keyword' data-tip='${
+          k === "Protetor"
+            ? "Enquanto houver Protetor ou carta em Defesa do lado do defensor, ataques devem mirá-los."
+            : k === "Furioso"
+            ? "Pode atacar no turno em que é jogada."
+            : k === "Absorver"
+            ? "Ao entrar, copia uma palavra-chave de um aliado."
+            : k === "Mutável"
+            ? "No fim do turno, troca ATK e HP."
+            : ""
+        }' >${k}</span>`,
+    );
+    if (c.subclasse && c.classe) {
+      kwChips.push(`<span class='chip class-tag ${c.classe}'>${c.subclasse}</span>`);
     }
-    const textBox = cardEl.querySelector(".text");
-    if (textBox) textBox.classList.add("details");
-    tiltify(cardEl);
-    els.encyGrid.appendChild(cardEl);
+    const kwMarkup = kwChips.length
+      ? `<div class='kw-tags'>${kwChips.join("")}</div>`
+      : "";
+    const effectMarkup = c.text
+      ? `<p class='effect-text'>${c.text}</p>`
+      : "";
+    d.innerHTML = `<div class='bg bg-${c.deck}'></div><div class='head'><span class='cost'>${c.cost}${
+      c.harvestCost ? `🌾${c.harvestCost}` : ""
+    }</span><div class='name'>${c.name}</div></div><div class='mini'>${c.tribe} • ⚔️ ${c.atk} / ❤️ ${c.hp}</div><div class='art'>${art}</div><div class='details'>${kwMarkup}${effectMarkup}</div>`;
+    tiltify(d);
+    els.encyGrid.appendChild(d);
   });
   els.ency.classList.add("show");
   els.encyFilters.style.display = locked ? "none" : "flex";
