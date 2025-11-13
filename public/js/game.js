@@ -1315,9 +1315,7 @@
     if (c.subclasse && c.classe) {
       kwTags.push(`<span class='class-tag ${c.classe}'>${c.subclasse}</span>`);
     }
-    const kwMarkup = kwTags.length ? `<div class="kw-tags">${kwTags.join("")}</div>` : "";
-    const effectMarkup = c.text ? `<p class="effect-text">${c.text}</p>` : "";
-    d.innerHTML = `<div class="bg bg-${c.deck || "default"}"></div><div class="head"><span class="cost">${costText}</span><div class="name">${c.name}</div>${c.stance ? `<span class="badge ${c.stance === "defense" ? "def" : "atk"}">${c.stance === "defense" ? "\u{1F6E1}\uFE0F" : "\u2694\uFE0F"}</span>` : ""}</div><div class="tribe">${c.tribe}</div><div class="art">${artMarkup}</div><div class="text">${kwMarkup}${effectMarkup}</div><div class="stats"><span class="gem atk">\u2694\uFE0F ${c.atk}</span>${c.stance ? `<span class="stance-label ${c.stance}">${c.stance === "defense" ? "\u{1F6E1}\uFE0F" : "\u2694\uFE0F"}</span>` : ""}<span class="gem hp ${c.hp <= 2 ? "low" : ""}">\u2764\uFE0F ${c.hp}</span></div>`;
+    d.innerHTML = `<div class="bg bg-${c.deck || "default"}"></div><div class="head"><span class="cost">${costText}</span><div class="name">${c.name}</div>${c.stance ? `<span class="badge ${c.stance === "defense" ? "def" : "atk"}">${c.stance === "defense" ? "\u{1F6E1}\uFE0F" : "\u2694\uFE0F"}</span>` : ""}</div><div class="tribe">${c.tribe}</div><div class="art">${artMarkup}</div><div class="text">${kwTags.join(" ")} ${c.text || ""}</div><div class="stats"><span class="gem atk">\u2694\uFE0F ${c.atk}</span>${c.stance ? `<span class="stance-label ${c.stance}">${c.stance === "defense" ? "\u{1F6E1}\uFE0F" : "\u2694\uFE0F"}</span>` : ""}<span class="gem hp ${c.hp <= 2 ? "low" : ""}">\u2764\uFE0F ${c.hp}</span></div>`;
     return d;
   }
   function resetCardState(c) {
@@ -1535,7 +1533,6 @@
       zIndex: 999,
       transition: "transform .45s ease,opacity .45s ease"
     });
-    clone.style.visibility = "visible";
     clone.classList.add("fly");
     document.body.appendChild(clone);
     const br = els.pBoard.getBoundingClientRect();
