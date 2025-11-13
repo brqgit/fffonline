@@ -340,53 +340,31 @@ background-image:var(--start-bg),radial-gradient(1200px 700px at 80% 20%,#10236a
 background-size:cover,auto;
 background-repeat:no-repeat,no-repeat;
 background-position:center,0 0}
-.start-layout{position:relative;display:flex;
- flex-direction:column;
- align-items:center;
- justify-content:center;
- gap:clamp(16px,4vw,40px);
- width:min(100%,1200px);
- padding:clamp(16px,5vw,40px);
- box-sizing:border-box;
- text-align:center}
-.start-layout .brand{display:flex;
- flex-direction:column;
- align-items:center;
- justify-content:center;
- gap:clamp(8px,2vw,16px)}
+.start-layout{display:flex;
+flex-direction:column;
+align-items:center;
+justify-content:center;
+gap:clamp(16px,4vw,40px);
+width:min(100%,1200px);
+padding:clamp(16px,5vw,40px);
+box-sizing:border-box}
 .start .panel{position:relative;
- background:linear-gradient(180deg,#121a44,#0c1230);
- border:1px solid #2b3a86;
- border-radius:16px;
- box-shadow:0 20px 50px rgba(0,0,0,.5);
- padding:26px 28px;
- max-width:96vw;
- width:auto;
- display:flex;
- flex-direction:column;
- align-items:stretch;
- gap:clamp(12px,2vw,20px);
- margin:0;
- align-self:center}
-#titleMenu .panel{width:min(92vw,max-content);max-width:420px}
-#titleMenu .main-actions{display:flex;flex-direction:column;gap:12px;align-items:stretch}
-#titleMenu .main-actions .btn{width:100%}
-.start .panel-toolbar{display:flex;justify-content:flex-end;gap:8px;align-items:center}
-.start .panel-toolbar .btn-ghost{font-size:15px;padding:8px 12px;border-radius:999px}
-.mute-toggle{white-space:nowrap}
-.play-popup{position:absolute;top:50%;left:100%;transform:translate(32px,-50%);display:flex;flex-direction:column;gap:10px;background:linear-gradient(180deg,#151f52,#0d1434);border:1px solid #3a4aa8;border-radius:14px;padding:20px 22px;box-shadow:0 18px 45px rgba(0,0,0,.55);min-width:220px;z-index:20}
-.play-popup[hidden]{display:none}
-.play-popup.show{display:flex}
-.play-popup .btn{width:100%}
-
-.play-popup::before{content:"";position:absolute;left:-16px;top:50%;transform:translateY(-50%);width:0;height:0;border-top:10px solid transparent;border-bottom:10px solid transparent;border-right:16px solid rgba(26,36,86,.9)}
+background:linear-gradient(180deg,#121a44,#0c1230);
+border:1px solid #2b3a86;
+border-radius:16px;
+box-shadow:0 20px 50px rgba(0,0,0,.5);
+padding:26px 28px;
+max-width:1200px;
+width:min(96vw,1200px);
+display:flex;
+flex-direction:column;
+align-items:center;
+margin:0}
 .multiplayer{position:fixed;inset:0;display:grid;place-items:center;z-index:5;background:radial-gradient(1200px 700px at 80% 20%,#10236a 0%,#0b1020 60%)}
 .multiplayer .panel{background:linear-gradient(180deg,#121a44,#0c1230);border:1px solid #2b3a86;border-radius:16px;box-shadow:0 20px 50px rgba(0,0,0,.5);padding:26px 28px;max-width:480px;width:min(94vw,480px);text-align:center;display:flex;flex-direction:column;gap:12px}
 #joinCode{flex:1;padding:8px;border-radius:8px;border:1px solid #2b3a86;background:#0c1230;color:#cfe3ff}
 .multiplayer .panel div{display:flex;justify-content:center;gap:8px}
-.play-popup::after{content:"";position:absolute;inset:0;border-radius:inherit;border:1px solid rgba(255,255,255,.05);pointer-events:none}
-
-.start .panel .sub{margin-top:-8px}
+#titleMenu .main-actions{display:flex;flex-direction:column;gap:12px;align-items:center}
 .options-menu{position:fixed;inset:0;display:none;place-items:center;z-index:60;background:rgba(0,0,0,.7);pointer-events:none}
 .options-menu .panel{text-align:center;display:flex;flex-direction:column;gap:12px}
 .options-menu.show{display:grid !important;pointer-events:auto !important}
