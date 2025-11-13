@@ -50,6 +50,11 @@ export function sfx(n) {
         tone(660, 0.06, "square", 0.6, 0);
         tone(880, 0.08, "triangle", 0.5, 0.04);
       },
+      shuffle: () => {
+        tone(380, 0.08, "triangle", 0.45, 0);
+        tone(520, 0.1, "sawtooth", 0.38, 0.05);
+        tone(280, 0.08, "square", 0.4, 0.12);
+      },
       defense: () => {
         tone(280, 0.09, "square", 0.6, 0);
         tone(200, 0.12, "sine", 0.5, 0.08);

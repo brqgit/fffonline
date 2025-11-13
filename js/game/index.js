@@ -659,6 +659,8 @@ const els = {
   aAva: $("#aiAvatar"),
   drawCount: $("#drawCount"),
   discardCount: $("#discardCount"),
+  drawPile: $("#drawPile"),
+  aiDrawPile: $("#aiDrawPile"),
   barPHP: $("#barPlayerHP"),
   barAHP: $("#barAiHP"),
   barMana: $("#barMana"),
@@ -964,6 +966,10 @@ function renderBoard() {
       d.addEventListener("click", () => selectAttacker(c));
     }
     els.pBoard.appendChild(d);
+    if (c.justPlayed) {
+      requestAnimationFrame(() => animateCardLanding(d));
+      delete c.justPlayed;
+    }
   }
   els.aBoard.innerHTML = "";
   for (const c of G.aiBoard) {
@@ -976,6 +982,10 @@ function renderBoard() {
       }
     }
     els.aBoard.appendChild(d);
+    if (c.justPlayed) {
+      requestAnimationFrame(() => animateCardLanding(d));
+      delete c.justPlayed;
+    }
   }
   let btn = document.querySelector("#aiBoard .face-attack-btn");
   if (!btn) {
@@ -1105,6 +1115,7 @@ export function startGame(opts = {}) {
   }
   if (G.mode === "story" && continuing) {
     G.playerDeck.push(...G.playerHand, ...G.playerBoard, ...G.playerDiscard);
+    G.playerDeck.forEach(resetCardState);
     G.playerHand = [];
     G.playerBoard = [];
     G.playerDiscard = [];
@@ -1184,8 +1195,7 @@ function draw(who, n = 1) {
     disc = who === "player" ? G.playerDiscard : G.aiDiscard;
   for (let i = 0; i < n; i++) {
     if (deck.length === 0 && disc.length) {
-      disc.forEach(resetCardState);
-      deck.push(...shuffle(disc.splice(0)));
+      reshuffleDiscard(who, deck, disc);
     }
     if (deck.length) {
       const c = deck.shift();
@@ -1211,6 +1221,33 @@ function draw(who, n = 1) {
     els.drawCount.textContent = G.playerDeck.length;
     els.discardCount.textContent = G.playerDiscard.length;
   }
+}
+
+function reshuffleDiscard(who, deck, disc) {
+  if (!disc.length) return;
+  disc.forEach(resetCardState);
+  const cards = shuffle(disc.splice(0));
+  deck.push(...cards);
+  triggerShuffleFx(who);
+  if (who === "player") {
+    log("Seu deck foi reembaralhado.");
+    sfx("shuffle");
+  }
+}
+
+function triggerShuffleFx(who) {
+  const pile = who === "player" ? els.drawPile : els.aiDrawPile;
+  if (!pile) return;
+  pile.classList.add("shuffling");
+  const rect = pile.getBoundingClientRect();
+  if (rect.width && rect.height) {
+    screenParticle(
+      "magic",
+      rect.left + rect.width / 2,
+      rect.top + rect.height / 2,
+    );
+  }
+  setTimeout(() => pile.classList.remove("shuffling"), 600);
 }
 
 function burnCard(c) {
@@ -1353,6 +1390,7 @@ function summon(side, c, st = "attack") {
     c.atk += G.enemyScaling;
     c.hp += G.enemyScaling;
   }
+  c.justPlayed = true;
   board.push(c);
   particleOnCard(c.id, "summon");
   log(
@@ -1546,6 +1584,15 @@ const addAnim = (n, c, d = 400) => {
   n && n.classList.add(c);
   setTimeout(() => n && n.classList.remove(c), d);
 };
+function animateCardLanding(node) {
+  if (!node) return;
+  node.classList.add("card-landing");
+  node.addEventListener(
+    "animationend",
+    () => node.classList.remove("card-landing"),
+    { once: true },
+  );
+}
 const animateAttack = (aId, tId) => {
   const a = nodeById(aId),
     t = tId ? nodeById(tId) : null;
@@ -1788,7 +1835,32 @@ function renderEncy(filter = "all", locked = false) {
     const art = c.img
       ? `<img src='${c.img}' alt='${c.name}' loading='lazy'>`
       : c.emoji || "";
-    d.innerHTML = `<div class='bg bg-${c.deck}'></div><div class='head'><span class='cost'>${c.cost}${c.harvestCost ? `🌾${c.harvestCost}` : ""}</span><div class='name'>${c.name}</div></div><div class='mini'>${c.tribe} • ⚔️ ${c.atk} / ❤️ ${c.hp}</div><div class='art'>${art}</div><div class='details'><div>${(c.kw || []).map((k) => `<span class='chip' data-type='keyword' data-tip='${k === "Protetor" ? "Enquanto houver Protetor ou carta em Defesa do lado do defensor, ataques devem mirá-los." : k === "Furioso" ? "Pode atacar no turno em que é jogada." : ""}' >${k}</span>`).join(" ")}</div><div style='margin-top:6px'>${c.text || ""}</div></div>`;
+    const kwChips = (c.kw || []).map(
+      (k) =>
+        `<span class='chip' data-type='keyword' data-tip='${
+          k === "Protetor"
+            ? "Enquanto houver Protetor ou carta em Defesa do lado do defensor, ataques devem mirá-los."
+            : k === "Furioso"
+            ? "Pode atacar no turno em que é jogada."
+            : k === "Absorver"
+            ? "Ao entrar, copia uma palavra-chave de um aliado."
+            : k === "Mutável"
+            ? "No fim do turno, troca ATK e HP."
+            : ""
+        }' >${k}</span>`,
+    );
+    if (c.subclasse && c.classe) {
+      kwChips.push(`<span class='chip class-tag ${c.classe}'>${c.subclasse}</span>`);
+    }
+    const kwMarkup = kwChips.length
+      ? `<div class='kw-tags'>${kwChips.join("")}</div>`
+      : "";
+    const effectMarkup = c.text
+      ? `<p class='effect-text'>${c.text}</p>`
+      : "";
+    d.innerHTML = `<div class='bg bg-${c.deck}'></div><div class='head'><span class='cost'>${c.cost}${
+      c.harvestCost ? `🌾${c.harvestCost}` : ""
+    }</span><div class='name'>${c.name}</div></div><div class='mini'>${c.tribe} • ⚔️ ${c.atk} / ❤️ ${c.hp}</div><div class='art'>${art}</div><div class='details'>${kwMarkup}${effectMarkup}</div>`;
     tiltify(d);
     els.encyGrid.appendChild(d);
   });
