@@ -392,9 +392,28 @@ text-align:center;
 margin:0 auto}
 .logoFFF{width:36px;
 height:36px}
-.deckpick{display:grid;grid-template-columns:repeat(2,minmax(260px,1fr));gap:12px;margin:14px 0}
-.deckbtn{position:relative;display:flex;flex-direction:column;gap:4px;align-items:flex-start;justify-content:center;overflow:visible;padding:10px 38px 10px 12px;min-height:78px}
-.deckbtn{font-size:clamp(14px,1.6vw,16px);line-height:1.25}
+.deckpick{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin:14px 0;justify-content:center}
+.deckbtn{position:relative;display:flex;flex-direction:column;gap:4px;align-items:flex-start;justify-content:center;overflow:visible;padding:12px 34px 12px 14px;min-height:72px;max-width:100%}
+.deckbtn{font-size:clamp(14px,1.4vw,16px);line-height:1.25}
+
+.logo-spin-secret{animation:logo-secret-spin 0.6s ease-in-out 3 both}
+@keyframes logo-secret-spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+
+@media (max-width:900px){
+  .start-layout{gap:clamp(20px,6vw,32px)}
+}
+
+@media (max-width:760px){
+  .start-layout{align-items:center;text-align:center}
+  .play-popup{position:relative;left:auto;top:auto;transform:none;margin-top:12px;align-self:center;min-width:0;width:min(92vw,360px)}
+  .play-popup::before{display:none}
+}
+
+@media (max-width:620px){
+  .deckpick{grid-template-columns:minmax(0,1fr)}
+  .deckbtn{padding:12px 28px 12px 14px;font-size:15px}
+  .deckbtn .ribbon{font-size:12px}
+}
 .deckbtn .ribbon{margin-top:4px;font-size:clamp(12px,1.4vw,13px);opacity:.92;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
 .deckbtn .ribbon{margin-top:2px;font-size:12px;opacity:.9}
 .deckbtn>.view-cards{position:absolute;top:6px !important;right:10px !important;left:auto !important;bottom:auto !important}
