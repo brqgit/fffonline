@@ -341,19 +341,13 @@ background-size:cover,auto;
 background-repeat:no-repeat,no-repeat;
 background-position:center,0 0}
 .start-layout{display:flex;
- flex-direction:column;
- align-items:center;
- justify-content:center;
- gap:clamp(16px,4vw,40px);
- width:min(100%,1200px);
- padding:clamp(16px,5vw,40px);
- box-sizing:border-box;
- text-align:center}
-.start-layout .brand{display:flex;
- flex-direction:column;
- align-items:center;
- justify-content:center;
- gap:clamp(8px,2vw,16px)}
+flex-direction:column;
+align-items:center;
+justify-content:center;
+gap:clamp(16px,4vw,40px);
+width:min(100%,1200px);
+padding:clamp(16px,5vw,40px);
+box-sizing:border-box}
 .start .panel{position:relative;
 background:linear-gradient(180deg,#121a44,#0c1230);
 border:1px solid #2b3a86;
