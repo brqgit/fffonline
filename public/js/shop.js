@@ -107,11 +107,16 @@ const DEFAULT_CARD_MEDIA = {
   "Cervo das Runas": { deck: 'floresta', img: '/img/decks/forest-beasts/characters/Coruja_Guardiao.png' },
   "Javali Espinhoso": { deck: 'floresta', img: '/img/decks/forest-beasts/characters/Coruja_Runica.png' },
 };
-const CARD_MEDIA_MAP = (typeof window !== 'undefined' && window.CARD_MEDIA)
-  ? window.CARD_MEDIA
-  : DEFAULT_CARD_MEDIA;
+function getCardMediaMap(){
+  if(typeof window === 'undefined') return DEFAULT_CARD_MEDIA;
+  if(window.CARD_MEDIA && Object.keys(window.CARD_MEDIA).length){
+    return window.CARD_MEDIA;
+  }
+  return DEFAULT_CARD_MEDIA;
+}
 function withImg(it){
-  const media = CARD_MEDIA_MAP[it.name];
+  const map = getCardMediaMap();
+  const media = map[it.name] || DEFAULT_CARD_MEDIA[it.name];
   if(media){
     if(media.deck) it.deck = media.deck;
     if(media.img) it.img = media.img;
