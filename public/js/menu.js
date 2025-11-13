@@ -144,7 +144,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (backToMenu) backToMenu.addEventListener('click', () => {
     if (deckScreen) deckScreen.style.display = 'none';
-    if (titleMenu) titleMenu.style.display = 'grid';
+    if (multiMenu) multiMenu.style.display = 'none';
+    if (titleMenu) titleMenu.style.display = 'flex';
     const startBtn = document.getElementById('startGame');
     if (startBtn){startBtn.textContent='Jogar';startBtn.disabled=true;}
     window.currentGameMode = null;
