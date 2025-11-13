@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', () => {
+const initMenuScreens = () => {
   const titleMenu = document.getElementById('titleMenu');
   const deckScreen = document.getElementById('start');
   const multiMenu = document.getElementById('multiplayerMenu');
@@ -38,6 +38,50 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   let playPopupOpen = false;
+
+  const positionPlayPopup = () => {
+    if (!playPopupOpen || !playPopup || !playBtn) return;
+    const layout = playBtn.closest('.start-layout');
+    const panel = playBtn.closest('.panel');
+    if (!layout || !panel) return;
+    const matchMedia = window.matchMedia ? window.matchMedia('(max-width: 760px)') : null;
+    const stacked = matchMedia ? matchMedia.matches : false;
+    if (stacked) {
+      playPopup.style.left = '';
+      playPopup.style.top = '';
+      playPopup.style.transform = '';
+      return;
+    }
+    const panelRect = panel.getBoundingClientRect();
+    const layoutRect = layout.getBoundingClientRect();
+    const gap = 24;
+    playPopup.style.left = `${panelRect.right - layoutRect.left + gap}px`;
+    playPopup.style.top = `${panelRect.top - layoutRect.top + panelRect.height / 2}px`;
+    playPopup.style.transform = 'translateY(-50%)';
+  };
+
+  const openPlayPopup = () => {
+    if (!playPopup || playPopupOpen) return;
+    playPopup.hidden = false;
+    playPopup.removeAttribute('aria-hidden');
+    playPopup.classList.add('show');
+    if (playBtn) playBtn.setAttribute('aria-expanded', 'true');
+    playPopupOpen = true;
+    positionPlayPopup();
+  };
+
+  const closePlayPopup = () => {
+    if (!playPopup) return;
+    playPopup.classList.remove('show');
+    playPopup.hidden = true;
+    playPopup.setAttribute('aria-hidden', 'true');
+    if (playBtn) playBtn.setAttribute('aria-expanded', 'false');
+    playPopupOpen = false;
+    playPopup.style.left = '';
+    playPopup.style.top = '';
+    playPopup.style.transform = '';
+  };
+
 
   const positionPlayPopup = () => {
     if (!playPopupOpen || !playPopup || !playBtn) return;
@@ -84,11 +128,14 @@ document.addEventListener('DOMContentLoaded', () => {
     closePlayPopup();
     if (mode === 'multiplayer') {
       if (titleMenu) titleMenu.style.display = 'none';
+      if (deckScreen) deckScreen.style.display = 'none';
       if (multiMenu) multiMenu.style.display = 'grid';
       window.currentGameMode = 'multi';
       return;
     }
     if (titleMenu) titleMenu.style.display = 'none';
+    if (multiMenu) multiMenu.style.display = 'none';
+    if (deckScreen) deckScreen.style.display = 'flex';
     if (deckScreen) deckScreen.style.display = 'grid';
     if (mode === 'story') {
       setDeckScreenDifficultyVisible(false);
@@ -106,6 +153,11 @@ document.addEventListener('DOMContentLoaded', () => {
       if (playPopupOpen) {
         closePlayPopup();
       } else {
+        if (playPopup) {
+          openPlayPopup();
+        } else {
+          handlePlayChoice('solo');
+        }
         openPlayPopup();
       }
     });
@@ -261,4 +313,11 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   });
+};
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initMenuScreens);
+} else {
+  initMenuScreens();
+}
 });
