@@ -826,7 +826,13 @@ function cardNode(c, owner) {
   if (c.subclasse && c.classe) {
     kwTags.push(`<span class='class-tag ${c.classe}'>${c.subclasse}</span>`);
   }
-  d.innerHTML = `<div class="bg bg-${c.deck || "default"}"></div><div class="head"><span class="cost">${costText}</span><div class="name">${c.name}</div>${c.stance ? `<span class="badge ${c.stance === "defense" ? "def" : "atk"}">${c.stance === "defense" ? "🛡️" : "⚔️"}</span>` : ""}</div><div class="tribe">${c.tribe}</div><div class="art">${artMarkup}</div><div class="text">${kwTags.join(" ")} ${c.text || ""}</div><div class="stats"><span class="gem atk">⚔️ ${c.atk}</span>${c.stance ? `<span class="stance-label ${c.stance}">${c.stance === 'defense' ? '🛡️' : '⚔️'}</span>` : ''}<span class="gem hp ${c.hp <= 2 ? "low" : ""}">❤️ ${c.hp}</span></div>`;
+  const kwMarkup = kwTags.length
+    ? `<div class="kw-tags">${kwTags.join("")}</div>`
+    : "";
+  const effectMarkup = c.text
+    ? `<p class="effect-text">${c.text}</p>`
+    : "";
+  d.innerHTML = `<div class="bg bg-${c.deck || "default"}"></div><div class="head"><span class="cost">${costText}</span><div class="name">${c.name}</div>${c.stance ? `<span class="badge ${c.stance === "defense" ? "def" : "atk"}">${c.stance === "defense" ? "🛡️" : "⚔️"}</span>` : ""}</div><div class="tribe">${c.tribe}</div><div class="art">${artMarkup}</div><div class="text">${kwMarkup}${effectMarkup}</div><div class="stats"><span class="gem atk">⚔️ ${c.atk}</span>${c.stance ? `<span class="stance-label ${c.stance}">${c.stance === 'defense' ? '🛡️' : '⚔️'}</span>` : ''}<span class="gem hp ${c.hp <= 2 ? "low" : ""}">❤️ ${c.hp}</span></div>`;
   return d;
 }
 function resetCardState(c) {
@@ -1057,6 +1063,7 @@ function flyToBoard(node, onEnd) {
     zIndex: 999,
     transition: "transform .45s ease,opacity .45s ease",
   });
+  clone.style.visibility = "visible";
   clone.classList.add("fly");
   document.body.appendChild(clone);
   const br = els.pBoard.getBoundingClientRect();
