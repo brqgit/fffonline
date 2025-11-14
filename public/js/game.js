@@ -118,6 +118,58 @@ const BATTLE_THEME_AUDIO = {
 const audioBufferCache = new Map();
 let ambientLoop = null;
 
+function ensureMusicChain(){
+  if(!AudioCtx) return null;
+  initAudio();
+  if(!actx) return null;
+  if(!musicGain){
+    try{
+      musicGain = actx.createGain();
+      musicGain.gain.value = musicMuted ? 0 : musicBase * musicVolume;
+      musicGain.connect(master);
+    }catch(_){
+      musicGain = null;
+    }
+  }
+  return musicGain;
+}
+
+function stopMenuMusic(){
+  musicOn = false;
+  musicLoopId = null;
+  try{ setBattleAmbience(null); }
+  catch(_){ }
+}
+
+function startMenuMusic(preset){
+  const key = (preset || 'menu').toLowerCase();
+  musicPreset = key;
+  initAudio();
+  ensureMusicChain();
+  ensureRunning();
+  if(musicMuted || !AudioCtx){
+    musicOn = false;
+    return;
+  }
+  musicOn = true;
+  const theme = key==='menu' ? 'default' : key;
+  try{ setBattleAmbience(theme); }
+  catch(_){ }
+}
+
+function tryStartMenuMusicImmediate(){
+  if(musicOn && musicPreset){
+    return;
+  }
+  startMenuMusic(musicPreset || 'menu');
+}
+
+try{
+  window.startMenuMusic = startMenuMusic;
+  window.stopMenuMusic = stopMenuMusic;
+  window.tryStartMenuMusicImmediate = tryStartMenuMusicImmediate;
+}catch(_){ }
+
 function initAudio(){
   if(!AudioCtx) return;
   if(!actx){
