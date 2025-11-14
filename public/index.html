@@ -4,7 +4,13 @@
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>FFF Farm Fight Formula</title>
-<link rel="icon" href="/favicon.png" type="image/png">  
+  <meta name="description" content="Jogue Farm Fight Formula: monte seu deck, desafie a IA ou amigos e descubra combos insanos de cartas.">
+  <meta property="og:title" content="FFF Farm Fight Formula">
+  <meta property="og:description" content="Escolha sua facção favorita e lute em partidas solo ou multiplayer.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://fffarmfightformula.com">
+  <meta property="og:image" content="img/ui/logos/logo2.png">
+  <link rel="icon" href="/favicon.png" type="image/png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="css/style.css">
@@ -51,12 +57,12 @@
     <div class="start-layout">
       <div class="brand">
         <div class="logo-secret-fan" aria-hidden="true">
-          <img src="img/decks/farm-vikings/deck-backs/fv-db-default.png" alt="" class="logo-secret-card">
-          <img src="img/decks/north-beasts/deck-backs/nb-db-default.webp" alt="" class="logo-secret-card">
-          <img src="img/decks/fJord-fishers/deck-backs/jf-db-default.webp" alt="" class="logo-secret-card">
-          <img src="img/decks/forest-beasts/deck-backs/fb-db-default.webp" alt="" class="logo-secret-card">
+          <img src="img/decks/farm-vikings/deck-backs/fv-db-default.png" alt="" class="logo-secret-card" loading="lazy" decoding="async">
+          <img src="img/decks/north-beasts/deck-backs/nb-db-default.webp" alt="" class="logo-secret-card" loading="lazy" decoding="async">
+          <img src="img/decks/fJord-fishers/deck-backs/jf-db-default.webp" alt="" class="logo-secret-card" loading="lazy" decoding="async">
+          <img src="img/decks/forest-beasts/deck-backs/fb-db-default.webp" alt="" class="logo-secret-card" loading="lazy" decoding="async">
         </div>
-        <img src="img/ui/logos/logo2.png" class="logo-wordmark holo-logo" alt="Farm Fight Formula logo">
+        <img src="img/ui/logos/logo2.png" class="logo-wordmark holo-logo" alt="Farm Fight Formula logo" loading="lazy" decoding="async">
       </div>
       <div class="panel">
         <div class="panel-toolbar">
@@ -64,12 +70,48 @@
         </div>
         <p class="sub">Escolha um deck e parta para a arena.</p>
         <div class="deckpick">
-          <button class="btn deckbtn" data-deck="vikings">👩‍🌾 Fazendeiros Vikings<div class="ribbon">Cura e proteção</div><span class="view-cards" data-deck="vikings" data-tip="Ver cartas" aria-label="Ver cartas">📖</span></button>
-          <button class="btn deckbtn" data-deck="animais">🐺 Bestas do Norte<div class="ribbon">Ataque bruto</div><span class="view-cards" data-deck="animais" data-tip="Ver cartas" aria-label="Ver cartas">📖</span></button>
-          <button class="btn deckbtn" data-deck="pescadores">🎣 Pescadores do Fiorde<div class="ribbon">Suporte e bônus</div><span class="view-cards" data-deck="pescadores" data-tip="Ver cartas" aria-label="Ver cartas">📖</span></button>
-          <button class="btn deckbtn" data-deck="floresta">🌲 Feras da Floresta<div class="ribbon">Pressão constante</div><span class="view-cards" data-deck="floresta" data-tip="Ver cartas" aria-label="Ver cartas">📖</span></button>
-          <button class="btn deckbtn" data-deck="convergentes">🌀 Convergentes da Aurora<div class="ribbon">Absorção e metamorfose</div><span class="view-cards" data-deck="convergentes" data-tip="Ver cartas" aria-label="Ver cartas">📖</span></button>
-          <button class="btn deckbtn" data-deck="custom">🧩 Deck Personalizado<div class="ribbon">Monte seu baralho</div><span class="view-cards" data-deck="custom" data-tip="Ver cartas" aria-label="Ver cartas">📖</span></button>
+          <div class="deck-option">
+            <button class="btn deckbtn" data-deck="vikings" type="button">
+              <span class="deck-label">👩‍🌾 Fazendeiros Vikings</span>
+              <span class="ribbon">Cura e proteção</span>
+            </button>
+            <button class="view-cards" data-deck="vikings" data-tip="Ver cartas" aria-label="Ver cartas do deck Fazendeiros Vikings" type="button">📖</button>
+          </div>
+          <div class="deck-option">
+            <button class="btn deckbtn" data-deck="animais" type="button">
+              <span class="deck-label">🐺 Bestas do Norte</span>
+              <span class="ribbon">Ataque bruto</span>
+            </button>
+            <button class="view-cards" data-deck="animais" data-tip="Ver cartas" aria-label="Ver cartas do deck Bestas do Norte" type="button">📖</button>
+          </div>
+          <div class="deck-option">
+            <button class="btn deckbtn" data-deck="pescadores" type="button">
+              <span class="deck-label">🎣 Pescadores do Fiorde</span>
+              <span class="ribbon">Suporte e bônus</span>
+            </button>
+            <button class="view-cards" data-deck="pescadores" data-tip="Ver cartas" aria-label="Ver cartas do deck Pescadores do Fiorde" type="button">📖</button>
+          </div>
+          <div class="deck-option">
+            <button class="btn deckbtn" data-deck="floresta" type="button">
+              <span class="deck-label">🌲 Feras da Floresta</span>
+              <span class="ribbon">Pressão constante</span>
+            </button>
+            <button class="view-cards" data-deck="floresta" data-tip="Ver cartas" aria-label="Ver cartas do deck Feras da Floresta" type="button">📖</button>
+          </div>
+          <div class="deck-option">
+            <button class="btn deckbtn" data-deck="convergentes" type="button">
+              <span class="deck-label">🌀 Convergentes da Aurora</span>
+              <span class="ribbon">Absorção e metamorfose</span>
+            </button>
+            <button class="view-cards" data-deck="convergentes" data-tip="Ver cartas" aria-label="Ver cartas do deck Convergentes da Aurora" type="button">📖</button>
+          </div>
+          <div class="deck-option">
+            <button class="btn deckbtn" data-deck="custom" type="button">
+              <span class="deck-label">🧩 Deck Personalizado</span>
+              <span class="ribbon">Monte seu baralho</span>
+            </button>
+            <button class="view-cards" data-deck="custom" data-tip="Ver cartas" aria-label="Ver cartas do deck personalizado" type="button">📖</button>
+          </div>
         </div>
         <div id="deckBuilder" style="display:none">
           <p>Monte seu baralho: <span id="countDeck">0</span>/20</p>
@@ -95,9 +137,9 @@
   </div>
 
   <!-- Multiplayer lobby -->
-  <div class="multiplayer" id="multiplayerMenu" style="display:none">
+  <div class="multiplayer" id="multiplayerMenu" style="display:none" role="dialog" aria-modal="true" aria-labelledby="multiplayerTitle" aria-hidden="true">
     <div class="panel">
-      <h2>Multiplayer</h2>
+      <h2 id="multiplayerTitle">Multiplayer</h2>
       <div><input id="playerName" maxlength="16" placeholder="Seu nome"/></div>
       <button class="btn" id="hostBtn">Hostear partida</button>
       <button class="btn" id="findBtn">Encontrar partida</button>
@@ -109,9 +151,9 @@
   </div>
 
   <!-- Options -->
-  <div class="options-menu" id="optionsMenu" style="display:none">
+  <div class="options-menu" id="optionsMenu" style="display:none" role="dialog" aria-modal="true" aria-labelledby="optionsTitle" aria-hidden="true">
     <div class="panel">
-      <h2>Opções</h2>
+      <h2 id="optionsTitle">Opções</h2>
       <label>Música <input type="range" id="musicVol" min="0" max="1" step="0.01" value="1"></label>
       <label>Efeitos <input type="range" id="sfxVol" min="0" max="1" step="0.01" value="1"></label>
       <label><input type="checkbox" id="disableAnims"> Desativar animações</label>
@@ -120,9 +162,9 @@
   </div>
 
   <!-- Test menu -->
-  <div class="options-menu" id="testModal" style="display:none">
+  <div class="options-menu" id="testModal" style="display:none" role="dialog" aria-modal="true" aria-labelledby="testTitle" aria-hidden="true">
     <div class="panel">
-      <h2>Testes</h2>
+      <h2 id="testTitle">Testes</h2>
       <button class="btn" id="testShopBtn">Abrir Loja</button>
       <button class="btn" id="testTotemBtn">Totens</button>
       <button class="btn-ghost" id="closeTest">Fechar</button>
@@ -130,10 +172,10 @@
   </div>
 
   <!-- Encyclopedia -->
-  <div class="ency" id="ency">
+  <div class="ency" id="ency" role="dialog" aria-modal="true" aria-labelledby="encyTitle" aria-describedby="encyHint" aria-hidden="true">
     <div class="panel">
       <div class="ency-hd">
-        <h2 style="margin:0">Enciclopédia de Cartas</h2>
+        <h2 id="encyTitle" style="margin:0">Enciclopédia de Cartas</h2>
         <div class="filters" id="encyFilters">
           <button class="fbtn active" data-deck="all">Todos</button>
           <button class="fbtn" data-deck="vikings">Vikings</button>
@@ -145,7 +187,7 @@
       </div>
       <div class="ency-grid" id="encyGrid"></div>
       <div class="footer">
-        <span class="sub" style="margin:0">Passe o mouse sobre uma palavra‑chave para ver o que ela faz.</span>
+        <span class="sub" id="encyHint" style="margin:0">Passe o mouse sobre uma palavra-chave para ver o que ela faz.</span>
         <button class="btn-ghost" id="closeEncy">Fechar</button>
       </div>
     </div>
@@ -156,19 +198,19 @@
     <div class="mid-mana" id="midMana"></div>
     <div class="hud">
       <div class="meter player"><b>Seu HP</b><span class="value" id="playerHP">30</span><div class="player-img" id="playerAvatar">👤</div><div class="bar"><div class="fill" id="barPlayerHP"></div></div></div>
-      <div class="center-hud"><div class="meter mana"><b>Mana</b><span class="value" id="mana">0/0</span><div class="bar"><div class="fill" id="barMana"></div></div></div><button class="btn-ghost" id="muteBtn" title="Som">🔊 Som</button><button class="btn-ghost" id="openMenuBtn" title="Menu">☰ Menu</button></div>
+      <div class="center-hud"><div class="meter mana"><b>Mana</b><span class="value" id="mana">0/0</span><div class="bar"><div class="fill" id="barMana"></div></div></div><button class="btn-ghost" id="muteBtn" title="Som" aria-pressed="false">🔊 Som</button><button class="btn-ghost" id="openMenuBtn" title="Menu">☰ Menu</button></div>
       <div class="meter enemy" style="justify-self:end"><b>HP Inimigo</b><span class="opp-label" id="opponentLabel"></span><span class="value" id="aiHP">30</span><div class="enemy-img" id="aiAvatar">🧿</div><div class="bar"><div class="fill" id="barAiHP"></div></div></div>
     </div>
     <div class="row enemy-row">
-  <div class="pile" id="aiDrawPile"><img src="img/decks/fJord-fishers/deck-backs/jf-db-default.webp" alt="deck"><div class="pile-label">DECK</div></div>
+  <div class="pile" id="aiDrawPile"><img src="img/decks/fJord-fishers/deck-backs/jf-db-default.webp" alt="deck" loading="lazy" decoding="async"><div class="pile-label">DECK</div></div>
       <div class="board" id="aiBoard"></div>
-  <div class="pile" id="aiDiscardPile"><img src="img/decks/fJord-fishers/deck-backs/jf-db-default.webp" alt="discard"><div class="pile-label">DESCARTE</div></div>
+  <div class="pile" id="aiDiscardPile"><img src="img/decks/fJord-fishers/deck-backs/jf-db-default.webp" alt="discard" loading="lazy" decoding="async"><div class="pile-label">DESCARTE</div></div>
     </div>
     <div class="turn-bar"><div class="turn-indicator" id="turnIndicator"></div><button class="btn" id="endTurnBtn">Encerrar turno</button></div>
     <div class="row">
-  <div class="pile" id="drawPile"><img src="img/decks/fJord-fishers/deck-backs/jf-db-default.webp" alt="deck"><div class="count" id="drawCount">0</div><div class="pile-label">SEU DECK</div></div>
+  <div class="pile" id="drawPile"><img src="img/decks/fJord-fishers/deck-backs/jf-db-default.webp" alt="deck" loading="lazy" decoding="async"><div class="count" id="drawCount">0</div><div class="pile-label">SEU DECK</div></div>
       <div class="board" id="playerBoard"></div>
-  <div class="pile" id="discardPile"><img src="img/decks/fJord-fishers/deck-backs/jf-db-default.webp" alt="discard"><div class="count" id="discardCount">0</div><div class="pile-label">DESCARTE</div></div>
+  <div class="pile" id="discardPile"><img src="img/decks/fJord-fishers/deck-backs/jf-db-default.webp" alt="discard" loading="lazy" decoding="async"><div class="count" id="discardCount">0</div><div class="pile-label">DESCARTE</div></div>
       <div class="log-wrap"><div class="zone-title">Registro</div><div class="log" id="log"></div></div>
     </div>
     <div class="totem-bar" id="totemBar"></div>
@@ -185,8 +227,9 @@
   </div>
 
   <!-- In-game menu -->
-  <div class="game-menu" id="gameMenu">
+  <div class="game-menu" id="gameMenu" role="dialog" aria-modal="true" aria-labelledby="gameMenuTitle" aria-hidden="true">
     <div class="panel">
+      <h2 class="sr-only" id="gameMenuTitle">Menu do jogo</h2>
       <button class="btn" id="resignBtn">Desistir</button>
       <button class="btn" id="restartBtn">Recomeçar</button>
       <button class="btn" id="mainMenuBtn">Menu principal</button>
@@ -195,7 +238,7 @@
   </div>
 
   <!-- End screen -->
-  <div class="end-overlay" id="endOverlay">
+  <div class="end-overlay" id="endOverlay" role="dialog" aria-modal="true" aria-labelledby="endMsg" aria-describedby="endSub" aria-hidden="true">
     <div class="end-box">
       <div class="end-msg" id="endMsg"></div>
       <div class="end-sub" id="endSub"></div>
@@ -208,7 +251,7 @@
   </div>
 
   <!-- Reconnect popup -->
-  <div class="reconnect-overlay" id="reconnectOverlay">
+  <div class="reconnect-overlay" id="reconnectOverlay" role="alertdialog" aria-modal="true" aria-labelledby="reconnectMsg" aria-describedby="reconnectTimer" aria-hidden="true" tabindex="-1">
     <div class="reconnect-box">
       <div id="reconnectMsg">Você perdeu a conexão com a sala.</div>
       <div>Tentando reconectar... <span id="reconnectTimer">15</span>s</div>
@@ -216,11 +259,11 @@
   </div>
 
   <!-- Shop Modal -->
-  <div id="shopModal" class="modal">
+  <div id="shopModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="shopTitle" aria-describedby="shopMsg" aria-hidden="true">
     <div class="box">
       <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
-  <img id="shopVendor" class="shop-keeper" src="img/ui/shopkeeper.png" alt="Vendedor">
-        <h2 style="margin:0">Loja</h2>
+  <img id="shopVendor" class="shop-keeper" src="img/ui/shopkeeper.png" alt="Vendedor" loading="lazy" decoding="async">
+        <h2 id="shopTitle" style="margin:0">Loja</h2>
   <span style="margin-left:auto"><span class="coin-icon"></span> <b id="shopGold">0</b></span>
         <button class="btn" id="btnReroll">Re-rolar</button>
       </div>
@@ -234,13 +277,13 @@
 
   <div id="encounterBanner"></div>
   <div id="encounterTransition"></div>
-  <script src="js/player-id.js"></script>
-  <script src="socket.io/socket.io.js"></script>
-  <script src="js/net-client.js"></script>
-  <script src="js/multiplayer.js"></script>
-  <script src="js/menu.js"></script>
-  <script src="js/shop.js"></script>
-  <script src="js/enemies.js"></script>
-  <script src="js/game.js"></script>
+  <script src="js/player-id.js" defer></script>
+  <script src="socket.io/socket.io.js" defer></script>
+  <script src="js/net-client.js" defer></script>
+  <script src="js/multiplayer.js" defer></script>
+  <script src="js/menu.js" defer></script>
+  <script src="js/shop.js" defer></script>
+  <script src="js/enemies.js" defer></script>
+  <script src="js/game.js" defer></script>
 </body>
 </html>

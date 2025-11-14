@@ -14,6 +14,10 @@ document.addEventListener('DOMContentLoaded', () => {
   window.isMultiplayer = false;
   window.mpState = null;
   let playerNamed=false;
+  const setHidden = (el, hidden) => {
+    if(!el) return;
+    el.setAttribute('aria-hidden', hidden ? 'true' : 'false');
+  };
   function ensureName(showError=true){
     if(playerNamed) return true;
     if(!nameInput) return false;
@@ -34,6 +38,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function showDeckSelect() {
     mpMenu.style.display = 'none';
+    setHidden(mpMenu, true);
     startScreen.style.display = 'grid';
     const mpOpen = document.getElementById('openMultiplayer');
     if (mpOpen) mpOpen.style.display = 'none';
@@ -52,7 +57,10 @@ document.addEventListener('DOMContentLoaded', () => {
     openBtn.addEventListener('click', () => {
       ensureName(false);
       if (startScreen) startScreen.style.display = 'none';
-      if (mpMenu) mpMenu.style.display = 'grid';
+      if (mpMenu){
+        mpMenu.style.display = 'grid';
+        setHidden(mpMenu, false);
+      }
       if (roomList) roomList.style.display = 'none';
     });
   }
@@ -60,6 +68,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (backBtn) {
     backBtn.addEventListener('click', () => {
       mpMenu.style.display = 'none';
+      setHidden(mpMenu, true);
       startScreen.style.display = 'grid';
       statusEl.textContent = '';
       window.isMultiplayer = false;

@@ -1,4 +1,6 @@
 (function(){const $=s=>document.querySelector(s),$$=s=>Array.from(document.querySelectorAll(s));const logBox=$('#log');const log=t=>{if(!logBox)return;const d=document.createElement('div');d.textContent=t;logBox.prepend(d)};const rand=a=>a[Math.floor(Math.random()*a.length)],clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),uid=()=>(Math.random().toString(36).slice(2));
+const setAriaHidden=(node,hidden)=>{if(!node)return;node.setAttribute('aria-hidden',hidden?'true':'false')};
+const focusDialog=node=>{if(!node)return;const target=node.querySelector('[autofocus],button,[href],input,select,textarea,[tabindex]:not([tabindex="-1"])');if(target&&typeof target.focus==='function'){target.focus()}};
 const AUDIO_ENABLED = false;
 const AudioCtor = (typeof window!=='undefined') ? (window.AudioContext || window.webkitAudioContext) : null;
 const AudioCtx = AUDIO_ENABLED ? AudioCtor : null;
@@ -1737,7 +1739,8 @@ async function aiTurn(){
   setTimeout(next,500);
 }
 function fireworks(win){const b=document.createElement('div');b.className='boom';b.style.left='50%';b.style.top='50%';b.style.background=`radial-gradient(circle at 50% 50%, ${win?'#8bf5a2':'#ff8a8a'}, transparent)`;document.body.appendChild(b);setTimeout(()=>b.remove(),650);} 
-function endGame(win){stopMenuMusic();els.endMsg.textContent=win?'You WIN!':'You Lose...';els.endMsg.style.color=win?'#8bf5a2':'#ff8a8a';els.endSub.textContent=win?'Parabéns! Quer continuar jogando?':'Tentar de novo ou voltar ao menu.';els.endOverlay.classList.add('show');setTimeout(()=>fireworks(win),1000);} 
+function endGame(win){stopMenuMusic();els.endMsg.textContent=win?'You WIN!':'You Lose...';els.endMsg.style.color=win?'#8bf5a2':'#ff8a8a';els.endSub.textContent=win?'Parabéns! Quer continuar jogando?':'Tentar de novo ou voltar ao menu.';els.endOverlay.classList.add('show');setAriaHidden(els.endOverlay,false);focusDialog(els.endOverlay);setTimeout(()=>fireworks(win),1000);} 
+const hideEndOverlay=()=>{if(!els.endOverlay)return;els.endOverlay.classList.remove('show');setAriaHidden(els.endOverlay,true)};
 function checkWin(){
   if(G.aiHP<=0){
     if(G.mode==='story'&&G.story){
@@ -1778,14 +1781,16 @@ function checkWin(){
   if(G.playerHP<=0){endGame(false);}
 }
 function allCards(){let out=[];for(const k of Object.keys(TEMPLATES)){for(const raw of TEMPLATES[k]){const c=makeCard(raw);c.deck=k;out.push(c)}}return out}
-function renderEncy(filter='all',locked=false){els.encyGrid.innerHTML='';const cards=(filter==='all'?allCards():TEMPLATES[filter].map(makeCard).map(c=>Object.assign(c,{deck:filter})));cards.forEach(c=>{const d=cardNode(c,'player');d.classList.add('ency-card');tiltify(d);els.encyGrid.appendChild(d)});els.ency.classList.add('show');els.encyFilters.style.display=locked?'none':'flex';$$('.filters .fbtn').forEach(b=>b.classList.toggle('active',b.dataset.deck===filter||filter==='all'&&b.dataset.deck==='all'))}
-els.endBtn.addEventListener('click',endTurn);els.muteBtn.addEventListener('click',()=>{initAudio();ensureRunning();allMuted=!allMuted;musicMuted=allMuted;sfxMuted=allMuted;if(master) master.gain.value=allMuted?0:1;if(musicGain) musicGain.gain.value=allMuted?0:musicBase*musicVolume;if(ambientLoop&&ambientLoop.gain){const target=allMuted?0:ambientLoop.base*sfxVolume;try{ambientLoop.gain.gain.setValueAtTime(target,actx.currentTime);}catch(_){ambientLoop.gain.gain.value=target;}}els.muteBtn.textContent=allMuted?'🔇 Som':'🔊 Som'});window.addEventListener('keydown',e=>{if(e.key!=='Escape')return;if(G.chosen){cancelTargeting();return}if(!els.gameMenu)return;const t=els.gameMenu.classList.contains('show');t?els.gameMenu.classList.remove('show'):(els.gameMenu.classList.add('show'),els.restartBtn&&(els.restartBtn.style.display=window.isMultiplayer?'none':'block'))});document.addEventListener('click',e=>{if(!G.chosen)return;if(e.target.closest('#aiBoard .card.selectable')||e.target.closest('#playerBoard .card.selectable')||e.target.closest('#aiBoard .face-attack-btn'))return;cancelTargeting()},{capture:true});
+function renderEncy(filter='all',locked=false){els.encyGrid.innerHTML='';const cards=(filter==='all'?allCards():TEMPLATES[filter].map(makeCard).map(c=>Object.assign(c,{deck:filter})));cards.forEach(c=>{const d=cardNode(c,'player');d.classList.add('ency-card');tiltify(d);els.encyGrid.appendChild(d)});els.ency.classList.add('show');setAriaHidden(els.ency,false);focusDialog(els.ency);els.encyFilters.style.display=locked?'none':'flex';$$('.filters .fbtn').forEach(b=>b.classList.toggle('active',b.dataset.deck===filter||filter==='all'&&b.dataset.deck==='all'))}
+const updateRestartVisibility=()=>{if(els.restartBtn)els.restartBtn.style.display=window.isMultiplayer?'none':'block'};
+const toggleGameMenu=open=>{if(!els.gameMenu)return;if(open){els.gameMenu.classList.add('show');setAriaHidden(els.gameMenu,false);focusDialog(els.gameMenu);updateRestartVisibility();}else{els.gameMenu.classList.remove('show');setAriaHidden(els.gameMenu,true)}};
+els.endBtn.addEventListener('click',endTurn);els.muteBtn.addEventListener('click',()=>{initAudio();ensureRunning();allMuted=!allMuted;musicMuted=allMuted;sfxMuted=allMuted;if(master) master.gain.value=allMuted?0:1;if(musicGain) musicGain.gain.value=allMuted?0:musicBase*musicVolume;if(ambientLoop&&ambientLoop.gain){const target=allMuted?0:ambientLoop.base*sfxVolume;try{ambientLoop.gain.gain.setValueAtTime(target,actx.currentTime);}catch(_){ambientLoop.gain.gain.value=target;}}els.muteBtn.textContent=allMuted?'🔇 Som':'🔊 Som';els.muteBtn.setAttribute('aria-pressed',allMuted?'true':'false')});window.addEventListener('keydown',e=>{if(e.key!=='Escape')return;if(G.chosen){cancelTargeting();return}if(!els.gameMenu)return;const t=els.gameMenu.classList.contains('show');t?toggleGameMenu(false):toggleGameMenu(true)});document.addEventListener('click',e=>{if(!G.chosen)return;if(e.target.closest('#aiBoard .card.selectable')||e.target.closest('#playerBoard .card.selectable')||e.target.closest('#aiBoard .face-attack-btn'))return;cancelTargeting()},{capture:true});
 function confirmExit(){return G.mode==='story'?confirm('Progresso da história será perdido. Continuar?'):confirm('Tem certeza?');}
-if(els.openMenuBtn)els.openMenuBtn.addEventListener('click',()=>{els.gameMenu.classList.add('show');els.restartBtn&&(els.restartBtn.style.display=window.isMultiplayer?'none':'block')});
-if(els.closeMenuBtn)els.closeMenuBtn.addEventListener('click',()=>{els.gameMenu.classList.remove('show')});
-if(els.mainMenuBtn)els.mainMenuBtn.addEventListener('click',()=>{if(!confirmExit())return;els.gameMenu.classList.remove('show');const title=document.getElementById('titleMenu');const deck=document.getElementById('start');if(title)title.style.display='flex';if(deck)deck.style.display='none';applyBattleTheme(null);els.wrap.style.display='none';startMenuMusic('menu');if(window.isMultiplayer&&window.NET){NET.disconnect();}window.isMultiplayer=false;window.mpState=null;const custom=document.querySelector('.deckbtn[data-deck="custom"]');custom&&(custom.style.display='');if(els.startGame){els.startGame.textContent='Jogar';els.startGame.disabled=true;}});
-if(els.restartBtn)els.restartBtn.addEventListener('click',()=>{if(window.isMultiplayer)return;if(!confirmExit())return;els.gameMenu.classList.remove('show');startGame()});
-if(els.resignBtn)els.resignBtn.addEventListener('click',()=>{if(!confirmExit())return;els.gameMenu.classList.remove('show');if(window.isMultiplayer&&window.NET){NET.resign();}endGame(false)});
+if(els.openMenuBtn)els.openMenuBtn.addEventListener('click',()=>{toggleGameMenu(true)});
+if(els.closeMenuBtn)els.closeMenuBtn.addEventListener('click',()=>{toggleGameMenu(false)});
+if(els.mainMenuBtn)els.mainMenuBtn.addEventListener('click',()=>{if(!confirmExit())return;toggleGameMenu(false);const title=document.getElementById('titleMenu');const deck=document.getElementById('start');if(title)title.style.display='flex';if(deck)deck.style.display='none';applyBattleTheme(null);els.wrap.style.display='none';startMenuMusic('menu');if(window.isMultiplayer&&window.NET){NET.disconnect();}window.isMultiplayer=false;window.mpState=null;const custom=document.querySelector('.deckbtn[data-deck="custom"]');custom&&(custom.style.display='');if(els.startGame){els.startGame.textContent='Jogar';els.startGame.disabled=true;}});
+if(els.restartBtn)els.restartBtn.addEventListener('click',()=>{if(window.isMultiplayer)return;if(!confirmExit())return;toggleGameMenu(false);startGame()});
+if(els.resignBtn)els.resignBtn.addEventListener('click',()=>{if(!confirmExit())return;toggleGameMenu(false);if(window.isMultiplayer&&window.NET){NET.resign();}endGame(false)});
 if(els.emojiBar){els.emojiBar.querySelectorAll('.emoji-btn').forEach(b=>b.addEventListener('click',()=>{const em=b.dataset.emoji;showEmoji('player',em);if(window.isMultiplayer&&window.NET){NET.sendEmoji(em)}}));}
 function initDeckButtons(){
   $$('.deckbtn').forEach(btn=>{
@@ -1818,11 +1823,15 @@ function initDeckButtons(){
       $$('.deckbtn').forEach(b=>b.style.outline='none');
       btn.style.outline='2px solid var(--accent)';
     });
-    const book=btn.querySelector('.view-cards');
-    book&&book.addEventListener('click',ev=>{
-      ev.stopPropagation();
-      renderEncy(btn.dataset.deck,true);
-    });
+    const wrap=btn.closest('.deck-option');
+    const book=wrap?wrap.querySelector('.view-cards'):null;
+    if(book){
+      book.addEventListener('click',ev=>{
+        ev.preventDefault();
+        ev.stopPropagation();
+        renderEncy(btn.dataset.deck,true);
+      });
+    }
   });
 }
 
@@ -1860,8 +1869,8 @@ if(document.readyState!=='loading'){
 }
 if(els.saveDeck)els.saveDeck.addEventListener('click',()=>{if(G.customDeck&&G.customDeck.length){els.deckBuilder.style.display='none';els.startGame.disabled=false;}});
 els.startGame.addEventListener('click',()=>{if(els.startGame.disabled)return;if(window.isMultiplayer){if(window.mpState==='readyStart'){NET.startReady();window.mpState='waitingStart';els.startGame.textContent='Aguardando oponente iniciar...';els.startGame.disabled=true}else if(!window.mpState){NET.deckChoice(G.playerDeckChoice);if(window.opponentConfirmed){window.mpState='readyStart';els.startGame.textContent='Iniciar';els.startGame.disabled=false}else{window.mpState='waitingDeck';els.startGame.textContent='Aguardando oponente confirmar deck...';els.startGame.disabled=true}}}else{els.start.style.display='none';els.wrap.style.display='block';initAudio();ensureRunning();stopMenuMusic();startGame()}});
-els.openEncy.addEventListener('click',()=>renderEncy('all',false));els.closeEncy.addEventListener('click',()=>{els.ency.classList.remove('show')});$$('.filters .fbtn').forEach(b=>b.addEventListener('click',()=>{renderEncy(b.dataset.deck,false)}));
-els.playAgainBtn.addEventListener('click',()=>{if(!confirmExit())return;if(window.isMultiplayer){showMultiplayerDeckSelect();els.endOverlay.classList.remove('show');}else{els.endOverlay.classList.remove('show');startGame()}});els.rematchBtn.addEventListener('click',()=>{if(!confirmExit())return;if(window.isMultiplayer&&window.NET){NET.requestRematch();els.rematchBtn.disabled=true;els.endSub.textContent='Aguardando oponente';}else{els.endOverlay.classList.remove('show');startGame()}});els.menuBtn.addEventListener('click',()=>{if(!confirmExit())return;els.endOverlay.classList.remove('show');applyBattleTheme(null);els.start.style.display='flex';els.wrap.style.display='none';startMenuMusic('menu');if(window.isMultiplayer&&window.NET){NET.disconnect();}window.isMultiplayer=false;window.mpState=null;const custom=document.querySelector('.deckbtn[data-deck="custom"]');custom&&(custom.style.display='');if(els.startGame){els.startGame.textContent='Jogar';els.startGame.disabled=true;}});
+els.openEncy.addEventListener('click',()=>renderEncy('all',false));els.closeEncy.addEventListener('click',()=>{els.ency.classList.remove('show');setAriaHidden(els.ency,true)});$$('.filters .fbtn').forEach(b=>b.addEventListener('click',()=>{renderEncy(b.dataset.deck,false)}));
+els.playAgainBtn.addEventListener('click',()=>{if(!confirmExit())return;if(window.isMultiplayer){showMultiplayerDeckSelect();hideEndOverlay();}else{hideEndOverlay();startGame()}});els.rematchBtn.addEventListener('click',()=>{if(!confirmExit())return;if(window.isMultiplayer&&window.NET){NET.requestRematch();els.rematchBtn.disabled=true;els.endSub.textContent='Aguardando oponente';}else{hideEndOverlay();startGame()}});els.menuBtn.addEventListener('click',()=>{if(!confirmExit())return;hideEndOverlay();applyBattleTheme(null);els.start.style.display='flex';els.wrap.style.display='none';startMenuMusic('menu');if(window.isMultiplayer&&window.NET){NET.disconnect();}window.isMultiplayer=false;window.mpState=null;const custom=document.querySelector('.deckbtn[data-deck="custom"]');custom&&(custom.style.display='');if(els.startGame){els.startGame.textContent='Jogar';els.startGame.disabled=true;}});
 window.startTotemTest=()=>{
   window.currentGameMode='solo';
   const deck=[
@@ -1897,7 +1906,7 @@ NET.onOpponentDisconnected(()=>{if(window.showReconnect)window.showReconnect('Op
 NET.onOpponentReconnected(()=>{if(window.hideReconnect)window.hideReconnect();});
 NET.onOpponentLeft(()=>{if(window.hideReconnect)window.hideReconnect();log('Oponente desconectou.');if(window.isMultiplayer&&els.wrap.style.display==='block')endGame(true);});
 NET.onOpponentResigned(()=>endGame(true));
-NET.onRematch(()=>{showMultiplayerDeckSelect();els.endOverlay.classList.remove('show')});
+NET.onRematch(()=>{showMultiplayerDeckSelect();hideEndOverlay()});
 }
 document.addEventListener('DOMContentLoaded',tryStartMenuMusicImmediate);
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')tryStartMenuMusicImmediate()});

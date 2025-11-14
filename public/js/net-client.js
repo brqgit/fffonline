@@ -29,6 +29,8 @@
     let t = 15;
     overlayTimer.textContent = t;
     overlay.classList.add('show');
+    overlay.setAttribute('aria-hidden', 'false');
+    if(typeof overlay.focus === 'function'){ overlay.focus(); }
     clearInterval(overlayInterval);
     overlayInterval = setInterval(() => {
       t -= 1;
@@ -40,6 +42,7 @@
   function hideReconnect() {
     if (!overlay) return;
     overlay.classList.remove('show');
+    overlay.setAttribute('aria-hidden', 'true');
     clearInterval(overlayInterval);
   }
 

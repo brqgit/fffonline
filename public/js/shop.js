@@ -284,6 +284,9 @@ function openShop({ faction, gold, onClose, unlimited=false, story=false }){
   if(modal){
     modal.classList.add('show');
     modal.style.display = 'grid';
+    modal.setAttribute('aria-hidden','false');
+    const focusTarget = modal.querySelector('#closeShop') || modal.querySelector('button');
+    if(focusTarget && typeof focusTarget.focus==='function'){ focusTarget.focus(); }
   }
 }
 
@@ -292,6 +295,7 @@ function closeShop(){
   if(modal){
     modal.classList.remove('show');
     modal.style.display = 'none';
+    modal.setAttribute('aria-hidden','true');
   }
   tooltip.hide();
   // reset any in-flight purchase tracking on close

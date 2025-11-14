@@ -31,6 +31,11 @@
       muteToggles.push(toggleNodes[i]);
     }
 
+    function setElementHidden(el, hidden) {
+      if (!el) return;
+      el.setAttribute('aria-hidden', hidden ? 'true' : 'false');
+    }
+
     function setDeckScreenDifficultyVisible(visible) {
       if (diffLabel) diffLabel.style.display = visible ? '' : 'none';
       if (diffSelect) diffSelect.style.display = visible ? '' : 'none';
@@ -117,12 +122,18 @@
       if (mode === 'multiplayer') {
         if (titleMenu) titleMenu.style.display = 'none';
         if (deckScreen) deckScreen.style.display = 'none';
-        if (multiMenu) multiMenu.style.display = 'grid';
+        if (multiMenu) {
+          multiMenu.style.display = 'grid';
+          setElementHidden(multiMenu, false);
+        }
         window.currentGameMode = 'multi';
         return;
       }
       if (titleMenu) titleMenu.style.display = 'none';
-      if (multiMenu) multiMenu.style.display = 'none';
+      if (multiMenu) {
+        multiMenu.style.display = 'none';
+        setElementHidden(multiMenu, true);
+      }
       if (deckScreen) deckScreen.style.display = 'flex';
       if (mode === 'story') {
         setDeckScreenDifficultyVisible(false);
@@ -196,21 +207,30 @@
     if (optBtn) {
       optBtn.addEventListener('click', function () {
         closePlayPopup();
-        if (optionsMenu && optionsMenu.classList) optionsMenu.classList.add('show');
+        if (optionsMenu && optionsMenu.classList) {
+          optionsMenu.classList.add('show');
+          setElementHidden(optionsMenu, false);
+        }
       });
     }
 
     if (testBtn) {
       testBtn.addEventListener('click', function () {
         closePlayPopup();
-        if (testModal && testModal.classList) testModal.classList.add('show');
+        if (testModal && testModal.classList) {
+          testModal.classList.add('show');
+          setElementHidden(testModal, false);
+        }
       });
     }
 
     if (backToMenu) {
       backToMenu.addEventListener('click', function () {
         if (deckScreen) deckScreen.style.display = 'none';
-        if (multiMenu) multiMenu.style.display = 'none';
+        if (multiMenu) {
+          multiMenu.style.display = 'none';
+          setElementHidden(multiMenu, true);
+        }
         if (titleMenu) titleMenu.style.display = 'flex';
         var startBtn = document.getElementById('startGame');
         if (startBtn) {
@@ -224,13 +244,19 @@
 
     if (closeOptions) {
       closeOptions.addEventListener('click', function () {
-        if (optionsMenu && optionsMenu.classList) optionsMenu.classList.remove('show');
+        if (optionsMenu && optionsMenu.classList) {
+          optionsMenu.classList.remove('show');
+          setElementHidden(optionsMenu, true);
+        }
       });
     }
 
     if (closeTest) {
       closeTest.addEventListener('click', function () {
-        if (testModal && testModal.classList) testModal.classList.remove('show');
+        if (testModal && testModal.classList) {
+          testModal.classList.remove('show');
+          setElementHidden(testModal, true);
+        }
       });
     }
 
@@ -239,6 +265,7 @@
         if (testModal) {
           if (testModal.classList) testModal.classList.remove('show');
           testModal.style.display = 'none';
+          setElementHidden(testModal, true);
         }
         if (window.openShop) window.openShop({ faction: 'random', gold: 30, unlimited: true });
       });
@@ -249,6 +276,7 @@
         if (testModal) {
           if (testModal.classList) testModal.classList.remove('show');
           testModal.style.display = 'none';
+          setElementHidden(testModal, true);
         }
         if (window.startTotemTest) window.startTotemTest();
       });
