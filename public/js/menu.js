@@ -332,6 +332,8 @@
       (function (logo) {
         var clickCount = 0;
         var resetTimer = null;
+        var brand = closest(logo, '.brand');
+        var fanTimeout = null;
 
         logo.addEventListener('click', function () {
           clickCount += 1;
@@ -347,6 +349,21 @@
             }
             if (!logo.classList.contains('logo-spin-secret')) {
               logo.classList.add('logo-spin-secret');
+            }
+            if (brand) {
+              if (fanTimeout) {
+                clearTimeout(fanTimeout);
+                fanTimeout = null;
+              }
+              if (brand.classList.contains('logo-secret-active')) {
+                brand.classList.remove('logo-secret-active');
+                // force reflow so animation can restart
+                void brand.offsetWidth;
+              }
+              brand.classList.add('logo-secret-active');
+              fanTimeout = setTimeout(function () {
+                brand.classList.remove('logo-secret-active');
+              }, 2000);
             }
           }
         });

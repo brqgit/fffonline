@@ -353,7 +353,8 @@ background-position:center,0 0}
  flex-direction:column;
  align-items:center;
  justify-content:center;
- gap:clamp(8px,2vw,16px)}
+ gap:clamp(8px,2vw,16px);
+ position:relative}
 .start .panel{position:relative;
  background:linear-gradient(180deg,#121a44,#0c1230);
  border:1px solid #2b3a86;
@@ -414,7 +415,20 @@ align-items:center;
 justify-content:center;
 gap:10px;
 text-align:center;
-margin:0 auto}
+margin:0 auto;
+position:relative}
+.brand .logo-wordmark{position:relative;z-index:2;will-change:transform}
+.logo-secret-fan{position:absolute;top:50%;left:50%;transform:translate(-50%,-58%) scale(.85);display:flex;justify-content:center;gap:clamp(4px,1.2vw,10px);pointer-events:none;opacity:0;z-index:1;perspective:900px;transition:opacity .2s ease}
+.logo-secret-card{width:clamp(72px,11vw,132px);border-radius:14px;box-shadow:0 16px 26px rgba(0,0,0,.45);transform-origin:50% 100%;opacity:0;filter:saturate(1.12)}
+.logo-secret-active .logo-secret-fan{opacity:1}
+.logo-secret-active .logo-secret-card:nth-child(1){animation:logo-secret-card-left .7s cubic-bezier(.22,.61,.36,1) forwards}
+.logo-secret-active .logo-secret-card:nth-child(2){animation:logo-secret-card-mid-left .7s cubic-bezier(.22,.61,.36,1) .06s forwards}
+.logo-secret-active .logo-secret-card:nth-child(3){animation:logo-secret-card-mid-right .7s cubic-bezier(.22,.61,.36,1) .12s forwards}
+.logo-secret-active .logo-secret-card:nth-child(4){animation:logo-secret-card-right .7s cubic-bezier(.22,.61,.36,1) .18s forwards}
+@keyframes logo-secret-card-left{0%{opacity:0;transform:translate3d(0,42px,0) rotate(0deg) scale(.6)}55%{opacity:1}100%{opacity:1;transform:translate3d(-128px,-18px,0) rotate(-26deg) rotateY(14deg) scale(1)}}
+@keyframes logo-secret-card-mid-left{0%{opacity:0;transform:translate3d(0,38px,0) rotate(0deg) scale(.65)}55%{opacity:1}100%{opacity:1;transform:translate3d(-58px,-12px,0) rotate(-10deg) rotateY(6deg) scale(1)}}
+@keyframes logo-secret-card-mid-right{0%{opacity:0;transform:translate3d(0,38px,0) rotate(0deg) scale(.65)}55%{opacity:1}100%{opacity:1;transform:translate3d(22px,-12px,0) rotate(10deg) rotateY(-6deg) scale(1)}}
+@keyframes logo-secret-card-right{0%{opacity:0;transform:translate3d(0,42px,0) rotate(0deg) scale(.6)}55%{opacity:1}100%{opacity:1;transform:translate3d(96px,-22px,0) rotate(24deg) rotateY(-16deg) scale(1)}}
 .logoFFF{width:36px;
 height:36px}
 .deckpick{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin:14px 0;justify-content:center}
