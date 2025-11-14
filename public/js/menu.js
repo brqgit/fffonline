@@ -39,6 +39,28 @@ const initMenuScreens = () => {
 
   let playPopupOpen = false;
 
+  const matchesSelector = (element, selector) => {
+    if (!element) return false;
+    const proto = Element.prototype;
+    const matcher = proto.matches || proto.msMatchesSelector || proto.webkitMatchesSelector;
+    return matcher ? matcher.call(element, selector) : false;
+  };
+
+  const closest = (element, selector) => {
+    if (!element) return null;
+    if (typeof element.closest === 'function') return element.closest(selector);
+    let current = element;
+    while (current) {
+      if (matchesSelector(current, selector)) return current;
+      current = current.parentElement;
+    }
+    return null;
+  };
+
+  const positionPlayPopup = () => {
+    if (!playPopupOpen || !playPopup || !playBtn) return;
+    const layout = closest(playBtn, '.start-layout');
+    const panel = closest(playBtn, '.panel');
   const positionPlayPopup = () => {
     if (!playPopupOpen || !playPopup || !playBtn) return;
     const layout = playBtn.closest('.start-layout');
@@ -59,6 +81,13 @@ const initMenuScreens = () => {
     playPopup.style.top = `${panelRect.top - layoutRect.top + panelRect.height / 2}px`;
     playPopup.style.transform = 'translateY(-50%)';
   };
+
+  const openPlayPopup = () => {
+    if (!playPopup || playPopupOpen) return;
+    playPopup.hidden = false;
+    playPopup.removeAttribute('aria-hidden');
+    playPopup.classList.add('show');
+    if (playBtn) playBtn.setAttribute('aria-expanded', 'true');
 
   const openPlayPopup = () => {
     if (!playPopup || playPopupOpen) return;
@@ -116,6 +145,8 @@ const initMenuScreens = () => {
     if (!playPopup) return;
     playPopup.classList.remove('show');
     playPopup.hidden = true;
+    playPopup.setAttribute('aria-hidden', 'true');
+    if (playBtn) playBtn.setAttribute('aria-expanded', 'false');
     playBtn?.setAttribute('aria-expanded', 'false');
     playPopupOpen = false;
     playPopup.style.left = '';
