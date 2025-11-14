@@ -33,9 +33,15 @@
         </div>
       </div>
       <div class="play-popup" id="playPopup" role="menu" hidden>
+        <div class="play-popup-trail" aria-hidden="true">
+          <span class="trail-card"></span>
+          <span class="trail-card"></span>
+          <span class="trail-card"></span>
+        </div>
         <button class="btn" id="menuPlayStory" type="button" role="menuitem">História</button>
         <button class="btn" id="menuPlayQuick" type="button" role="menuitem">Partida rápida</button>
         <button class="btn" id="menuPlayMulti" type="button" role="menuitem">Multiplayer</button>
+        <button class="btn" id="openEncy" type="button" role="menuitem">Enciclopédia</button>
       </div>
     </div>
   </div>
@@ -80,7 +86,6 @@
               <option value="1" selected>Equilibrado</option>
               <option value="2">IMPOSSIBLE!!!</option>
             </select>
-            <button class="btn" id="openEncy">Enciclopédia</button>
             <button class="btn" id="startGame" disabled>Jogar</button>
             <button class="btn" id="backToMenu">Menu</button>
           </div>

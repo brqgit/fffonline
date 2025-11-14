@@ -24,6 +24,7 @@
     var testTotemBtn = document.getElementById('testTotemBtn');
     var diffLabel = document.querySelector('label[for="difficulty"]');
     var diffSelect = document.getElementById('difficulty');
+    var encyBtn = document.getElementById('openEncy');
     var toggleNodes = document.querySelectorAll('[data-action="toggle-music"]');
     var muteToggles = [];
     for (var i = 0; i < toggleNodes.length; i += 1) {
@@ -178,6 +179,19 @@
       if (playPopup && (event.target === playPopup || playPopup.contains(event.target))) return;
       closePlayPopup();
     });
+
+    if (encyBtn) {
+      encyBtn.addEventListener('click', function () {
+        closePlayPopup();
+        try {
+          if (window.renderEncy) {
+            window.renderEncy('all', false);
+          }
+        } catch (_err) {
+          // ignore
+        }
+      });
+    }
 
     if (optBtn) {
       optBtn.addEventListener('click', function () {

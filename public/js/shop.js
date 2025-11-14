@@ -24,6 +24,25 @@ const NEUTRAL = [
   { name: 'Totem do Carvalho', type: 'totem', desc: '+1 HP', cost: 9, rarity: 'rare' }
 ];
 
+const STORY_ITEMS = [
+  { name: 'Elixir de Mana Primordial', type: 'relic', desc: 'Comece os combates da história com +1 de mana.', cost: 18, rarity: 'rare', flair: 'mana', bonus: { startMana: 1 } },
+  { name: 'Tambor dos Conquistadores', type: 'relic', desc: 'Ganha +1 de mana sempre que destruir uma unidade inimiga.', cost: 24, rarity: 'epic', flair: 'weapon', bonus: { killMana: 1 } },
+  { name: 'Grãos Encantados de Freyja', type: 'buff', desc: 'Aliados começam com +1 HP permanente na campanha.', cost: 16, rarity: 'rare', flair: 'buff', bonus: { allyBuff: { hp: 1 } } },
+  { name: 'Lâmina das Sete Runas', type: 'buff', desc: '+1 ATK permanente para suas unidades na campanha.', cost: 22, rarity: 'epic', flair: 'weapon', bonus: { allyBuff: { atk: 1 } } },
+  { name: 'Talismã Totêmico Ancestral', type: 'totem', desc: 'Totens concedem +1/+1 adicional ao ativar.', cost: 26, rarity: 'legendary', flair: 'totem', bonus: { totemBonus: { atk: 1, hp: 1 } } }
+];
+
+const SHOP_ICONS = {
+  buff: '✨',
+  relic: '🔮',
+  totem: '🗿',
+  mana: '💠',
+  weapon: '⚔️',
+  item: '🧭',
+  spell: '📜',
+  unit: '⚔️'
+};
+
 function getPlayerId(){
   if(window && window.PLAYER_ID) return window.PLAYER_ID;
   const fallback = window.crypto && window.crypto.randomUUID
@@ -33,7 +52,7 @@ function getPlayerId(){
   return fallback;
 }
 
-let shopState = { faction: '', gold: 0, onClose: null, unlimited: false, purchased: [] };
+let shopState = { faction: '', gold: 0, onClose: null, unlimited: false, purchased: [], story: false };
 let rerollCount = 0;
 
 function showShopMsg(msg){
@@ -104,8 +123,18 @@ function genShopOffers(){
     : [];
   const neutralPool = NEUTRAL.map(c => Object.assign({ faction: 'Neutro' }, c));
   let pool = [];
+  if(shopState.story){
+    const storyPicks = shuffle(STORY_ITEMS).slice(0, 4).map(it => Object.assign({}, it));
+    for(const item of storyPicks){
+      if(pool.length >= maxOffers) break;
+      if(!pool.some(p => p.name === item.name)) pool.push(item);
+    }
+  }
   if(factionPool.length){
-    pool = pool.concat(shuffle(factionPool).slice(0, Math.ceil(maxOffers/2)));
+    shuffle(factionPool).forEach(it => {
+      if(pool.length >= maxOffers) return;
+      if(!pool.some(p => p.name === it.name)) pool.push(it);
+    });
   }
   const allPools = Object.entries(FACTIONS).flatMap(([fac, obj]) =>
     obj.pool.map(c => Object.assign({ faction: fac }, c))
@@ -140,6 +169,9 @@ function renderShop(){
   genShopOffers().forEach(it => {
     const card = document.createElement('div');
     card.className = 'shop-card';
+    const flair = (it && (it.flair || (it.type === 'buff' && it.bonus && it.bonus.startMana ? 'mana' : it.type))) || 'item';
+    card.dataset.flair = flair;
+    if(it && it.type) card.dataset.type = it.type;
 
     if(['unit','spell','totem'].includes(it.type) && window.cardNode){
       // normalize data for cardNode: prefer deck/icon or img
@@ -151,15 +183,22 @@ function renderShop(){
       node.classList.add('shop-preview');
       card.appendChild(node);
     }else{
-      const p = document.createElement('div');
-      p.className = 'shop-placeholder';
-      p.textContent = it.name;
-      card.appendChild(p);
+      const art = document.createElement('div');
+      art.className = 'shop-art';
+      const iconSpan = document.createElement('span');
+      iconSpan.className = 'shop-art-icon';
+      iconSpan.textContent = it.icon || SHOP_ICONS[flair] || SHOP_ICONS[it.type] || '🛒';
+      art.appendChild(iconSpan);
+      card.appendChild(art);
+      const name = document.createElement('div');
+      name.className = 'shop-item-name';
+      name.textContent = it.name;
+      card.appendChild(name);
     }
 
     const btn = document.createElement('button');
     btn.className = 'btn price-btn';
-  btn.innerHTML = `${it.cost}<span class="coin-icon"></span>`;
+    btn.innerHTML = `${it.cost}<span class="coin-icon"></span>`;
     btn.onclick = () => {
       if(shopState.gold < it.cost){ showShopMsg('Sem ouro.'); return; }
       btn.disabled = true;
@@ -221,7 +260,7 @@ function updateRerollBtn(){
   }
 }
 
-function openShop({ faction, gold, onClose, unlimited=false }){
+function openShop({ faction, gold, onClose, unlimited=false, story=false }){
 
   const map = { vikings:'Furioso', animais:'Furioso', pescadores:'Sombras', floresta:'Percepcao', convergentes:'Percepcao' };
   shopState.faction = map[faction] || faction || 'Furioso';
@@ -230,6 +269,7 @@ function openShop({ faction, gold, onClose, unlimited=false }){
   shopState.unlimited = unlimited;
   shopState.purchased = [];
   shopState.pending = [];
+  shopState.story = !!story;
   rerollCount = 0;
   updateRerollBtn();
   $('#shopGold').textContent = shopState.gold;
@@ -254,6 +294,7 @@ function closeShop(){
   tooltip.hide();
   // reset any in-flight purchase tracking on close
   shopState.pending = [];
+  shopState.story = false;
   if(shopState.onClose) shopState.onClose(shopState);
 }
 
