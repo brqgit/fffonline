@@ -1,5 +1,7 @@
 (function(){const $=s=>document.querySelector(s),$$=s=>Array.from(document.querySelectorAll(s));const logBox=$('#log');const log=t=>{if(!logBox)return;const d=document.createElement('div');d.textContent=t;logBox.prepend(d)};const rand=a=>a[Math.floor(Math.random()*a.length)],clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),uid=()=>(Math.random().toString(36).slice(2));
-const AudioCtx = window.AudioContext || window.webkitAudioContext;
+const AUDIO_ENABLED = false;
+const AudioCtor = (typeof window!=='undefined') ? (window.AudioContext || window.webkitAudioContext) : null;
+const AudioCtx = AUDIO_ENABLED ? AudioCtor : null;
 let actx = null,
     master = null,
     musicGain = null,
@@ -14,6 +16,7 @@ let actx = null,
     allMuted = false;
 
 const SFX_ROOT = 'sfx/';
+const SFX_DIRECTORIES = ['GameSFX','Instruments','Voices'];
 
 const SFX_CLIPS = {
   start: ['Voices/Level Completed.wav', 'Voices/You Win.wav'],
@@ -413,6 +416,14 @@ function setSrcFallback(el,urls,onFail){
     el.src = u;
   };
   tryNext();
+}
+
+function pickEnemyName(deck,boss=false){
+  const pools = (window.ENEMY_NAMES || {});
+  const list = pools[deck] || [];
+  const filtered = list.filter(entry=>boss ? entry.boss : !entry.boss);
+  const choice = filtered.length ? rand(filtered) : (list.length ? rand(list) : null);
+  return choice && choice.name ? choice.name : 'Inimigo';
 }
 
 const KW={P:'Protetor',F:'Furioso',A:'Absorver',M:'Mutável'},
