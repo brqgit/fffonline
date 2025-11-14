@@ -12,53 +12,78 @@
 <body>
   <!-- Main menu -->
   <div class="start" id="titleMenu">
-    <div class="panel">
+    <div class="start-layout">
       <div class="brand">
+        <div class="logo-secret-fan" aria-hidden="true">
+          <img src="img/decks/farm-vikings/deck-backs/fv-db-default.png" alt="" class="logo-secret-card">
+          <img src="img/decks/north-beasts/deck-backs/nb-db-default.webp" alt="" class="logo-secret-card">
+          <img src="img/decks/fJord-fishers/deck-backs/jf-db-default.webp" alt="" class="logo-secret-card">
+          <img src="img/decks/forest-beasts/deck-backs/fb-db-default.webp" alt="" class="logo-secret-card">
+        </div>
         <img src="img/ui/logos/logo2.png" class="logo-wordmark holo-logo" alt="Farm Fight Formula logo">
       </div>
-      <div class="main-actions">
-        <button class="btn" id="menuStory">Modo História</button>
-        <button class="btn" id="menuSolo">Jogar Solo</button>
-        <button class="btn" id="menuMulti">Jogar Multiplayer</button>
-        <button class="btn" id="menuOptions">Opções</button>
-        <button class="btn" id="menuTestes">Testes</button>
+      <div class="panel">
+        <div class="panel-toolbar">
+          <button class="btn-ghost mute-toggle" type="button" data-action="toggle-music" aria-pressed="false">🔊 Música</button>
+        </div>
+        <div class="main-actions">
+          <button class="btn" id="menuPlay" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="playPopup">Jogar</button>
+          <button class="btn" id="menuOptions" type="button">Opções</button>
+          <button class="btn" id="menuTestes" type="button">Testes</button>
+        </div>
+      </div>
+      <div class="play-popup" id="playPopup" role="menu" hidden>
+        <button class="btn" id="menuPlayStory" type="button" role="menuitem">História</button>
+        <button class="btn" id="menuPlayQuick" type="button" role="menuitem">Partida rápida</button>
+        <button class="btn" id="menuPlayMulti" type="button" role="menuitem">Multiplayer</button>
       </div>
     </div>
   </div>
 
   <!-- Deck selection -->
   <div class="start" id="start" style="display:none">
-    <div class="panel">
+    <div class="start-layout">
       <div class="brand">
+        <div class="logo-secret-fan" aria-hidden="true">
+          <img src="img/decks/farm-vikings/deck-backs/fv-db-default.png" alt="" class="logo-secret-card">
+          <img src="img/decks/north-beasts/deck-backs/nb-db-default.webp" alt="" class="logo-secret-card">
+          <img src="img/decks/fJord-fishers/deck-backs/jf-db-default.webp" alt="" class="logo-secret-card">
+          <img src="img/decks/forest-beasts/deck-backs/fb-db-default.webp" alt="" class="logo-secret-card">
+        </div>
         <img src="img/ui/logos/logo2.png" class="logo-wordmark holo-logo" alt="Farm Fight Formula logo">
       </div>
-      <p class="sub">Escolha um deck e parta para a arena.</p>
-      <div class="deckpick">
-        <button class="btn deckbtn" data-deck="vikings">👩‍🌾 Fazendeiros Vikings<div class="ribbon">Cura e proteção</div><span class="view-cards" data-deck="vikings" data-tip="Ver cartas" aria-label="Ver cartas">📖</span></button>
-        <button class="btn deckbtn" data-deck="animais">🐺 Bestas do Norte<div class="ribbon">Ataque bruto</div><span class="view-cards" data-deck="animais" data-tip="Ver cartas" aria-label="Ver cartas">📖</span></button>
-        <button class="btn deckbtn" data-deck="pescadores">🎣 Pescadores do Fiorde<div class="ribbon">Suporte e bônus</div><span class="view-cards" data-deck="pescadores" data-tip="Ver cartas" aria-label="Ver cartas">📖</span></button>
-        <button class="btn deckbtn" data-deck="floresta">🌲 Feras da Floresta<div class="ribbon">Pressão constante</div><span class="view-cards" data-deck="floresta" data-tip="Ver cartas" aria-label="Ver cartas">📖</span></button>
-        <button class="btn deckbtn" data-deck="convergentes">🌀 Convergentes da Aurora<div class="ribbon">Absorção e metamorfose</div><span class="view-cards" data-deck="convergentes" data-tip="Ver cartas" aria-label="Ver cartas">📖</span></button>
-        <button class="btn deckbtn" data-deck="custom">🧩 Deck Personalizado<div class="ribbon">Monte seu baralho</div><span class="view-cards" data-deck="custom" data-tip="Ver cartas" aria-label="Ver cartas">📖</span></button>
-      </div>
-      <div id="deckBuilder" style="display:none">
-        <p>Monte seu baralho: <span id="countDeck">0</span>/20</p>
-        <div id="curve"></div>
-        <div id="pool"></div>
-        <div id="chosen"></div>
-        <button class="btn" id="saveDeck">Salvar Deck</button>
-      </div>
-      <div class="footer">
-        <div class="controls">
-          <label for="difficulty" class="sub">Dificuldade:</label>
-          <select id="difficulty" class="difficulty">
-            <option value="0">Ameba</option>
-            <option value="1" selected>Equilibrado</option>
-            <option value="2">IMPOSSIBLE!!!</option>
-          </select>
-          <button class="btn" id="openEncy">Enciclopédia</button>
+      <div class="panel">
+        <div class="panel-toolbar">
+          <button class="btn-ghost mute-toggle" type="button" data-action="toggle-music" aria-pressed="false">🔊 Música</button>
+        </div>
+        <p class="sub">Escolha um deck e parta para a arena.</p>
+        <div class="deckpick">
+          <button class="btn deckbtn" data-deck="vikings">👩‍🌾 Fazendeiros Vikings<div class="ribbon">Cura e proteção</div><span class="view-cards" data-deck="vikings" data-tip="Ver cartas" aria-label="Ver cartas">📖</span></button>
+          <button class="btn deckbtn" data-deck="animais">🐺 Bestas do Norte<div class="ribbon">Ataque bruto</div><span class="view-cards" data-deck="animais" data-tip="Ver cartas" aria-label="Ver cartas">📖</span></button>
+          <button class="btn deckbtn" data-deck="pescadores">🎣 Pescadores do Fiorde<div class="ribbon">Suporte e bônus</div><span class="view-cards" data-deck="pescadores" data-tip="Ver cartas" aria-label="Ver cartas">📖</span></button>
+          <button class="btn deckbtn" data-deck="floresta">🌲 Feras da Floresta<div class="ribbon">Pressão constante</div><span class="view-cards" data-deck="floresta" data-tip="Ver cartas" aria-label="Ver cartas">📖</span></button>
+          <button class="btn deckbtn" data-deck="convergentes">🌀 Convergentes da Aurora<div class="ribbon">Absorção e metamorfose</div><span class="view-cards" data-deck="convergentes" data-tip="Ver cartas" aria-label="Ver cartas">📖</span></button>
+          <button class="btn deckbtn" data-deck="custom">🧩 Deck Personalizado<div class="ribbon">Monte seu baralho</div><span class="view-cards" data-deck="custom" data-tip="Ver cartas" aria-label="Ver cartas">📖</span></button>
+        </div>
+        <div id="deckBuilder" style="display:none">
+          <p>Monte seu baralho: <span id="countDeck">0</span>/20</p>
+          <div id="curve"></div>
+          <div id="pool"></div>
+          <div id="chosen"></div>
+          <button class="btn" id="saveDeck">Salvar Deck</button>
+        </div>
+        <div class="footer">
+          <div class="controls">
+            <label for="difficulty" class="sub">Dificuldade:</label>
+            <select id="difficulty" class="difficulty">
+              <option value="0">Ameba</option>
+              <option value="1" selected>Equilibrado</option>
+              <option value="2">IMPOSSIBLE!!!</option>
+            </select>
+            <button class="btn" id="openEncy">Enciclopédia</button>
             <button class="btn" id="startGame" disabled>Jogar</button>
-          <button class="btn" id="backToMenu">Menu</button>
+            <button class="btn" id="backToMenu">Menu</button>
+          </div>
         </div>
       </div>
     </div>
