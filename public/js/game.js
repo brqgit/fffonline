@@ -1,48 +1,367 @@
 (function(){const $=s=>document.querySelector(s),$$=s=>Array.from(document.querySelectorAll(s));const logBox=$('#log');const log=t=>{if(!logBox)return;const d=document.createElement('div');d.textContent=t;logBox.prepend(d)};const rand=a=>a[Math.floor(Math.random()*a.length)],clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),uid=()=>(Math.random().toString(36).slice(2));
-const AudioCtx=window.AudioContext||window.webkitAudioContext;let actx=null,master=null,musicGain=null,musicLoopId=null,musicOn=false,musicPreset='menu',musicMuted=false,sfxMuted=false,musicVolume=1,sfxVolume=1,musicBase=.18,allMuted=false;const SFX_TONES={start:[{f:520,d:.08,t:'triangle',v:.7,w:0},{f:780,d:.09,t:'triangle',v:.6,w:.08}],play:[{f:420,d:.07,t:'sine',v:.7,w:0},{f:560,d:.08,t:'sine',v:.6,w:.06}],defense:[{f:280,d:.09,t:'square',v:.6,w:0},{f:200,d:.12,t:'sine',v:.5,w:.08}],hit:[{f:160,d:.07,t:'square',v:.6,w:0}],overflow:[{f:600,d:.1,t:'triangle',v:.6,w:0}],death:[{f:420,d:.08,t:'sawtooth',v:.6,w:0},{f:260,d:.12,t:'sawtooth',v:.55,w:.06}],end:[{f:600,d:.06,t:'triangle',v:.6,w:0},{f:400,d:.06,t:'triangle',v:.5,w:.05}],crit:[{f:120,d:.08,t:'square',v:.75,w:0},{f:90,d:.12,t:'square',v:.7,w:.06}],error:[{f:140,d:.05,t:'square',v:.6,w:0},{f:140,d:.05,t:'square',v:.6,w:.06}],mana:[{f:480,d:.08,t:'sine',v:.7,w:0},{f:720,d:.08,t:'sine',v:.6,w:.06}],reward:[{f:560,d:.08,t:'sine',v:.7,w:0},{f:840,d:.08,t:'sine',v:.6,w:.06}],reroll:[{f:360,d:.08,t:'square',v:.6,w:0}]};const ATTACK_TONES={default:[{f:320,d:.08,t:'sawtooth',v:.7,w:0},{f:180,d:.08,t:'sawtooth',v:.55,w:.05}],flame:[{f:540,d:.07,t:'sawtooth',v:.75,w:0},{f:720,d:.09,t:'triangle',v:.6,w:.05}],storm:[{f:500,d:.06,t:'square',v:.7,w:0},{f:900,d:.09,t:'triangle',v:.5,w:.04}],feral:[{f:260,d:.06,t:'square',v:.75,w:0},{f:180,d:.08,t:'square',v:.6,w:.05}],mystic:[{f:440,d:.08,t:'sine',v:.7,w:0},{f:660,d:.1,t:'sine',v:.55,w:.04}],heavy:[{f:200,d:.09,t:'sawtooth',v:.75,w:0},{f:120,d:.12,t:'square',v:.65,w:.06}],totem:[{f:360,d:.07,t:'triangle',v:.7,w:0},{f:540,d:.09,t:'triangle',v:.6,w:.05}],frost:[{f:400,d:.07,t:'sine',v:.65,w:0},{f:620,d:.09,t:'sine',v:.55,w:.05}],poison:[{f:300,d:.07,t:'sawtooth',v:.6,w:0},{f:180,d:.1,t:'triangle',v:.5,w:.04}],tidal:[{f:420,d:.07,t:'sine',v:.65,w:0},{f:540,d:.1,t:'triangle',v:.55,w:.05}]};function initAudio(){if(!AudioCtx)return;if(!actx){actx=new AudioCtx();master=actx.createGain();master.gain.value=sfxMuted?0:sfxVolume;master.connect(actx.destination)}}function ensureRunning(){if(actx&&actx.state==='suspended'){try{actx.resume()}catch(_){}}}function tone(f=440,d=.1,t='sine',v=1,w=0){if(!actx||sfxMuted)return;ensureRunning();const o=actx.createOscillator(),g=actx.createGain();o.type=t;o.frequency.setValueAtTime(f,actx.currentTime+w);g.gain.setValueAtTime(.0001,actx.currentTime+w);g.gain.exponentialRampToValueAtTime(Math.max(.0002,v)*sfxVolume,actx.currentTime+w+.01);g.gain.exponentialRampToValueAtTime(.0001,actx.currentTime+w+d);o.connect(g);g.connect(master);o.start(actx.currentTime+w);o.stop(actx.currentTime+w+d+.02)}function playToneSequence(seq){if(!seq||!seq.length)return;for(let i=0;i<seq.length;i++){const step=seq[i];tone(step.f,step.d,step.t,step.v,step.w)}}function sfx(name,variant){if(!AudioCtx)return Promise.resolve();initAudio();if(!actx||sfxMuted)return Promise.resolve();let seq;if(name==='attack'){const key=(variant&&ATTACK_TONES[variant])?variant:'default';seq=ATTACK_TONES[key]||ATTACK_TONES.default;}else{seq=SFX_TONES[name];}if(seq){playToneSequence(seq);}return Promise.resolve();}
+const AudioCtx = window.AudioContext || window.webkitAudioContext;
+let actx = null,
+    master = null,
+    musicGain = null,
+    musicLoopId = null,
+    musicOn = false,
+    musicPreset = 'menu',
+    musicMuted = false,
+    sfxMuted = false,
+    musicVolume = 1,
+    sfxVolume = 1,
+    musicBase = .18,
+    allMuted = false;
+
+const SFX_ROOT = 'sfx/';
+
+const SFX_CLIPS = {
+  start: ['Voices/Level Completed.wav', 'Voices/You Win.wav'],
+  end: ['Voices/Time Out.wav'],
+  play: {
+    default: ['GameSFX/Retro Blip 07.wav'],
+    spell: ['GameSFX/Retro Alarmed 10.wav'],
+    totem: ['GameSFX/Retro Alarm 02.wav']
+  },
+  defense: ['GameSFX/Retro Alarm Long 02.wav'],
+  attack: {
+    heavy: ['GameSFX/Retro Alarmed 06.wav', 'GameSFX/Retro Alarmed StereoUP 03.wav'],
+    flame: ['GameSFX/Retro Alarmed 10.wav'],
+    storm: ['GameSFX/Retro Alarm Long 02.wav', 'GameSFX/Retro Alarmed StereoUP 03.wav'],
+    feral: ['GameSFX/Retro Beeep 20.wav'],
+    mystic: ['GameSFX/Retro Blip 15.wav'],
+    totem: ['GameSFX/Retro Alarm 02.wav'],
+    frost: ['Instruments/Retro Instrument - choir bass - C03.wav'],
+    poison: ['GameSFX/Retro Beeep 06.wav'],
+    tidal: ['GameSFX/Retro Ring 01.wav'],
+    default: ['GameSFX/Retro Blip 07.wav', 'GameSFX/Retro Blip 15.wav']
+  },
+  hit: {
+    default: ['GameSFX/Retro Alarmed 06.wav']
+  },
+  overflow: ['GameSFX/Retro Alarmed StereoUP 03.wav'],
+  death: ['Voices/Game Over.wav', 'Voices/Nightmare Mode.wav'],
+  crit: ['GameSFX/Retro Alarmed 10.wav'],
+  error: ['Voices/Malfunction.wav'],
+  mana: ['GameSFX/Retro Ring 01.wav'],
+  reward: ['Voices/Mission Completed.wav', 'Voices/Level Completed.wav'],
+  reroll: ['GameSFX/Retro Beeep 06.wav']
+};
+
+const CHARACTER_ATTACK_CUES = {
+  male: ['Voices/Mission Completed.wav'],
+  female: ['Voices/Level Completed.wav'],
+  human: ['GameSFX/Retro Blip 15.wav'],
+  beast: ['GameSFX/Retro Beeep 20.wav'],
+  spirit: ['Instruments/Retro Instrument - choir bass - C04.wav'],
+  fire: ['GameSFX/Retro Alarmed 10.wav'],
+  storm: ['GameSFX/Retro Alarmed StereoUP 03.wav'],
+  frost: ['Instruments/Retro Instrument - choir bass - C03.wav'],
+  nature: ['Instruments/Retro Instrument - choir bass - C01.wav'],
+  water: ['GameSFX/Retro Ring 01.wav'],
+  shadow: ['Voices/Nightmare Mode.wav'],
+  totem: ['GameSFX/Retro Alarm 02.wav'],
+  default: ['GameSFX/Retro Blip 07.wav']
+};
+
+const CHARACTER_HIT_CUES = {
+  male: ['Voices/Deactivated.wav'],
+  female: ['Voices/Time Out.wav'],
+  human: ['GameSFX/Retro Alarmed 06.wav'],
+  beast: ['GameSFX/Retro Alarm 02.wav'],
+  spirit: ['Instruments/Retro Instrument - choir bass - C02.wav'],
+  shadow: ['Voices/Nightmare Mode.wav'],
+  totem: ['GameSFX/Retro Alarm 02.wav'],
+  default: ['GameSFX/Retro Alarmed 06.wav']
+};
+
+const CHARACTER_DEATH_CUES = {
+  male: ['Voices/Game Over.wav'],
+  female: ['Voices/Time Out.wav'],
+  human: ['Voices/Game Over.wav'],
+  beast: ['Voices/Nightmare Mode.wav'],
+  spirit: ['Voices/Nightmare Mode.wav'],
+  shadow: ['Voices/Nightmare Mode.wav'],
+  totem: ['GameSFX/Retro Alarm 02.wav'],
+  default: ['Voices/Game Over.wav']
+};
+
+const ABILITY_CUES = {
+  heal: ['Voices/You Win.wav'],
+  buff: ['GameSFX/Retro Blip 15.wav'],
+  mana: ['GameSFX/Retro Ring 01.wav'],
+  draw: ['GameSFX/Retro Beeep 06.wav'],
+  debuff: ['GameSFX/Retro Alarmed StereoUP 03.wav'],
+  totem: ['GameSFX/Retro Alarm 02.wav'],
+  spell: ['GameSFX/Retro Alarmed 10.wav'],
+  fire: ['GameSFX/Retro Alarmed 10.wav'],
+  storm: ['GameSFX/Retro Alarm Long 02.wav'],
+  frost: ['Instruments/Retro Instrument - choir bass - C03.wav'],
+  nature: ['Instruments/Retro Instrument - choir bass - C01.wav'],
+  water: ['GameSFX/Retro Ring 01.wav'],
+  shadow: ['Voices/Nightmare Mode.wav'],
+  default: ['GameSFX/Retro Blip 07.wav']
+};
+
+const BATTLE_THEME_AUDIO = {
+  vikings: 'Instruments/Retro Instrument - choir bass - C05.wav',
+  pescadores: 'Instruments/Retro Instrument - choir bass - C04.wav',
+  animais: 'GameSFX/Retro Beeep 20.wav',
+  floresta: 'Instruments/Retro Instrument - choir bass - C01.wav',
+  convergentes: 'Instruments/Retro Instrument - choir bass - C07.wav',
+  sombras: 'Instruments/Retro Instrument - choir bass - C08.wav',
+  furioso: 'Instruments/Retro Instrument - choir bass - C06.wav',
+  percepcao: 'Instruments/Retro Instrument - choir bass - C03.wav',
+  default: 'Instruments/Retro Instrument - choir bass - C02.wav'
+};
+
+const audioBufferCache = new Map();
+let ambientLoop = null;
+
+function initAudio(){
+  if(!AudioCtx) return;
+  if(!actx){
+    actx = new AudioCtx();
+    master = actx.createGain();
+    master.gain.value = sfxMuted ? 0 : 1;
+    master.connect(actx.destination);
+  }
+}
+
+function ensureRunning(){
+  if(actx && actx.state==='suspended'){
+    try{ actx.resume(); }catch(_){ }
+  }
+}
+
+function loadSfxBuffer(file){
+  initAudio();
+  if(!actx) return Promise.resolve(null);
+  if(audioBufferCache.has(file)) return audioBufferCache.get(file);
+  const url = encodeURI(SFX_ROOT + file);
+  const pending = fetch(url)
+    .then(res=>{ if(!res.ok) throw new Error('SFX load failed'); return res.arrayBuffer(); })
+    .then(buf=>actx.decodeAudioData(buf))
+    .catch(err=>{ console.warn('Falha ao carregar SFX', file, err); return null; });
+  audioBufferCache.set(file, pending);
+  return pending;
+}
+
+function playBufferedClip(file,{ volume=1, loop=false, fade=.3, rate=1 }={}){
+  if(!AudioCtx || sfxMuted) return Promise.resolve(null);
+  initAudio();
+  ensureRunning();
+  if(!actx) return Promise.resolve(null);
+  return loadSfxBuffer(file).then(buffer=>{
+    if(!buffer || !actx) return null;
+    const source = actx.createBufferSource();
+    source.buffer = buffer;
+    if(rate && rate!==1){ try{ source.playbackRate.value = rate; }catch(_){ } }
+    source.loop = !!loop;
+    const gain = actx.createGain();
+    const target = Math.max(0, volume * sfxVolume * (sfxMuted?0:1));
+    if(loop && fade>0){ gain.gain.value = .0001; } else { gain.gain.value = target; }
+    source.connect(gain);
+    gain.connect(master);
+    try{ source.start(); }catch(_){ return null; }
+    if(loop && fade>0){
+      try{ gain.gain.exponentialRampToValueAtTime(Math.max(.0001,target), actx.currentTime + fade); }
+      catch(_){ gain.gain.value = target; }
+    }else{
+      gain.gain.value = target;
+    }
+    if(!loop){
+      source.addEventListener('ended',()=>{
+        try{ source.disconnect(); }catch(_){ }
+        try{ gain.disconnect(); }catch(_){ }
+      });
+    }
+    return { source, gain, base: volume, loop };
+  });
+}
+
+function pickClip(entry,variant){
+  if(!entry) return null;
+  if(Array.isArray(entry)) return entry.length ? rand(entry) : null;
+  if(variant && entry[variant]){
+    const arr = entry[variant];
+    if(Array.isArray(arr) && arr.length) return rand(arr);
+  }
+  if(entry.default){
+    const arr = entry.default;
+    if(Array.isArray(arr) && arr.length) return rand(arr);
+  }
+  const keys = Object.keys(entry);
+  for(const key of keys){
+    const arr = entry[key];
+    if(Array.isArray(arr) && arr.length) return rand(arr);
+  }
+  return null;
+}
+
+function sfx(name,variant,opts){
+  if(!AudioCtx) return Promise.resolve();
+  const clip = pickClip(SFX_CLIPS[name], variant);
+  if(!clip) return Promise.resolve();
+  return playBufferedClip(clip, opts||{});
+}
+
+function stopAmbientLoop(fade=.25){
+  if(!ambientLoop){ return; }
+  if(!actx){ ambientLoop = null; return; }
+  const { source, gain } = ambientLoop;
+  try{
+    if(gain && fade>0){
+      gain.gain.exponentialRampToValueAtTime(.0001, actx.currentTime + fade);
+      setTimeout(()=>{
+        try{ source.stop(); }catch(_){ }
+        try{ source.disconnect(); }catch(_){ }
+        try{ gain.disconnect(); }catch(_){ }
+      }, Math.max(150, fade*1000 + 100));
+    }else{
+      try{ source.stop(); }catch(_){ }
+      try{ source.disconnect(); }catch(_){ }
+      try{ gain.disconnect(); }catch(_){ }
+    }
+  }catch(_){ }
+  ambientLoop = null;
+}
+
+function setBattleAmbience(theme){
+  if(!AudioCtx){ return; }
+  if(!theme){ stopAmbientLoop(); return; }
+  const key = (theme||'').toLowerCase();
+  const clip = BATTLE_THEME_AUDIO[key] || BATTLE_THEME_AUDIO.default;
+  stopAmbientLoop();
+  if(!clip) return;
+  playBufferedClip(clip, { loop:true, volume:.35, fade:.4 }).then(ctrl=>{
+    if(!ctrl) return;
+    ambientLoop = ctrl;
+    if(ctrl.gain){
+      const target = sfxMuted ? 0 : ctrl.base * sfxVolume;
+      try{ ctrl.gain.gain.setValueAtTime(target, actx.currentTime); }
+      catch(_){ ctrl.gain.gain.value = target; }
+    }
+  });
+}
+
+function setMusicVolume(v){
+  musicVolume = clamp(v,0,1);
+  if(musicGain) musicGain.gain.value = musicMuted ? 0 : musicBase * musicVolume;
+}
+
+function setSfxVolume(v){
+  sfxVolume = clamp(v,0,1);
+  if(master) master.gain.value = sfxMuted ? 0 : 1;
+  if(ambientLoop && ambientLoop.gain){
+    const target = sfxMuted ? 0 : ambientLoop.base * sfxVolume;
+    try{ ambientLoop.gain.gain.setValueAtTime(target, actx.currentTime); }
+    catch(_){ ambientLoop.gain.gain.value = target; }
+  }
+}
+
+window.setMusicVolume = setMusicVolume;
+window.setSfxVolume = setSfxVolume;
+window.playSfx = sfx;
+window.sfx = sfx;
+
+const FEMALE_NAME_HINTS = ['sacerdotisa','ceifeira','guardia','matriarca','rainha','feiticeira','curandeir','batedora','ladra','arqueira','dama','herbalista','valquir','guardia','defensora'];
+const BEAST_NAME_HINTS = ['lobo','urso','raposa','coruja','cervo','alce','javali','texugo','lince','foca','falca','corvo','serpente','fera','animal','bode','touro','esquilo','cabrito','morcego','fenrir'];
+const SPIRIT_NAME_HINTS = ['espirito','espírito','convergente','etereo','etéreo','totem','ancestral','fantasma','sombra','runa','mistico','místico','aparic'];
+const FIRE_HINTS = ['fogo','chama','bras','brasa','ardente','inferno','forja','incendio','labared','brasero'];
+const FROST_HINTS = ['gelo','neve','artico','ártico','frio','glacial','inverno','geada','gelado','aurora'];
+const STORM_HINTS = ['raio','tempest','trov','relamp','storm','furacao','vento','ciclone','tormenta','turbilh'];
+const WATER_HINTS = ['mar','oceano','onda','mare','maré','rio','pesc','navio','corsario','marinho','porto','tide'];
+const NATURE_HINTS = ['bosque','florest','raiz','folha','vinha','trigo','terra','musgo','selva','campo','carvalho','seiva'];
+const SHADOW_HINTS = ['sombra','noite','noturno','luna','oculto','escuro','sombrio'];
+
+function normalizeAudioText(str){
+  return (str||'').normalize('NFD').replace(/[^a-z0-9\s]/gi,'').toLowerCase();
+}
+
+function deriveAudioProfile(card){
+  if(!card) return { gender:'male', race:'human', element:'' };
+  const nameTxt = normalizeAudioText(card.name);
+  const tribeTxt = normalizeAudioText(card.tribe);
+  const textTxt = normalizeAudioText(card.text);
+  const combined = `${nameTxt} ${tribeTxt} ${textTxt}`;
+  let race = 'human';
+  if(card.type === 'totem') race = 'totem';
+  if(tribeTxt.includes('animal') || BEAST_NAME_HINTS.some(h=>combined.includes(h))) race = 'beast';
+  else if(tribeTxt.includes('converg') || SPIRIT_NAME_HINTS.some(h=>combined.includes(h))) race = 'spirit';
+  else if(tribeTxt.includes('totem')) race = 'totem';
+  let gender = 'male';
+  if(race === 'beast' || race === 'totem'){ gender = 'male'; }
+  else if(FEMALE_NAME_HINTS.some(h=>combined.includes(h))){ gender = 'female'; }
+  else {
+    const words = nameTxt.split(' ').filter(Boolean);
+    if(words.length){
+      const last = words[words.length-1];
+      if(last.endsWith('a') && !last.endsWith('da') && !last.endsWith('ma')) gender = 'female';
+    }
+  }
+  let element = '';
+  if(FIRE_HINTS.some(h=>combined.includes(h))) element = 'fire';
+  else if(FROST_HINTS.some(h=>combined.includes(h))) element = 'frost';
+  else if(STORM_HINTS.some(h=>combined.includes(h))) element = 'storm';
+  else if(WATER_HINTS.some(h=>combined.includes(h))) element = 'water';
+  else if(NATURE_HINTS.some(h=>combined.includes(h))) element = 'nature';
+  else if(SHADOW_HINTS.some(h=>combined.includes(h))) element = 'shadow';
+  else if(race === 'totem') element = 'totem';
+  return { gender, race, element };
+}
+
+function playCharacterCue(card,stage){
+  if(!card) return;
+  const profile = deriveAudioProfile(card);
+  let bank = null;
+  switch(stage){
+    case 'hit': bank = CHARACTER_HIT_CUES; break;
+    case 'death': bank = CHARACTER_DEATH_CUES; break;
+    default: bank = CHARACTER_ATTACK_CUES; break;
+  }
+  if(!bank) return;
+  let clip = null;
+  if(profile.element) clip = pickClip(bank, profile.element);
+  if(!clip && profile.race) clip = pickClip(bank, profile.race);
+  if(!clip && profile.gender) clip = pickClip(bank, profile.gender);
+  if(!clip) clip = pickClip(bank);
+  if(clip) playBufferedClip(clip, { volume: stage==='hit' ? .7 : .85 });
+}
+
+function playAbilityCue(effect,card){
+  const profile = card ? deriveAudioProfile(card) : null;
+  let clip = null;
+  if(profile && profile.element) clip = pickClip(ABILITY_CUES, profile.element);
+  if(!clip && effect) clip = pickClip(ABILITY_CUES, effect);
+  if(!clip) clip = pickClip(ABILITY_CUES);
+  if(clip) playBufferedClip(clip, { volume: .8 });
+}
+
 function setSrcFallback(el,urls,onFail){
-  // Try urls in order and record failures in IMG_CACHE to avoid repeated 404s
   const tried = urls.slice();
   const tryNext = ()=>{
     if(!urls.length){
-      // mark all tried URLs as failed so future renders won't re-request them
       tried.forEach(u=>{ IMG_CACHE[u] = { failed:true }; });
       try{ if(typeof onFail==='function') onFail(); }catch(_){ }
       return;
     }
     const u = urls.shift();
-    // if this url is already known to have failed, skip it
     if(IMG_CACHE[u] && IMG_CACHE[u].failed) return tryNext();
     el.onerror = ()=>{
-      // mark this specific url as failed immediately to prevent parallel re-requests
       try{ IMG_CACHE[u] = { failed:true }; }catch(_){ }
       tryNext();
     };
     el.onload = ()=>{
       try{
-        // cache a clone of the loaded image and mark as complete
         IMG_CACHE[u] = el.cloneNode();
         IMG_CACHE[u].complete = true;
       }catch(_){ }
     };
-    // set src last so handlers are in place
     el.src = u;
   };
   tryNext();
 }
-const pickEnemyName=(deck,boss=false)=>{const pool=(window.ENEMY_NAMES||{})[deck]||[];const list=pool.filter(e=>boss?e.boss:!e.boss);const c=list.length?rand(list):{name:"Inimigo"};return c.name;};
-// --- MENU MUSIC (procedural, deck-themed) ---
-const MUSIC={menu:{bpm:84,leadBase:196,bassBase:98,leadWave:'triangle',bassWave:'sine',scale:[0,3,5,7,5,3,0,-5]},vikings:{bpm:76,leadBase:174.61,bassBase:87.31,leadWave:'sawtooth',bassWave:'sine',scale:[0,3,5,7,10,7,5,3]},animais:{bpm:90,leadBase:220,bassBase:110,leadWave:'square',bassWave:'sine',scale:[0,2,5,7,9,7,5,2]},pescadores:{bpm:96,leadBase:196,bassBase:98,leadWave:'triangle',bassWave:'triangle',scale:[0,2,4,7,9,7,4,2]},floresta:{bpm:68,leadBase:207.65,bassBase:103.83,leadWave:'sine',bassWave:'sine',scale:[0,3,5,10,5,3,0,-2]},combat:{bpm:118,leadBase:220,bassBase:110,leadWave:'sawtooth',bassWave:'square',scale:[0,2,3,5,7,8,7,5],perc:true,ac:4}};
-function startMenuMusic(preset){if(!AudioCtx||musicMuted)return;initAudio();ensureRunning();if(preset&&preset!==musicPreset&&musicOn){stopMenuMusic()}musicPreset=preset||musicPreset||'menu';if(musicOn)return;musicOn=true;const P=MUSIC[musicPreset]||MUSIC.menu;musicGain=actx.createGain();musicGain.gain.value=.0001;musicGain.connect(master);musicBase=musicPreset==='combat'?.22:.18;musicGain.gain.exponentialRampToValueAtTime(musicBase*musicVolume,actx.currentTime+.4);const beat=60/P.bpm,steps=P.scale.length;const schedule=()=>{if(!musicOn||!musicGain) return; let t=actx.currentTime;for(let i=0;i<steps;i++){const f=P.leadBase*Math.pow(2,P.scale[i]/12),o=actx.createOscillator(),g=actx.createGain();o.type=P.leadWave;o.frequency.setValueAtTime(f,t+i*beat);g.gain.setValueAtTime(.0001,t+i*beat);g.gain.exponentialRampToValueAtTime((musicPreset==='combat'?.13:.11)*musicVolume,t+i*beat+.01);g.gain.exponentialRampToValueAtTime(.0001,t+i*beat+beat*.92);o.connect(g);g.connect(musicGain);o.start(t+i*beat);o.stop(t+i*beat+beat)}for(let i=0;i<steps;i+=2){const o=actx.createOscillator(),g=actx.createGain();o.type=P.bassWave;o.frequency.setValueAtTime(P.bassBase,t+i*beat);g.gain.setValueAtTime(.0001,t+i*beat);g.gain.exponentialRampToValueAtTime((musicPreset==='combat'?.1:.09)*musicVolume,t+i*beat+.01);g.gain.exponentialRampToValueAtTime(.0001,t+i*beat+beat*.96);o.connect(g);g.connect(musicGain);o.start(t+i*beat);o.stop(t+i*beat+beat)}if(P.perc){for(let i=0;i<steps;i++){const h=actx.createOscillator(),hg=actx.createGain();h.type='square';h.frequency.setValueAtTime(1600,t+i*beat);hg.gain.setValueAtTime(.0001,t+i*beat);hg.gain.exponentialRampToValueAtTime(.07*musicVolume,t+i*beat+.005);hg.gain.exponentialRampToValueAtTime(.0001,t+i*beat+beat*.2);h.connect(hg);hg.connect(musicGain);h.start(t+i*beat);h.stop(t+i*beat+beat*.2);if(P.ac&&i%P.ac===0){const k=actx.createOscillator(),kg=actx.createGain();k.type='sine';k.frequency.setValueAtTime(120,t+i*beat);kg.gain.setValueAtTime(.0001,t+i*beat);kg.gain.exponentialRampToValueAtTime(.12*musicVolume,t+i*beat+.01);kg.gain.exponentialRampToValueAtTime(.0001,t+i*beat+beat*.3);k.connect(kg);kg.connect(musicGain);k.start(t+i*beat);k.stop(t+i*beat+beat*.3)}}}};schedule();const loopMs=beat*steps*1000;musicLoopId=setInterval(schedule,loopMs-25)}
-function stopMenuMusic(){if(!musicOn)return;musicOn=false;if(musicLoopId){clearInterval(musicLoopId);musicLoopId=null}if(musicGain){try{musicGain.gain.exponentialRampToValueAtTime(.0001,actx.currentTime+.25)}catch(e){}setTimeout(()=>{try{musicGain.disconnect()}catch(e){}musicGain=null},300)}}
-function tryStartMenuMusicImmediate(){if(!AudioCtx)return;initAudio();try{ensureRunning()}catch(e){}try{startMenuMusic('menu')}catch(e){}if(actx&&actx.state!=='running'){try{actx.resume().then(()=>startMenuMusic('menu')).catch(()=>{})}catch(e){}}if(!musicOn){let tries=0;const t=setInterval(()=>{tries++;if(musicOn||tries>8){clearInterval(t);return}try{initAudio();ensureRunning();startMenuMusic('menu')}catch(e){}},800)}}
-
-function setMusicVolume(v){musicVolume=clamp(v,0,1);if(musicGain)musicGain.gain.value=musicMuted?0:musicBase*musicVolume}
-function setSfxVolume(v){sfxVolume=clamp(v,0,1);if(master)master.gain.value=sfxMuted?0:sfxVolume}
-window.setMusicVolume=setMusicVolume;
-window.setSfxVolume=setSfxVolume;
-window.playSfx=sfx;
-window.sfx=sfx;
 
 const KW={P:'Protetor',F:'Furioso',A:'Absorver',M:'Mutável'},
       KW_TIPS={Protetor:'Enquanto houver Protetor ou carta em Defesa do lado do defensor, ataques devem mirá-los.',Furioso:'Pode atacar no turno em que é jogada.',Absorver:'Ao entrar, copia uma palavra-chave de um aliado.',Mutável:'No fim do turno, troca ATK e HP.'},
@@ -228,7 +547,19 @@ const G={playerHP:30,aiHP:30,turn:0,playerMana:0,playerManaCap:0,aiMana:0,aiMana
 try{ window.G = G; }catch(_){ }
 const els={pHP:$('#playerHP'),pHP2:$('#playerHP2'),aHP:$('#aiHP'),aHP2:$('#aiHP2'),opponentLabel:$('#opponentLabel'),mana:$('#mana'),pHand:$('#playerHand'),pBoard:$('#playerBoard'),aBoard:$('#aiBoard'),endBtn:$('#endTurnBtn'),muteBtn:$('#muteBtn'),aAva:$('#aiAvatar'),drawCount:$('#drawCount'),discardCount:$('#discardCount'),barPHP:$('#barPlayerHP'),barAHP:$('#barAiHP'),barMana:$('#barMana'),wrap:$('#gameWrap'),start:$('#start'),openEncy:$('#openEncy'),ency:$('#ency'),encyGrid:$('#encyGrid'),encyFilters:$('#encyFilters'),closeEncy:$('#closeEncy'),startGame:$('#startGame'),endOverlay:$('#endOverlay'),endMsg:$('#endMsg'),endSub:$('#endSub'),playAgainBtn:$('#playAgainBtn'),rematchBtn:$('#rematchBtn'),menuBtn:$('#menuBtn'),openMenuBtn:$('#openMenuBtn'),gameMenu:$('#gameMenu'),closeMenuBtn:$('#closeMenuBtn'),resignBtn:$('#resignBtn'),restartBtn:$('#restartBtn'),mainMenuBtn:$('#mainMenuBtn'),turnIndicator:$('#turnIndicator'),emojiBar:$('#emojiBar'),playerEmoji:$('#playerEmoji'),opponentEmoji:$('#opponentEmoji'),deckBuilder:$('#deckBuilder'),saveDeck:$('#saveDeck'),midMana:$('#midMana')};
 const bodyEl=document.body||document.querySelector('body');
-function applyBattleTheme(theme){if(!bodyEl)return;const wrap=els.wrap;if(!theme){bodyEl.removeAttribute('data-battle-theme');if(wrap)wrap.removeAttribute('data-battle-theme');return;}bodyEl.setAttribute('data-battle-theme',theme);if(wrap)wrap.setAttribute('data-battle-theme',theme);}
+function applyBattleTheme(theme){
+  if(!bodyEl) return;
+  const wrap = els.wrap;
+  if(!theme){
+    bodyEl.removeAttribute('data-battle-theme');
+    if(wrap) wrap.removeAttribute('data-battle-theme');
+    setBattleAmbience(null);
+    return;
+  }
+  bodyEl.setAttribute('data-battle-theme', theme);
+  if(wrap) wrap.setAttribute('data-battle-theme', theme);
+  setBattleAmbience(theme);
+}
 els.startGame.disabled=true;
 
 function updateCardSize(){
@@ -890,6 +1221,8 @@ function summon(side,c,st='attack',skipBC=false){
   c.summonTurn = G.turn;
   board.push(c);
   particleOnCard(c.id,'summon');
+  if(c.type==='totem'){ playAbilityCue('totem',c); }
+  else if(c.type==='spell'){ playAbilityCue('spell',c); }
   log(`${side==='player'?'Você':'Inimigo'} jogou ${c.name} em modo ${st==='defense'?'defesa':'ataque'}.`);
   let effects = [];
   if(!skipBC){
@@ -960,7 +1293,126 @@ function summon(side,c,st='attack',skipBC=false){
     },30);
   });
 }
-function triggerBattlecry(side,c){const foe=side==='player'?'ai':'player';const effects=[];switch(c.battlecry){case 'draw1':draw(side,1);log(`${c.name}: comprou 1 carta.`);effects.push({type:'draw'});break;case 'heal2':{const allies=(side==='player'?G.playerBoard:G.aiBoard);if(allies.length){const t=rand(allies);t.hp=Math.min(t.hp+2,20);fxTextOnCard(t.id,'+2','heal');const n=nodeById(t.id);if(n){const r=n.getBoundingClientRect();screenParticle('healing',r.left+r.width/2,r.top+r.height/2);}log(`${c.name}: curou 2 em ${t.name}.`);effects.push({type:'heal',targetId:t.id,amount:2})}}break;case 'ping1':{const foes=(foe==='ai'?G.aiBoard:G.playerBoard);if(foes.length){const t=rand(foes);damageMinion(t,1);particleOnCard(t.id,'attack');fxTextOnCard(t.id,'-1','dmg');log(`${c.name}: 1 de dano em ${t.name}.`);checkDeaths();renderAll();sfx('hit');effects.push({type:'damage',targetId:t.id,amount:1})}}break;case 'buffRandom1':{const allies=(side==='player'?G.playerBoard:G.aiBoard).filter(x=>x.id!==c.id);if(allies.length){const t=rand(allies);t.atk+=1;t.hp+=1;fxTextOnCard(t.id,'+1/+1','buff');particleOnCard(t.id,'magic');log(`${c.name}: deu +1/+1 em ${t.name}.`);effects.push({type:'buff',targetId:t.id,atk:1,hp:1})}}break;case 'buffAlliesAtk1':{const allies=(side==='player'?G.playerBoard:G.aiBoard).filter(x=>x.id!==c.id);allies.forEach(x=>{x.atk+=1;fxTextOnCard(x.id,'+1 ATK','buff');particleOnCard(x.id,'magic');effects.push({type:'buff',targetId:x.id,atk:1,hp:0})});if(allies.length)log(`${c.name}: aliados ganharam +1 de ataque.`)}break;case 'mana1':{if(side==='player'){G.playerManaCap=clamp(G.playerManaCap+1,0,10);G.playerMana=Math.min(G.playerMana+1,G.playerManaCap);}else{G.aiManaCap=clamp(G.aiManaCap+1,0,10);G.aiMana=Math.min(G.aiMana+1,G.aiManaCap);}log(`${c.name}: ganhou 1 de mana.`);effects.push({type:'mana',amount:1})}break;case 'mana2':{if(side==='player'){G.playerManaCap=clamp(G.playerManaCap+2,0,10);G.playerMana=Math.min(G.playerMana+2,G.playerManaCap);}else{G.aiManaCap=clamp(G.aiManaCap+2,0,10);G.aiMana=Math.min(G.aiMana+2,G.aiManaCap);}log(`${c.name}: canalizou 2 de mana.`);effects.push({type:'mana',amount:2})}break;case 'sacMana':{const allies=(side==='player'?G.playerBoard:G.aiBoard).filter(x=>x.id!==c.id);if(allies.length){const t=rand(allies);const board=side==='player'?G.playerBoard:G.aiBoard;const discard=side==='player'?G.playerDiscard:G.aiDiscard;const idx=board.findIndex(x=>x.id===t.id);if(idx>-1){board.splice(idx,1);discard.push(t);resetCardState(t);particleOnCard(t.id,'explosion');}if(side==='player'){G.playerMana=Math.min(G.playerMana+t.cost,G.playerManaCap);}else{G.aiMana=Math.min(G.aiMana+t.cost,G.aiManaCap);}fxTextOnCard(t.id,'sac','dmg');log(`${c.name}: sacrificou ${t.name} e ganhou ${t.cost} de mana.`);effects.push({type:'sacMana',targetId:t.id,amount:t.cost});checkDeaths();renderAll();}}break;}return effects}
+function triggerBattlecry(side,c){
+  const foe=side==='player'?'ai':'player';
+  const effects=[];
+  switch(c.battlecry){
+    case 'draw1':{
+      draw(side,1);
+      log(`${c.name}: comprou 1 carta.`);
+      playAbilityCue('draw',c);
+      effects.push({type:'draw'});
+      break;
+    }
+    case 'heal2':{
+      const allies=(side==='player'?G.playerBoard:G.aiBoard);
+      if(allies.length){
+        const t=rand(allies);
+        t.hp=Math.min(t.hp+2,20);
+        fxTextOnCard(t.id,'+2','heal');
+        const n=nodeById(t.id);
+        if(n){const r=n.getBoundingClientRect();screenParticle('healing',r.left+r.width/2,r.top+r.height/2);}
+        log(`${c.name}: curou 2 em ${t.name}.`);
+        playAbilityCue('heal',c);
+        effects.push({type:'heal',targetId:t.id,amount:2});
+      }
+      break;
+    }
+    case 'ping1':{
+      const foes=(foe==='ai'?G.aiBoard:G.playerBoard);
+      if(foes.length){
+        const t=rand(foes);
+        damageMinion(t,1);
+        particleOnCard(t.id,'attack');
+        fxTextOnCard(t.id,'-1','dmg');
+        log(`${c.name}: 1 de dano em ${t.name}.`);
+        playAbilityCue('debuff',c);
+        checkDeaths();
+        renderAll();
+        sfx('hit');
+        effects.push({type:'damage',targetId:t.id,amount:1});
+      }
+      break;
+    }
+    case 'buffRandom1':{
+      const allies=(side==='player'?G.playerBoard:G.aiBoard).filter(x=>x.id!==c.id);
+      if(allies.length){
+        const t=rand(allies);
+        t.atk+=1;
+        t.hp+=1;
+        fxTextOnCard(t.id,'+1/+1','buff');
+        particleOnCard(t.id,'magic');
+        log(`${c.name}: deu +1/+1 em ${t.name}.`);
+        playAbilityCue('buff',c);
+        effects.push({type:'buff',targetId:t.id,atk:1,hp:1});
+      }
+      break;
+    }
+    case 'buffAlliesAtk1':{
+      const allies=(side==='player'?G.playerBoard:G.aiBoard).filter(x=>x.id!==c.id);
+      allies.forEach(x=>{x.atk+=1;fxTextOnCard(x.id,'+1 ATK','buff');particleOnCard(x.id,'magic');effects.push({type:'buff',targetId:x.id,atk:1,hp:0});});
+      if(allies.length){
+        log(`${c.name}: aliados ganharam +1 de ataque.`);
+        playAbilityCue('buff',c);
+      }
+      break;
+    }
+    case 'mana1':{
+      if(side==='player'){
+        G.playerManaCap=clamp(G.playerManaCap+1,0,10);
+        G.playerMana=Math.min(G.playerMana+1,G.playerManaCap);
+      }else{
+        G.aiManaCap=clamp(G.aiManaCap+1,0,10);
+        G.aiMana=Math.min(G.aiMana+1,G.aiManaCap);
+      }
+      log(`${c.name}: ganhou 1 de mana.`);
+      playAbilityCue('mana',c);
+      effects.push({type:'mana',amount:1});
+      break;
+    }
+    case 'mana2':{
+      if(side==='player'){
+        G.playerManaCap=clamp(G.playerManaCap+2,0,10);
+        G.playerMana=Math.min(G.playerMana+2,G.playerManaCap);
+      }else{
+        G.aiManaCap=clamp(G.aiManaCap+2,0,10);
+        G.aiMana=Math.min(G.aiMana+2,G.aiManaCap);
+      }
+      log(`${c.name}: canalizou 2 de mana.`);
+      playAbilityCue('mana',c);
+      effects.push({type:'mana',amount:2});
+      break;
+    }
+    case 'sacMana':{
+      const allies=(side==='player'?G.playerBoard:G.aiBoard).filter(x=>x.id!==c.id);
+      if(allies.length){
+        const t=rand(allies);
+        const board=side==='player'?G.playerBoard:G.aiBoard;
+        const discard=side==='player'?G.playerDiscard:G.aiDiscard;
+        const idx=board.findIndex(x=>x.id===t.id);
+        if(idx>-1){
+          board.splice(idx,1);
+          discard.push(t);
+          resetCardState(t);
+          particleOnCard(t.id,'explosion');
+        }
+        if(side==='player'){
+          G.playerMana=Math.min(G.playerMana+t.cost,G.playerManaCap);
+        }else{
+          G.aiMana=Math.min(G.aiMana+t.cost,G.aiManaCap);
+        }
+        fxTextOnCard(t.id,'sac','dmg');
+        log(`${c.name}: sacrificou ${t.name} e ganhou ${t.cost} de mana.`);
+        playAbilityCue('mana',c);
+        effects.push({type:'sacMana',targetId:t.id,amount:t.cost});
+        checkDeaths();
+        renderAll();
+      }
+      break;
+    }
+  }
+  return effects;
+}
 function applyBattlecryEffects(side,effects){effects.forEach(e=>{if(e.type==='heal'){const allies=side==='player'?G.playerBoard:G.aiBoard;const t=allies.find(x=>x.id===e.targetId);if(t){t.hp=Math.min(t.hp+e.amount,20);fxTextOnCard(t.id,'+'+e.amount,'heal');particleOnCard(t.id,'healing')}}else if(e.type==='damage'){const foes=side==='player'?G.aiBoard:G.playerBoard;const t=foes.find(x=>x.id===e.targetId);if(t){damageMinion(t,e.amount);particleOnCard(t.id,'attack');fxTextOnCard(t.id,'-'+e.amount,'dmg')}}else if(e.type==='buff'){const allies=side==='player'?G.playerBoard:G.aiBoard;const t=allies.find(x=>x.id===e.targetId);if(t){t.atk+=e.atk;t.hp+=e.hp;fxTextOnCard(t.id,'+'+e.atk+(e.hp?'/'+e.hp:''),'buff');particleOnCard(t.id,'magic')}}else if(e.type==='mana'){if(side==='player'){G.playerManaCap=clamp(G.playerManaCap+e.amount,0,10);G.playerMana=Math.min(G.playerMana+e.amount,G.playerManaCap);}else{G.aiManaCap=clamp(G.aiManaCap+e.amount,0,10);G.aiMana=Math.min(G.aiMana+e.amount,G.aiManaCap);}}else if(e.type==='sacMana'){const allies=side==='player'?G.playerBoard:G.aiBoard;const discard=side==='player'?G.playerDiscard:G.aiDiscard;const t=allies.find(x=>x.id===e.targetId);if(t){allies.splice(allies.indexOf(t),1);discard.push(t);resetCardState(t);particleOnCard(t.id,'explosion');}if(side==='player'){G.playerMana=Math.min(G.playerMana+e.amount,G.playerManaCap);}else{G.aiMana=Math.min(G.aiMana+e.amount,G.aiManaCap);}}});checkDeaths()}
 
 function absorbFromAlly(side,c){const board=side==='player'?G.playerBoard:G.aiBoard;const allies=board.filter(x=>x.id!==c.id&&x.kw&&x.kw.length);if(!allies.length)return;const src=rand(allies);const choices=src.kw.filter(k=>!c.kw.includes(k));if(!choices.length)return;const kw=rand(choices);c.kw.push(kw);particleOnCard(c.id,'magic');fxTextOnCard(c.id,kw,'buff');log(`${c.name} absorveu ${kw}.`);if(c.name==='Sombra Rúnica'){c.atk+=1;c.hp+=1;}if(c.name==='Capataz de Runas'){const foes=side==='player'?G.aiBoard:G.playerBoard;foes.forEach(t=>{damageMinion(t,1);particleOnCard(t.id,'attack');fxTextOnCard(t.id,'-1','dmg')});checkDeaths()}}
@@ -1014,6 +1466,7 @@ function applyOnPlayRewards(side,card){
         try{particleOnCard(card.id,'magic');fxTextOnCard(card.id,`+${gained} mana`,'buff');}catch(_){ }
         sfx('mana');
         log(`${card.name} canalizou ${gained} de mana.`);
+        playAbilityCue('mana',card);
       }
     }else{
       const before=G.aiMana;
@@ -1022,6 +1475,7 @@ function applyOnPlayRewards(side,card){
         try{particleOnCard(card.id,'magic');}catch(_){ }
         sfx('mana');
         log(`O inimigo canalizou energia com ${card.name}.`);
+        playAbilityCue('mana',card);
       }
     }
   }
@@ -1030,6 +1484,7 @@ function applyOnPlayRewards(side,card){
     const res=draw(side,amount);
     sfx('reward');
     log(`${card.name} inspirou ${amount} carta${amount>1?'s':''}.`);
+    playAbilityCue('draw',card);
     if(res&&typeof res.then==='function'){res.then(()=>{try{renderAll();}catch(_){ }});}
   }
 }
@@ -1069,17 +1524,18 @@ function applyKillRewards(attacker,target){
       const before=G.playerMana;
       G.playerMana=Math.min(G.playerMana+manaGain,G.playerManaCap);
       const gained=G.playerMana-before;
-      if(gained>0){try{particleOnCard(attacker.id,'magic');fxTextOnCard(attacker.id,`+${gained} mana`,'buff');}catch(_){ }sfx('mana');}
+      if(gained>0){try{particleOnCard(attacker.id,'magic');fxTextOnCard(attacker.id,`+${gained} mana`,'buff');}catch(_){ }sfx('mana');playAbilityCue('mana',attacker);}
     }else{
       const before=G.aiMana;
       G.aiMana=Math.min(G.aiMana+manaGain,G.aiManaCap);
-      if(G.aiMana>before){try{particleOnCard(attacker.id,'magic');}catch(_){ }sfx('mana');}
+      if(G.aiMana>before){try{particleOnCard(attacker.id,'magic');}catch(_){ }sfx('mana');playAbilityCue('mana',attacker);}
     }
   }
   if(drawGain){
     const amount=Math.max(1,drawGain|0);
     const res=draw(side,amount);
     sfx('reward');
+    playAbilityCue('draw',attacker);
     log(`${attacker.name} saqueou ${amount} carta${amount>1?'s':''} após derrotar ${target.name}.`);
     if(res&&typeof res.then==='function'){res.then(()=>{try{renderAll();}catch(_){ }});}
   }
@@ -1100,8 +1556,83 @@ const ATTACK_FX_RULES=[
 const ATTACK_SFX_VARIANT={flame:'flame',storm:'storm',feral:'feral',mystic:'mystic',heavy:'heavy',totem:'totem',frost:'storm',poison:'mystic',tidal:'storm',attack:'heavy'};
 function normalizeText(txt){return (txt||'').normalize('NFD').replace(/[^a-zA-Z0-9\s]/g,'').toLowerCase();}
 function detectAttackFx(card){if(!card)return'attack';const nameNorm=normalizeText(card.name);const tribeNorm=normalizeText(card.tribe);if(card.type==='totem'||ATTACK_FX_RULES[0].test.test(nameNorm))return'totem';for(const rule of ATTACK_FX_RULES){if(rule.test.test(nameNorm))return rule.fx;}if(tribeNorm.includes('animal')||tribeNorm.includes('fera'))return'feral';if(tribeNorm.includes('pesc')||tribeNorm.includes('mar')||tribeNorm.includes('oceano'))return'tidal';if(tribeNorm.includes('floresta')||tribeNorm.includes('bosque'))return'feral';if(tribeNorm.includes('converg'))return'mystic';if(tribeNorm.includes('viking'))return'heavy';const cls=card.classe&&card.classe.toLowerCase();if(cls&&ATTACK_FX_BY_CLASS[cls])return ATTACK_FX_BY_CLASS[cls];return'attack';}
-function attackCard(attacker,target){if(!attacker||!attacker.canAttack||attacker.stance==='defense')return;const fx=detectAttackFx(attacker);const sfxVariant=ATTACK_SFX_VARIANT[fx]||ATTACK_SFX_VARIANT.attack;sfx('attack',sfxVariant);const a=nodeById(attacker.id),t=nodeById(target.id);if(a&&t){const ar=a.getBoundingClientRect(),tr=t.getBoundingClientRect();screenSlash(ar.right,ar.top+ar.height/2,15)}animateAttack(attacker.id,target.id);if(target.stance==='defense')animateDefense(target.id);particleOnCard(target.id,fx||'attack');const pre=target.hp,overflow=Math.max(0,attacker.atk-pre);damageMinion(target,attacker.atk);damageMinion(attacker,target.atk);const targetDied=target.hp<=0;sfx('hit');if(overflow>0&&target.hp<=0){const isP=G.playerBoard.includes(attacker);sfx('overflow');const faceFx=fx||'attack';if(isP){G.aiHP=clamp(G.aiHP-overflow,0,99);log(`${attacker.name} excedeu em ${overflow} e causou dano direto ao Inimigo!`);particleOnFace('ai',faceFx)}else{G.playerHP=clamp(G.playerHP-overflow,0,99);log(`${attacker.name} excedeu em ${overflow} e causou dano direto a Você!`);particleOnFace('player',faceFx)}checkWin()}if(targetDied){applyKillRewards(attacker,target);}attacker.canAttack=false;log(`${attacker.name} atacou ${target.name}.`);checkDeaths();renderAll();if(window.isMultiplayer&&G.current==='player'){NET.sendMove({type:'attack',attackerId:attacker.id,targetId:target.id})}G.chosen=null;updateTargetingUI();els.aBoard.classList.remove('face-can-attack')}
-function attackFace(attacker,face){if(!attacker||!attacker.canAttack||attacker.stance==='defense')return;const fx=detectAttackFx(attacker);const sfxVariant=ATTACK_SFX_VARIANT[fx]||ATTACK_SFX_VARIANT.attack;sfx('attack',sfxVariant);const a=nodeById(attacker.id);if(a){const ar=a.getBoundingClientRect();screenSlash(ar.right,ar.top+ar.height/2,10)}animateAttack(attacker.id,null);particleOnFace(face,fx||'attack');const dmg=attacker.atk;attacker.canAttack=false;if(face==='ai'){G.aiHP=clamp(G.aiHP-dmg,0,99);log(`${attacker.name} causou ${dmg} ao Inimigo!`);sfx('crit')}else{G.playerHP=clamp(G.playerHP-dmg,0,99);log(`${attacker.name} causou ${dmg} a Você!`);sfx('hit')}checkWin();if(window.isMultiplayer&&G.current==='player'){NET.sendMove({type:'attackFace',attackerId:attacker.id})}G.chosen=null;updateTargetingUI();els.aBoard.classList.remove('face-can-attack');renderAll()}
+function attackCard(attacker,target){
+  if(!attacker||!attacker.canAttack||attacker.stance==='defense')return;
+  const fx=detectAttackFx(attacker);
+  const sfxVariant=ATTACK_SFX_VARIANT[fx]||ATTACK_SFX_VARIANT.attack;
+  sfx('attack',sfxVariant);
+  playCharacterCue(attacker,'attack');
+  const a=nodeById(attacker.id),t=nodeById(target.id);
+  if(a&&t){const ar=a.getBoundingClientRect(),tr=t.getBoundingClientRect();screenSlash(ar.right,ar.top+ar.height/2,15);}
+  animateAttack(attacker.id,target.id);
+  if(target.stance==='defense')animateDefense(target.id);
+  particleOnCard(target.id,fx||'attack');
+  const pre=target.hp,overflow=Math.max(0,attacker.atk-pre);
+  damageMinion(target,attacker.atk);
+  playCharacterCue(target,'hit');
+  damageMinion(attacker,target.atk);
+  const targetDied=target.hp<=0;
+  sfx('hit');
+  if(overflow>0&&target.hp<=0){
+    const isP=G.playerBoard.includes(attacker);
+    sfx('overflow');
+    const faceFx=fx||'attack';
+    if(isP){
+      G.aiHP=clamp(G.aiHP-overflow,0,99);
+      log(`${attacker.name} excedeu em ${overflow} e causou dano direto ao Inimigo!`);
+      particleOnFace('ai',faceFx);
+    }else{
+      G.playerHP=clamp(G.playerHP-overflow,0,99);
+      log(`${attacker.name} excedeu em ${overflow} e causou dano direto a Você!`);
+      particleOnFace('player',faceFx);
+    }
+    checkWin();
+  }
+  if(targetDied){
+    playCharacterCue(target,'death');
+    applyKillRewards(attacker,target);
+  }
+  attacker.canAttack=false;
+  log(`${attacker.name} atacou ${target.name}.`);
+  checkDeaths();
+  renderAll();
+  if(window.isMultiplayer&&G.current==='player'){
+    NET.sendMove({type:'attack',attackerId:attacker.id,targetId:target.id});
+  }
+  G.chosen=null;
+  updateTargetingUI();
+  els.aBoard.classList.remove('face-can-attack');
+}
+function attackFace(attacker,face){
+  if(!attacker||!attacker.canAttack||attacker.stance==='defense')return;
+  const fx=detectAttackFx(attacker);
+  const sfxVariant=ATTACK_SFX_VARIANT[fx]||ATTACK_SFX_VARIANT.attack;
+  sfx('attack',sfxVariant);
+  playCharacterCue(attacker,'attack');
+  const a=nodeById(attacker.id);
+  if(a){const ar=a.getBoundingClientRect();screenSlash(ar.right,ar.top+ar.height/2,10);}
+  animateAttack(attacker.id,null);
+  particleOnFace(face,fx||'attack');
+  const dmg=attacker.atk;
+  attacker.canAttack=false;
+  if(face==='ai'){
+    G.aiHP=clamp(G.aiHP-dmg,0,99);
+    log(`${attacker.name} causou ${dmg} ao Inimigo!`);
+    sfx('crit');
+  }else{
+    G.playerHP=clamp(G.playerHP-dmg,0,99);
+    log(`${attacker.name} causou ${dmg} a Você!`);
+    sfx('hit');
+  }
+  checkWin();
+  if(window.isMultiplayer&&G.current==='player'){
+    NET.sendMove({type:'attackFace',attackerId:attacker.id});
+  }
+  G.chosen=null;
+  updateTargetingUI();
+  els.aBoard.classList.remove('face-can-attack');
+  renderAll();
+}
 function damageMinion(m,amt){if(!m||typeof amt!=='number')return;m.hp=clamp(m.hp-amt,0,99);if(m.hp<=0) setTimeout(checkDeaths,10)}
 function checkDeaths(){const deadA=G.aiBoard.filter(c=>c.hp<=0);deadA.forEach(c=>{particleOnCard(c.id,'explosion');resetCardState(c);});if(deadA.length){G.aiBoard=G.aiBoard.filter(c=>c.hp>0);G.aiDiscard.push(...deadA);log('Uma criatura inimiga caiu.')}const deadP=G.playerBoard.filter(c=>c.hp<=0);deadP.forEach(c=>{particleOnCard(c.id,'explosion');resetCardState(c);});if(deadP.length){G.playerBoard=G.playerBoard.filter(c=>c.hp>0);G.playerDiscard.push(...deadP);log('Sua criatura caiu.')}els.discardCount.textContent=G.playerDiscard.length}
 async function aiTurn(){
@@ -1185,7 +1716,7 @@ function checkWin(){
 }
 function allCards(){let out=[];for(const k of Object.keys(TEMPLATES)){for(const raw of TEMPLATES[k]){const c=makeCard(raw);c.deck=k;out.push(c)}}return out}
 function renderEncy(filter='all',locked=false){els.encyGrid.innerHTML='';const cards=(filter==='all'?allCards():TEMPLATES[filter].map(makeCard).map(c=>Object.assign(c,{deck:filter})));cards.forEach(c=>{const d=cardNode(c,'player');d.classList.add('ency-card');tiltify(d);els.encyGrid.appendChild(d)});els.ency.classList.add('show');els.encyFilters.style.display=locked?'none':'flex';$$('.filters .fbtn').forEach(b=>b.classList.toggle('active',b.dataset.deck===filter||filter==='all'&&b.dataset.deck==='all'))}
-els.endBtn.addEventListener('click',endTurn);els.muteBtn.addEventListener('click',()=>{initAudio();ensureRunning();allMuted=!allMuted;musicMuted=allMuted;sfxMuted=allMuted;if(master) master.gain.value=allMuted?0:sfxVolume; if(musicGain) musicGain.gain.value=allMuted?0:musicBase*musicVolume; els.muteBtn.textContent=allMuted?'🔇 Som':'🔊 Som'});window.addEventListener('keydown',e=>{if(e.key!=='Escape')return;if(G.chosen){cancelTargeting();return}if(!els.gameMenu)return;const t=els.gameMenu.classList.contains('show');t?els.gameMenu.classList.remove('show'):(els.gameMenu.classList.add('show'),els.restartBtn&&(els.restartBtn.style.display=window.isMultiplayer?'none':'block'))});document.addEventListener('click',e=>{if(!G.chosen)return;if(e.target.closest('#aiBoard .card.selectable')||e.target.closest('#playerBoard .card.selectable')||e.target.closest('#aiBoard .face-attack-btn'))return;cancelTargeting()},{capture:true});
+els.endBtn.addEventListener('click',endTurn);els.muteBtn.addEventListener('click',()=>{initAudio();ensureRunning();allMuted=!allMuted;musicMuted=allMuted;sfxMuted=allMuted;if(master) master.gain.value=allMuted?0:1;if(musicGain) musicGain.gain.value=allMuted?0:musicBase*musicVolume;if(ambientLoop&&ambientLoop.gain){const target=allMuted?0:ambientLoop.base*sfxVolume;try{ambientLoop.gain.gain.setValueAtTime(target,actx.currentTime);}catch(_){ambientLoop.gain.gain.value=target;}}els.muteBtn.textContent=allMuted?'🔇 Som':'🔊 Som'});window.addEventListener('keydown',e=>{if(e.key!=='Escape')return;if(G.chosen){cancelTargeting();return}if(!els.gameMenu)return;const t=els.gameMenu.classList.contains('show');t?els.gameMenu.classList.remove('show'):(els.gameMenu.classList.add('show'),els.restartBtn&&(els.restartBtn.style.display=window.isMultiplayer?'none':'block'))});document.addEventListener('click',e=>{if(!G.chosen)return;if(e.target.closest('#aiBoard .card.selectable')||e.target.closest('#playerBoard .card.selectable')||e.target.closest('#aiBoard .face-attack-btn'))return;cancelTargeting()},{capture:true});
 function confirmExit(){return G.mode==='story'?confirm('Progresso da história será perdido. Continuar?'):confirm('Tem certeza?');}
 if(els.openMenuBtn)els.openMenuBtn.addEventListener('click',()=>{els.gameMenu.classList.add('show');els.restartBtn&&(els.restartBtn.style.display=window.isMultiplayer?'none':'block')});
 if(els.closeMenuBtn)els.closeMenuBtn.addEventListener('click',()=>{els.gameMenu.classList.remove('show')});

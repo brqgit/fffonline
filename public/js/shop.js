@@ -84,14 +84,14 @@ function withImg(it){ return it; }
 const tooltip = (() => {
   const el = document.createElement('div');
   el.id = 'shopTooltip';
-  el.style.position = 'absolute';
+  el.style.position = 'fixed';
   el.style.display = 'none';
   el.style.background = 'rgba(0,0,0,0.85)';
   el.style.color = '#fff';
   el.style.padding = '6px';
   el.style.borderRadius = '4px';
   el.style.pointerEvents = 'none';
-  el.style.zIndex = '1000';
+  el.style.zIndex = '5000';
   document.body.appendChild(el);
   function hide(){ el.style.display = 'none'; }
   function show(data, target){
@@ -108,8 +108,8 @@ const tooltip = (() => {
     el.innerHTML = parts.join('');
     el.style.display = 'block';
     const r = target.getBoundingClientRect();
-    el.style.left = (r.right + 6 + window.scrollX) + 'px';
-    el.style.top = (r.top + window.scrollY) + 'px';
+    el.style.left = (r.right + 6) + 'px';
+    el.style.top = r.top + 'px';
   }
   document.addEventListener('click', hide);
   return { show, hide };
