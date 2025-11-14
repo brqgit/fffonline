@@ -200,7 +200,7 @@ function renderShop(){
     btn.className = 'btn price-btn';
     btn.innerHTML = `${it.cost}<span class="coin-icon"></span>`;
     btn.onclick = () => {
-      if(shopState.gold < it.cost){ showShopMsg('Sem ouro.'); return; }
+      if(shopState.gold < it.cost){ showShopMsg('Sem ouro.'); if(window.playSfx) window.playSfx('error'); return; }
       btn.disabled = true;
       const currentGold = shopState.gold;
       const req = fetch('/api/purchase', {
@@ -220,6 +220,7 @@ function renderShop(){
           $('#shopGold').textContent = shopState.gold;
           btn.textContent = '✔';
           shopState.purchased.push(it);
+          if(window.playSfx) window.playSfx('reward');
         } else {
           throw new Error('Resposta inválida');
         }
@@ -228,6 +229,7 @@ function renderShop(){
         console.error('purchase error', err);
         showShopMsg('Erro ao registrar compra');
         btn.disabled = false;
+        if(window.playSfx) window.playSfx('error');
       });
       shopState.pending.push(req);
     };
@@ -311,12 +313,13 @@ shopModal?.addEventListener('click', ev => {
 
 document.getElementById('btnReroll')?.addEventListener('click', () => {
   const cost = 5 * (rerollCount + 1);
-  if(!shopState.unlimited && rerollCount >= 1){ showShopMsg('Sem re-rolagens.'); return; }
-  if(shopState.gold < cost){ showShopMsg('Sem ouro.'); return; }
+  if(!shopState.unlimited && rerollCount >= 1){ showShopMsg('Sem re-rolagens.'); if(window.playSfx) window.playSfx('error'); return; }
+  if(shopState.gold < cost){ showShopMsg('Sem ouro.'); if(window.playSfx) window.playSfx('error'); return; }
   shopState.gold -= cost;
   $('#shopGold').textContent = shopState.gold;
   rerollCount++;
   renderShop();
   updateRerollBtn();
+  if(window.playSfx) window.playSfx('reroll');
 });
 document.getElementById('closeShop')?.addEventListener('click', closeShop);
