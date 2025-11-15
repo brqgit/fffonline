@@ -198,9 +198,18 @@ function renderShop(){
 
     const btn = document.createElement('button');
     btn.className = 'btn price-btn';
-    btn.innerHTML = `${it.cost}<span class="coin-icon"></span>`;
+    // show price with a span we can style when unaffordable
+    btn.innerHTML = `<span class="price-amt">${it.cost}</span><span class="coin-icon"></span>`;
+    // initial disabled state if unaffordable
+    const unaffordable = (!shopState.unlimited && shopState.gold < it.cost);
+    if (unaffordable) {
+      btn.classList.add('unaffordable');
+      btn.disabled = true;
+      const amt = btn.querySelector('.price-amt'); if (amt) amt.classList.add('unaffordable');
+    }
     btn.onclick = () => {
-      if(shopState.gold < it.cost){ showShopMsg('Sem ouro.'); if(window.playSfx) window.playSfx('error'); return; }
+      // guard: prevent any click if unaffordable or shopState changed
+      if (!shopState.unlimited && shopState.gold < it.cost) { showShopMsg('Sem ouro.'); if(window.playSfx) window.playSfx('error'); return; }
       btn.disabled = true;
       const currentGold = shopState.gold;
       const req = fetch('/api/purchase', {
@@ -216,10 +225,21 @@ function renderShop(){
       .then(r => r.json())
       .then(data => {
         if(data && typeof data.gold === 'number'){
-          shopState.gold = data.gold;
+          // sanity: prevent negative balance on client
+          shopState.gold = Math.max(0, data.gold);
           $('#shopGold').textContent = shopState.gold;
           btn.textContent = '✔';
           shopState.purchased.push(it);
+          // update other offer buttons affordability
+          try{
+            document.querySelectorAll('.price-btn').forEach(b => {
+              const amt = b.querySelector('.price-amt');
+              if(!amt) return;
+              const price = parseInt(amt.textContent,10) || 0;
+              if(!shopState.unlimited && shopState.gold < price){ b.classList.add('unaffordable'); b.disabled = true; amt.classList.add('unaffordable'); }
+              else { b.classList.remove('unaffordable'); b.disabled = false; amt.classList.remove('unaffordable'); }
+            });
+          }catch(e){/* ignore */}
           if(window.playSfx) window.playSfx('reward');
         } else {
           throw new Error('Resposta inválida');

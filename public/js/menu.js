@@ -271,6 +271,23 @@
       });
     }
 
+    var testStoryWinBtn = document.getElementById('testStoryWinBtn');
+    if (testStoryWinBtn) {
+      testStoryWinBtn.addEventListener('click', function () {
+        if (testModal) {
+          if (testModal.classList) testModal.classList.remove('show');
+          testModal.style.display = 'none';
+          setElementHidden(testModal, true);
+        }
+        // mark story mode and trigger instant victory overlay for testing
+        window.currentGameMode = 'story';
+        if (typeof window.endGame === 'function') {
+          // slight delay so UI updates complete
+          setTimeout(function () { window.endGame(true); }, 120);
+        }
+      });
+    }
+
     if (testTotemBtn) {
       testTotemBtn.addEventListener('click', function () {
         if (testModal) {

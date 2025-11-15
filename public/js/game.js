@@ -610,7 +610,7 @@ const ALL_DECKS=Object.keys(TEMPLATES);
 const G={playerHP:30,aiHP:30,turn:0,playerMana:0,playerManaCap:0,aiMana:0,aiManaCap:0,current:'player',playerDeck:[],aiDeck:[],playerHand:[],aiHand:[],playerBoard:[],aiBoard:[],playerDiscard:[],aiDiscard:[],chosen:null,playerDeckChoice:'vikings',aiDeckChoice:rand(ALL_DECKS),customDeck:null,mode:'solo',story:null,enemyScaling:0,maxHandSize:5,totems:[]};
 // expose for helpers that run outside this closure
 try{ window.G = G; }catch(_){ }
-const els={pHP:$('#playerHP'),pHP2:$('#playerHP2'),aHP:$('#aiHP'),aHP2:$('#aiHP2'),opponentLabel:$('#opponentLabel'),mana:$('#mana'),pHand:$('#playerHand'),pBoard:$('#playerBoard'),aBoard:$('#aiBoard'),endBtn:$('#endTurnBtn'),muteBtn:$('#muteBtn'),aAva:$('#aiAvatar'),drawCount:$('#drawCount'),discardCount:$('#discardCount'),barPHP:$('#barPlayerHP'),barAHP:$('#barAiHP'),barMana:$('#barMana'),wrap:$('#gameWrap'),start:$('#start'),openEncy:$('#openEncy'),ency:$('#ency'),encyGrid:$('#encyGrid'),encyFilters:$('#encyFilters'),closeEncy:$('#closeEncy'),startGame:$('#startGame'),endOverlay:$('#endOverlay'),endMsg:$('#endMsg'),endSub:$('#endSub'),playAgainBtn:$('#playAgainBtn'),rematchBtn:$('#rematchBtn'),menuBtn:$('#menuBtn'),openMenuBtn:$('#openMenuBtn'),gameMenu:$('#gameMenu'),closeMenuBtn:$('#closeMenuBtn'),resignBtn:$('#resignBtn'),restartBtn:$('#restartBtn'),mainMenuBtn:$('#mainMenuBtn'),turnIndicator:$('#turnIndicator'),emojiBar:$('#emojiBar'),playerEmoji:$('#playerEmoji'),opponentEmoji:$('#opponentEmoji'),deckBuilder:$('#deckBuilder'),saveDeck:$('#saveDeck'),midMana:$('#midMana')};
+const els={pHP:$('#playerHP'),pHP2:$('#playerHP2'),aHP:$('#aiHP'),aHP2:$('#aiHP2'),opponentLabel:$('#opponentLabel'),mana:$('#mana'),aiMana:$('#aiMana'),pHand:$('#playerHand'),pBoard:$('#playerBoard'),aBoard:$('#aiBoard'),endBtn:$('#endTurnBtn'),muteBtn:$('#muteBtn'),aAva:$('#aiAvatar'),drawCount:$('#drawCount'),discardCount:$('#discardCount'),barPHP:$('#barPlayerHP'),barAHP:$('#barAiHP'),barMana:$('#barMana'),barAiMana:$('#barAiMana'),wrap:$('#gameWrap'),start:$('#start'),openEncy:$('#openEncy'),ency:$('#ency'),encyGrid:$('#encyGrid'),encyFilters:$('#encyFilters'),closeEncy:$('#closeEncy'),startGame:$('#startGame'),endOverlay:$('#endOverlay'),endMsg:$('#endMsg'),endSub:$('#endSub'),playAgainBtn:$('#playAgainBtn'),rematchBtn:$('#rematchBtn'),menuBtn:$('#menuBtn'),openMenuBtn:$('#openMenuBtn'),gameMenu:$('#gameMenu'),closeMenuBtn:$('#closeMenuBtn'),resignBtn:$('#resignBtn'),restartBtn:$('#restartBtn'),mainMenuBtn:$('#mainMenuBtn'),turnIndicator:$('#turnIndicator'),emojiBar:$('#emojiBar'),playerEmoji:$('#playerEmoji'),opponentEmoji:$('#opponentEmoji'),deckBuilder:$('#deckBuilder'),saveDeck:$('#saveDeck')};
 const bodyEl=document.body||document.querySelector('body');
 function applyBattleTheme(theme){
   if(!bodyEl) return;
@@ -856,7 +856,8 @@ function updateMeters(){
   els.barPHP.style.width=pct(G.playerHP,30)+'%';
   els.barAHP.style.width=pct(G.aiHP,30)+'%';
   els.barMana.style.width=pct(G.playerMana,G.playerManaCap)+'%';
-  try{ if(els.midMana){ els.midMana.textContent = `${G.playerMana}/${G.playerManaCap}`; } }catch(_){ }
+  try{ if(els.aiMana){ els.aiMana.textContent = `${G.aiMana}/${G.aiManaCap}`; } }catch(_){ }
+  try{ if(els.barAiMana){ els.barAiMana.style.width = pct(G.aiMana,G.aiManaCap)+'%'; } }catch(_){ }
 }
 function updateOpponentLabel(){if(!els.opponentLabel)return;if(window.isMultiplayer){els.opponentLabel.textContent=window.opponentName?` ${window.opponentName}`:'';}else if(G.mode==='story'){els.opponentLabel.textContent='';}else{const t=DECK_TITLES[G.aiDeckChoice]||'';els.opponentLabel.textContent=t?` ${t}`:'';}}
 function renderAll(){
@@ -865,7 +866,7 @@ function renderAll(){
   els.aHP.textContent=G.aiHP;
   els.aHP2.textContent=G.aiHP;
   els.mana.textContent=`${G.playerMana}/${G.playerManaCap}`;
-  try{ if(els.midMana){ els.midMana.textContent = `${G.playerMana}/${G.playerManaCap}`; } }catch(_){ }
+  try{ if(els.aiMana){ els.aiMana.textContent = `${G.aiMana}/${G.aiManaCap}`; } }catch(_){ }
   // disable the button and hide it when it's not the player's turn; pulse highlight on your turn
   if(els.endBtn){
     const yourTurn = (G.current === 'player');

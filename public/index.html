@@ -166,6 +166,7 @@
     <div class="panel">
       <h2 id="testTitle">Testes</h2>
       <button class="btn" id="testShopBtn">Abrir Loja</button>
+      <button class="btn" id="testStoryWinBtn">Vitória instantânea (História)</button>
       <button class="btn" id="testTotemBtn">Totens</button>
       <button class="btn-ghost" id="closeTest">Fechar</button>
     </div>
@@ -195,11 +196,29 @@
 
   <!-- Game area -->
   <div class="" id="gameWrap" style="display:none">
-    <div class="mid-mana" id="midMana"></div>
     <div class="hud">
       <div class="meter player"><b>Seu HP</b><span class="value" id="playerHP">30</span><div class="player-img" id="playerAvatar">👤</div><div class="bar"><div class="fill" id="barPlayerHP"></div></div></div>
       <div class="center-hud"><div class="meter mana"><b>Mana</b><span class="value" id="mana">0/0</span><div class="bar"><div class="fill" id="barMana"></div></div></div><button class="btn-ghost" id="muteBtn" title="Som" aria-pressed="false">🔊 Som</button><button class="btn-ghost" id="openMenuBtn" title="Menu">☰ Menu</button></div>
-      <div class="meter enemy" style="justify-self:end"><b>HP Inimigo</b><span class="opp-label" id="opponentLabel"></span><span class="value" id="aiHP">30</span><div class="enemy-img" id="aiAvatar">🧿</div><div class="bar"><div class="fill" id="barAiHP"></div></div></div>
+      <div class="enemy-hud" style="justify-self:end;display:flex;gap:8px;align-items:center">
+        <div class="meter enemy">
+          <b>HP Inimigo</b>
+          <span class="opp-label" id="opponentLabel"></span>
+          <span class="value" id="aiHP">30</span>
+          <div class="enemy-img" id="aiAvatar">🧿</div>
+          <div class="bar"><div class="fill" id="barAiHP"></div></div>
+        </div>
+        <!-- enemy mana as a sibling meter to mirror player HUD structure -->
+        <div class="meter mana enemy-mana">
+          <b>Mana</b>
+          <span class="value" id="aiMana">0/0</span>
+          <div class="bar"><div class="fill" id="barAiMana"></div></div>
+        </div>
+      </div>
+    </div>
+    </div>
+    <div class="active-effects" id="activeEffects" aria-live="polite">
+      <div class="effects-title">Efeitos Ativos</div>
+      <div class="effects-list" id="effectsList"></div>
     </div>
     <div class="row enemy-row">
   <div class="pile" id="aiDrawPile"><img src="img/decks/fJord-fishers/deck-backs/jf-db-default.webp" alt="deck" loading="lazy" decoding="async"><div class="pile-label">DECK</div></div>
@@ -285,5 +304,6 @@
   <script src="js/shop.js" defer></script>
   <script src="js/enemies.js" defer></script>
   <script src="js/game.js" defer></script>
+  <script src="js/effects.js" defer></script>
 </body>
 </html>
