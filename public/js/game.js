@@ -610,7 +610,7 @@ const ALL_DECKS=Object.keys(TEMPLATES);
 const G={playerHP:30,aiHP:30,turn:0,playerMana:0,playerManaCap:0,aiMana:0,aiManaCap:0,current:'player',playerDeck:[],aiDeck:[],playerHand:[],aiHand:[],playerBoard:[],aiBoard:[],playerDiscard:[],aiDiscard:[],chosen:null,playerDeckChoice:'vikings',aiDeckChoice:rand(ALL_DECKS),customDeck:null,mode:'solo',story:null,enemyScaling:0,maxHandSize:5,totems:[]};
 // expose for helpers that run outside this closure
 try{ window.G = G; }catch(_){ }
-const els={pHP:$('#playerHP'),pHP2:$('#playerHP2'),aHP:$('#aiHP'),aHP2:$('#aiHP2'),opponentLabel:$('#opponentLabel'),mana:$('#mana'),aiMana:$('#aiMana'),pHand:$('#playerHand'),pBoard:$('#playerBoard'),aBoard:$('#aiBoard'),endBtn:$('#endTurnBtn'),muteBtn:$('#muteBtn'),aAva:$('#aiAvatar'),drawCount:$('#drawCount'),discardCount:$('#discardCount'),barPHP:$('#barPlayerHP'),barAHP:$('#barAiHP'),barMana:$('#barMana'),barAiMana:$('#barAiMana'),wrap:$('#gameWrap'),start:$('#start'),openEncy:$('#openEncy'),ency:$('#ency'),encyGrid:$('#encyGrid'),encyFilters:$('#encyFilters'),closeEncy:$('#closeEncy'),startGame:$('#startGame'),endOverlay:$('#endOverlay'),endMsg:$('#endMsg'),endSub:$('#endSub'),playAgainBtn:$('#playAgainBtn'),rematchBtn:$('#rematchBtn'),menuBtn:$('#menuBtn'),openMenuBtn:$('#openMenuBtn'),gameMenu:$('#gameMenu'),closeMenuBtn:$('#closeMenuBtn'),resignBtn:$('#resignBtn'),restartBtn:$('#restartBtn'),mainMenuBtn:$('#mainMenuBtn'),turnIndicator:$('#turnIndicator'),emojiBar:$('#emojiBar'),playerEmoji:$('#playerEmoji'),opponentEmoji:$('#opponentEmoji'),deckBuilder:$('#deckBuilder'),saveDeck:$('#saveDeck')};
+const els={pHP:$('#playerHP'),pHP2:$('#playerHP2'),aHP:$('#aiHP'),aHP2:$('#aiHP2'),opponentLabel:$('#opponentLabel'),mana:$('#mana'),aiMana:$('#aiMana'),pHand:$('#playerHand'),pBoard:$('#playerBoard'),aBoard:$('#aiBoard'),endBtn:$('#endTurnBtn'),instantWinBtn:$('#instantWinBtn'),muteBtn:$('#muteBtn'),aAva:$('#aiAvatar'),drawCount:$('#drawCount'),discardCount:$('#discardCount'),barPHP:$('#barPlayerHP'),barAHP:$('#barAiHP'),barMana:$('#barMana'),barAiMana:$('#barAiMana'),wrap:$('#gameWrap'),start:$('#start'),openEncy:$('#openEncy'),ency:$('#ency'),encyGrid:$('#encyGrid'),encyFilters:$('#encyFilters'),closeEncy:$('#closeEncy'),startGame:$('#startGame'),endOverlay:$('#endOverlay'),endMsg:$('#endMsg'),endSub:$('#endSub'),playAgainBtn:$('#playAgainBtn'),rematchBtn:$('#rematchBtn'),menuBtn:$('#menuBtn'),openMenuBtn:$('#openMenuBtn'),gameMenu:$('#gameMenu'),closeMenuBtn:$('#closeMenuBtn'),resignBtn:$('#resignBtn'),restartBtn:$('#restartBtn'),mainMenuBtn:$('#mainMenuBtn'),turnIndicator:$('#turnIndicator'),emojiBar:$('#emojiBar'),playerEmoji:$('#playerEmoji'),opponentEmoji:$('#opponentEmoji'),deckBuilder:$('#deckBuilder'),saveDeck:$('#saveDeck')};
 const bodyEl=document.body||document.querySelector('body');
 function applyBattleTheme(theme){
   if(!bodyEl) return;
@@ -1128,7 +1128,14 @@ function applyStoryDeckBonuses(){
     c.baseHp=c.hp;
   });
 }
+// Configuração central do delay de compra inicial ao continuar história
+const STORY_CONTINUE_DEAL_DELAY = 800; // ms
+// Identificador de sessão para ignorar efeitos/anim de draws da partida anterior
+let GAME_SESSION_ID = 0;
+
 function startGame(opts='player') {
+  GAME_SESSION_ID++;
+  const sessionId = GAME_SESSION_ID;
   updateCardSize();
   const isObj = typeof opts === 'object';
   const first = isObj ? (opts.first || 'player') : opts;
@@ -1144,7 +1151,8 @@ function startGame(opts='player') {
     G.enemyScaling = G.story.scaling;
     G.currentEnemyName = pickEnemyName(G.aiDeckChoice, boss);
     log(`Round ${G.story.round}: ${G.currentEnemyName} (${G.story.currentEncounter})`);
-    showEncounterBanner(G.currentEnemyName, boss ? 'boss' : 'enemy');
+    try{ showEncounterIntro({ name:G.currentEnemyName, round:G.story.round, kind: boss?'boss':'enemy', deckKey:G.aiDeckChoice }); }
+    catch(_){ showEncounterBanner(G.currentEnemyName, boss ? 'boss' : 'enemy'); }
     G.maxHandSize = 10;
   } else {
     G.story = null;
@@ -1152,10 +1160,15 @@ function startGame(opts='player') {
     G.maxHandSize = 5;
   }
   if (G.mode === 'story' && continuing) {
+    // Recoloca todas as cartas usadas de volta no deck e limpa zonas antes de nova compra
     G.playerDeck.push(...G.playerHand, ...G.playerBoard, ...G.playerDiscard);
     G.playerHand = [];
     G.playerBoard = [];
     G.playerDiscard = [];
+    // Em continuidade não era feito shuffle antes: adicionamos agora para garantir aleatoriedade
+    shuffle(G.playerDeck);
+    // Limpa imediatamente a UI para não parecer que as cartas foram somadas
+    try { renderAll(); } catch(_) {}
   } else {
     G.totems = [];
     G.playerDeck = (G.playerDeckChoice === 'custom' && G.customDeck ? G.customDeck.slice() : TEMPLATES[G.playerDeckChoice].map(makeCard));
@@ -1202,13 +1215,31 @@ function startGame(opts='player') {
   els.emojiBar && (els.emojiBar.style.display = window.isMultiplayer ? 'flex' : 'none');
   setDeckBacks();
   applyBattleTheme(G.aiDeckChoice);
-  if (first === 'player') draw('player', 5); else draw('ai', 5);
-  newTurn(true);
-  renderAll();
-  stopMenuMusic();
-  startMenuMusic('combat');
-  log('A batalha começou!');
-  sfx('start');
+
+  // Ao continuar no modo história, adiciona um pequeno delay entre a troca de inimigo
+  // (banner/transition) e a animação de entrega de cartas para evitar sobreposição.
+  const dealDelayMs = (G.mode === 'story' && continuing) ? STORY_CONTINUE_DEAL_DELAY : 0;
+  const doInitialDeal = async () => {
+    // Se outra partida já iniciou, aborta este deal atrasado
+    if (sessionId !== GAME_SESSION_ID) return;
+    if (first === 'player') await draw('player', 5); else await draw('ai', 5);
+    newTurn(true);
+    renderAll();
+    stopMenuMusic();
+    startMenuMusic('combat');
+    log('A batalha começou!');
+    sfx('start');
+    // Show instant win button if in story test mode
+    if (els.instantWinBtn) {
+      els.instantWinBtn.style.display = (window.storyTestMode && G.mode === 'story') ? 'inline-block' : 'none';
+    }
+  };
+  if (dealDelayMs > 0) {
+    // Render básico vazio antes do delay (já feito), só agenda compra
+    setTimeout(() => { doInitialDeal(); }, dealDelayMs);
+  } else {
+    doInitialDeal();
+  }
 }
 const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
 async function draw(who,n=1){
@@ -1561,9 +1592,39 @@ function showEncounterBanner(name,type='enemy'){
   if(!b) return;
   b.textContent=name;
   b.className=type+' show';
-  setTimeout(()=>b.classList.remove('show'),1500);
+  setTimeout(()=>b.classList.remove('show'),1600);
+}
+// Rich intro banner for story mode with round and deck title
+function showEncounterIntro({ name, round, kind, deckKey }){
+  const b = document.getElementById('encounterBanner');
+  if(!b){ return; }
+  const deckTitle = DECK_TITLES[deckKey] || '';
+  const sub = [];
+  if(typeof round === 'number' && round > 0) sub.push(`Round ${round}`);
+  if(deckTitle) sub.push(deckTitle);
+  if(kind === 'boss') sub.push('Chefão');
+  b.innerHTML = `<div class=\"enc-title\">${name||'Inimigo'}</div>${sub.length?`<div class=\\\"enc-sub\\\">${sub.join(' — ')}</div>`:''}`;
+  b.className = (kind||'enemy') + ' show';
+  setTimeout(()=>b.classList.remove('show'), 1700);
 }
 function encounterTransition(cb){const t=document.getElementById('encounterTransition');if(!t){cb();return;}t.classList.add('show');setTimeout(()=>{cb();setTimeout(()=>t.classList.remove('show'),400);},400)}
+// Simple victory modal for story mode
+function openVictoryModal(enemyName,onContinue){
+  const modal = document.getElementById('victoryModal');
+  if(!modal){ onContinue&&onContinue(); return; }
+  const title = document.getElementById('victoryTitle');
+  const text = document.getElementById('victoryText');
+  const btn = document.getElementById('victoryContinueBtn');
+  if(title) title.textContent = 'Vitória!';
+  if(text) text.textContent = enemyName ? `Você derrotou ${enemyName}.` : 'Inimigo derrotado.';
+  const cleanup = ()=>{ modal.classList.remove('show'); modal.style.display='none'; modal.setAttribute('aria-hidden','true'); };
+  if(btn){ btn.onclick = ()=>{ cleanup(); onContinue&&onContinue(); }; }
+  modal.classList.add('show');
+  modal.style.display = 'grid';
+  modal.setAttribute('aria-hidden','false');
+  try{ btn&&btn.focus(); }catch(_){ }
+  try{ sfx('reward'); }catch(_){ }
+}
 function particleOnCard(cid,n){const t=nodeById(cid);if(!t)return;const r=t.getBoundingClientRect();screenParticle(n,r.left+r.width/2,r.top+r.height/2)}
 function particleOnFace(side,n){
   // Prefer HP meters in the HUD; fallback to hidden bottom faces if present
@@ -1749,32 +1810,48 @@ function checkWin(){
       log(`Recompensas disponíveis: ${rewards.join(', ')}`);
       log(`Você ganhou ${goldGain} ouro.`);
       if(leveled) log(`Você alcançou o nível ${G.story.level}!`);
-      const proceed=()=>encounterTransition(()=>startGame({continueStory:true}));
-      showEncounterBanner('Loja do Clã','shop');
-      openShop({
-        faction:G.playerDeckChoice,
-        gold:G.story.gold,
-        story:true,
-        onClose: async state => {
-          if(state&&state.pending&&state.pending.length){
-            try{ await Promise.all(state.pending); }catch(_){ }
-          }
-          if(state){
-            G.story.gold = state.gold;
-            if(state.purchased&&state.purchased.length){
-              state.purchased.forEach(item=>{
-                if(item&&item.bonus){
-                  try{
-                    const note = G.story.registerBonus(item.bonus,item);
-                    if(note){ log(`Campanha: ${item.name} concedeu ${note}.`); }
-                  }catch(err){ console.error('register bonus',err); }
-                }
-              });
+
+      const openStoryShop = () => {
+        // Small banner that we're entering the shop
+        showEncounterBanner('Loja do Clã','shop');
+        openShop({
+          faction:G.playerDeckChoice,
+          gold:G.story.gold,
+          story:true,
+          onClose: async state => {
+            if(state&&state.pending&&state.pending.length){
+              try{ await Promise.all(state.pending); }catch(_){ }
             }
+            if(state){
+              G.story.gold = state.gold;
+              if(state.purchased&&state.purchased.length){
+                state.purchased.forEach(item=>{
+                  if(item&&item.bonus){
+                    try{
+                      const note = G.story.registerBonus(item.bonus,item);
+                      if(note){ log(`Campanha: ${item.name} concedeu ${note}.`); }
+                    }catch(err){ console.error('register bonus',err); }
+                  }else if(item && ['unit','spell','totem'].includes(item.type)){
+                    // Persist purchased cards into the campaign deck
+                    try{
+                      G.story.deck = G.story.deck || [];
+                      const entry = { name:item.name, atk:item.atk||0, hp:item.hp||0, cost:item.cost||0, desc:item.desc||item.text||'', type:item.type };
+                      G.story.deck.push(entry);
+                      log(`Campanha: ${item.name} foi adicionado ao seu baralho.`);
+                    }catch(err){ console.error('add purchased card',err); }
+                  }
+                });
+              }
+            }
+            // proceed to next round
+            const proceed=()=>encounterTransition(()=>startGame({continueStory:true}));
+            proceed();
           }
-          proceed();
-        }
-      });
+        });
+      };
+
+      // Victory modal first, then shop
+      try{ openVictoryModal(G.currentEnemyName, openStoryShop); }catch(_){ openStoryShop(); }
       return;
     }
     endGame(true);
@@ -1785,7 +1862,18 @@ function allCards(){let out=[];for(const k of Object.keys(TEMPLATES)){for(const 
 function renderEncy(filter='all',locked=false){els.encyGrid.innerHTML='';const cards=(filter==='all'?allCards():TEMPLATES[filter].map(makeCard).map(c=>Object.assign(c,{deck:filter})));cards.forEach(c=>{const d=cardNode(c,'player');d.classList.add('ency-card');tiltify(d);els.encyGrid.appendChild(d)});els.ency.classList.add('show');setAriaHidden(els.ency,false);focusDialog(els.ency);els.encyFilters.style.display=locked?'none':'flex';$$('.filters .fbtn').forEach(b=>b.classList.toggle('active',b.dataset.deck===filter||filter==='all'&&b.dataset.deck==='all'))}
 const updateRestartVisibility=()=>{if(els.restartBtn)els.restartBtn.style.display=window.isMultiplayer?'none':'block'};
 const toggleGameMenu=open=>{if(!els.gameMenu)return;if(open){els.gameMenu.classList.add('show');setAriaHidden(els.gameMenu,false);focusDialog(els.gameMenu);updateRestartVisibility();}else{els.gameMenu.classList.remove('show');setAriaHidden(els.gameMenu,true)}};
-els.endBtn.addEventListener('click',endTurn);els.muteBtn.addEventListener('click',()=>{initAudio();ensureRunning();allMuted=!allMuted;musicMuted=allMuted;sfxMuted=allMuted;if(master) master.gain.value=allMuted?0:1;if(musicGain) musicGain.gain.value=allMuted?0:musicBase*musicVolume;if(ambientLoop&&ambientLoop.gain){const target=allMuted?0:ambientLoop.base*sfxVolume;try{ambientLoop.gain.gain.setValueAtTime(target,actx.currentTime);}catch(_){ambientLoop.gain.gain.value=target;}}els.muteBtn.textContent=allMuted?'🔇 Som':'🔊 Som';els.muteBtn.setAttribute('aria-pressed',allMuted?'true':'false')});window.addEventListener('keydown',e=>{if(e.key!=='Escape')return;if(G.chosen){cancelTargeting();return}if(!els.gameMenu)return;const t=els.gameMenu.classList.contains('show');t?toggleGameMenu(false):toggleGameMenu(true)});document.addEventListener('click',e=>{if(!G.chosen)return;if(e.target.closest('#aiBoard .card.selectable')||e.target.closest('#playerBoard .card.selectable')||e.target.closest('#aiBoard .face-attack-btn'))return;cancelTargeting()},{capture:true});
+els.endBtn.addEventListener('click',endTurn);
+if(els.instantWinBtn){
+  els.instantWinBtn.addEventListener('click',()=>{
+    if(G.mode!=='story'||!window.storyTestMode)return;
+    G.aiHP=0;
+    particleOnFace('ai','explosion');
+    log('⚡ Teste: Vitória instantânea ativada!');
+    sfx('crit');
+    checkWin();
+  });
+}
+els.muteBtn.addEventListener('click',()=>{initAudio();ensureRunning();allMuted=!allMuted;musicMuted=allMuted;sfxMuted=allMuted;if(master) master.gain.value=allMuted?0:1;if(musicGain) musicGain.gain.value=allMuted?0:musicBase*musicVolume;if(ambientLoop&&ambientLoop.gain){const target=allMuted?0:ambientLoop.base*sfxVolume;try{ambientLoop.gain.gain.setValueAtTime(target,actx.currentTime);}catch(_){ambientLoop.gain.gain.value=target;}}els.muteBtn.textContent=allMuted?'🔇 Som':'🔊 Som';els.muteBtn.setAttribute('aria-pressed',allMuted?'true':'false')});window.addEventListener('keydown',e=>{if(e.key!=='Escape')return;if(G.chosen){cancelTargeting();return}if(!els.gameMenu)return;const t=els.gameMenu.classList.contains('show');t?toggleGameMenu(false):toggleGameMenu(true)});document.addEventListener('click',e=>{if(!G.chosen)return;if(e.target.closest('#aiBoard .card.selectable')||e.target.closest('#playerBoard .card.selectable')||e.target.closest('#aiBoard .face-attack-btn'))return;cancelTargeting()},{capture:true});
 function confirmExit(){return G.mode==='story'?confirm('Progresso da história será perdido. Continuar?'):confirm('Tem certeza?');}
 if(els.openMenuBtn)els.openMenuBtn.addEventListener('click',()=>{toggleGameMenu(true)});
 if(els.closeMenuBtn)els.closeMenuBtn.addEventListener('click',()=>{toggleGameMenu(false)});
@@ -1913,6 +2001,42 @@ document.addEventListener('DOMContentLoaded',tryStartMenuMusicImmediate);
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')tryStartMenuMusicImmediate()});
 
 // --- Overrides & helpers (appended) ---
+// Expose a card pool for the shop, derived from in-game templates
+try{
+  window.getCardPoolForShop = function(currentDeck){
+    const outByDeck = {};
+    const add = (deckKey, raw)=>{
+      try{
+        const tmp = makeCard(raw);
+        const obj = {
+          name: tmp.name,
+          type: tmp.type,
+          atk: tmp.atk||0,
+          hp: tmp.hp||0,
+          cost: tmp.cost||0,
+          text: tmp.text||'',
+          desc: tmp.text||'',
+          deck: deckKey,
+          // preserve artwork hints so shop previews can render character art like the encyclopaedia
+          icon: tmp.icon||'',
+          emoji: tmp.emoji||'',
+          kw: tmp.kw||[],
+          battlecry: tmp.battlecry||''
+        };
+        if(!outByDeck[deckKey]) outByDeck[deckKey] = [];
+        outByDeck[deckKey].push(obj);
+      }catch(_){ }
+    };
+    try{
+      Object.keys(TEMPLATES).forEach(deckKey=>{
+        (TEMPLATES[deckKey]||[]).forEach(raw=>add(deckKey,raw));
+      });
+    }catch(_){ }
+    const all = Object.values(outByDeck).flat();
+    return { byDeck: outByDeck, all, current: (outByDeck[currentDeck]||[]) };
+  };
+}catch(_){ }
+
 function getTotemTheme(t){
   const name=((t&&t.name)||'').toLowerCase();
   if(name.indexOf('fúria')>-1||name.indexOf('furia')>-1) return 'fury';

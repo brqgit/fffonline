@@ -279,12 +279,10 @@
           testModal.style.display = 'none';
           setElementHidden(testModal, true);
         }
-        // mark story mode and trigger instant victory overlay for testing
+        // Start story mode properly like the Play button does
         window.currentGameMode = 'story';
-        if (typeof window.endGame === 'function') {
-          // slight delay so UI updates complete
-          setTimeout(function () { window.endGame(true); }, 120);
-        }
+        window.storyTestMode = true; // Flag to show instant win button
+        handlePlayChoice('story');
       });
     }
 

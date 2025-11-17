@@ -225,7 +225,7 @@
       <div class="board" id="aiBoard"></div>
   <div class="pile" id="aiDiscardPile"><img src="img/decks/fJord-fishers/deck-backs/jf-db-default.webp" alt="discard" loading="lazy" decoding="async"><div class="pile-label">DESCARTE</div></div>
     </div>
-    <div class="turn-bar"><div class="turn-indicator" id="turnIndicator"></div><button class="btn" id="endTurnBtn">Encerrar turno</button></div>
+    <div class="turn-bar"><div class="turn-indicator" id="turnIndicator"></div><button class="btn" id="endTurnBtn">Encerrar turno</button><button class="btn" id="instantWinBtn" type="button" style="display:none;margin-left:8px;background:linear-gradient(180deg,#7a2e36,#5a1f25);border:1px solid #fb7185" aria-label="Vitória instantânea (teste)">⚡ Vitória Instantânea</button></div>
     <div class="row">
   <div class="pile" id="drawPile"><img src="img/decks/fJord-fishers/deck-backs/jf-db-default.webp" alt="deck" loading="lazy" decoding="async"><div class="count" id="drawCount">0</div><div class="pile-label">SEU DECK</div></div>
       <div class="board" id="playerBoard"></div>
@@ -290,6 +290,17 @@
       <div class="shop-grid" id="shopChoices"></div>
       <div style="margin-top:12px;text-align:right">
         <button id="closeShop" class="btn">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Victory Modal (Story mode) -->
+  <div id="victoryModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="victoryTitle" aria-describedby="victoryText" aria-hidden="true">
+    <div class="box">
+      <h2 id="victoryTitle" style="margin-top:0">Vitória!</h2>
+      <div id="victoryText" class="sub" style="margin-bottom:12px">Inimigo derrotado.</div>
+      <div style="text-align:right">
+        <button class="btn" id="victoryContinueBtn" type="button">Continuar</button>
       </div>
     </div>
   </div>

@@ -174,10 +174,9 @@ function renderShop(){
     if(it && it.type) card.dataset.type = it.type;
 
     if(['unit','spell','totem'].includes(it.type) && window.cardNode){
-      // normalize data for cardNode: prefer deck/icon or img
+      // Compact preview inside shop tile; keep consistent with previous layout
       const nodeData = Object.assign({}, it);
-      // clear img if present to avoid 404s; let game.js choose a safe deck placeholder
-      if(nodeData.img) delete nodeData.img;
+      if(nodeData.img) delete nodeData.img; // let projection/art resolver work
       if(!nodeData.deck && window && window.G && window.G.playerDeckChoice) nodeData.deck = window.G.playerDeckChoice;
       const node = window.cardNode(nodeData,'player');
       node.classList.add('shop-preview');
@@ -208,11 +207,38 @@ function renderShop(){
       const amt = btn.querySelector('.price-amt'); if (amt) amt.classList.add('unaffordable');
     }
     btn.onclick = () => {
-      // guard: prevent any click if unaffordable or shopState changed
+      // guard affordability first
       if (!shopState.unlimited && shopState.gold < it.cost) { showShopMsg('Sem ouro.'); if(window.playSfx) window.playSfx('error'); return; }
+      // helper to apply purchase locally (offline / fallback)
+      const applyLocal = () => {
+        shopState.gold = Math.max(0, shopState.gold - it.cost);
+        $('#shopGold').textContent = shopState.gold;
+        btn.textContent = '✔';
+        btn.disabled = true;
+        shopState.purchased.push(it);
+        // refresh other buttons affordability
+        try{
+          document.querySelectorAll('.price-btn').forEach(b => {
+            if(b===btn) return; // already handled
+            const amt = b.querySelector('.price-amt');
+            if(!amt) return;
+            const price = parseInt(amt.textContent,10) || 0;
+            if(!shopState.unlimited && shopState.gold < price){ b.classList.add('unaffordable'); b.disabled = true; amt.classList.add('unaffordable'); }
+            else { b.classList.remove('unaffordable'); b.disabled = false; amt.classList.remove('unaffordable'); }
+          });
+        }catch(_){ }
+        if(window.playSfx) window.playSfx('reward');
+        showShopMsg('Compra registrada');
+      };
+      const useServer = !!(window.isMultiplayer || window.usePurchaseAPI);
+      if(!useServer){
+        applyLocal();
+        return;
+      }
       btn.disabled = true;
+      const API_BASE = window.SHOP_API_BASE || '';
       const currentGold = shopState.gold;
-      const req = fetch('/api/purchase', {
+      const req = fetch(API_BASE + '/api/purchase', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -222,34 +248,32 @@ function renderShop(){
           gold: currentGold,
         })
       })
-      .then(r => r.json())
+      .then(r => {
+        if(!r.ok){ throw new Error('HTTP '+r.status); }
+        return r.json().catch(()=>({ gold: currentGold - it.cost }));
+      })
       .then(data => {
-        if(data && typeof data.gold === 'number'){
-          // sanity: prevent negative balance on client
-          shopState.gold = Math.max(0, data.gold);
-          $('#shopGold').textContent = shopState.gold;
-          btn.textContent = '✔';
-          shopState.purchased.push(it);
-          // update other offer buttons affordability
-          try{
-            document.querySelectorAll('.price-btn').forEach(b => {
-              const amt = b.querySelector('.price-amt');
-              if(!amt) return;
-              const price = parseInt(amt.textContent,10) || 0;
-              if(!shopState.unlimited && shopState.gold < price){ b.classList.add('unaffordable'); b.disabled = true; amt.classList.add('unaffordable'); }
-              else { b.classList.remove('unaffordable'); b.disabled = false; amt.classList.remove('unaffordable'); }
-            });
-          }catch(e){/* ignore */}
-          if(window.playSfx) window.playSfx('reward');
-        } else {
-          throw new Error('Resposta inválida');
-        }
+        if(!data || typeof data.gold !== 'number'){ throw new Error('Resposta inválida'); }
+        shopState.gold = Math.max(0, data.gold);
+        $('#shopGold').textContent = shopState.gold;
+        btn.textContent = '✔';
+        shopState.purchased.push(it);
+        try{
+          document.querySelectorAll('.price-btn').forEach(b => {
+            const amt = b.querySelector('.price-amt');
+            if(!amt) return;
+            const price = parseInt(amt.textContent,10) || 0;
+            if(!shopState.unlimited && shopState.gold < price){ b.classList.add('unaffordable'); b.disabled = true; amt.classList.add('unaffordable'); }
+            else { b.classList.remove('unaffordable'); b.disabled = false; amt.classList.remove('unaffordable'); }
+          });
+        }catch(_){ }
+        if(window.playSfx) window.playSfx('reward');
+        showShopMsg('Compra registrada');
       })
       .catch(err => {
-        console.error('purchase error', err);
-        showShopMsg('Erro ao registrar compra');
-        btn.disabled = false;
-        if(window.playSfx) window.playSfx('error');
+        console.warn('Falha na API de compra, usando fallback local:', err.message);
+        // fallback local purchase
+        applyLocal();
       });
       shopState.pending.push(req);
     };
