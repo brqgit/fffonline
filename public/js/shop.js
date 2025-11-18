@@ -52,8 +52,15 @@ function getPlayerId(){
   return fallback;
 }
 
-let shopState = { faction: '', gold: 0, onClose: null, unlimited: false, purchased: [], story: false };
+let shopState = { faction: '', gold: 0, onClose: null, unlimited: false, purchased: [], story: false, removals: 0 };
 let rerollCount = 0;
+
+const REMOVAL_COST_BY_RARITY = {
+  common: 15,
+  rare: 25,
+  epic: 35,
+  legendary: 50
+};
 
 function showShopMsg(msg){
   const el = $('#shopMsg');
@@ -174,13 +181,21 @@ function renderShop(){
     if(it && it.type) card.dataset.type = it.type;
 
     if(['unit','spell','totem'].includes(it.type) && window.cardNode){
-      // Compact preview inside shop tile; keep consistent with previous layout
       const nodeData = Object.assign({}, it);
-      if(nodeData.img) delete nodeData.img; // let projection/art resolver work
+      if(nodeData.img) delete nodeData.img;
       if(!nodeData.deck && window && window.G && window.G.playerDeckChoice) nodeData.deck = window.G.playerDeckChoice;
       const node = window.cardNode(nodeData,'player');
       node.classList.add('shop-preview');
       card.appendChild(node);
+      // 3D tilt effect
+      card.addEventListener('mousemove', e => {
+        const r = card.getBoundingClientRect();
+        const x = e.clientX - r.left, y = e.clientY - r.top;
+        const rx = (y - r.height/2)/(r.height/2)*-10;
+        const ry = (x - r.width/2)/(r.width/2)*10;
+        node.style.transform = `perspective(1000px) rotateX(${rx}deg) rotateY(${ry}deg) scale(1.05) translateZ(18px)`;
+      });
+      card.addEventListener('mouseleave', () => { node.style.transform=''; });
     }else{
       const art = document.createElement('div');
       art.className = 'shop-art';
@@ -193,6 +208,14 @@ function renderShop(){
       name.className = 'shop-item-name';
       name.textContent = it.name;
       card.appendChild(name);
+      card.addEventListener('mousemove', e => {
+        const r = card.getBoundingClientRect();
+        const x = e.clientX - r.left, y = e.clientY - r.top;
+        const rx = (y - r.height/2)/(r.height/2)*-8;
+        const ry = (x - r.width/2)/(r.width/2)*8;
+        art.style.transform = `perspective(1000px) rotateX(${rx}deg) rotateY(${ry}deg)`;
+      });
+      card.addEventListener('mouseleave', () => { art.style.transform=''; });
     }
 
     const btn = document.createElement('button');
@@ -306,6 +329,13 @@ function updateRerollBtn(){
   }
 }
 
+function getRemovalCost(card){
+  if(!card) return 15 + (shopState.removals * 5);
+  const rarity = (card.rarity || 'common').toLowerCase();
+  const base = REMOVAL_COST_BY_RARITY[rarity] || 15;
+  return base + (shopState.removals * 5);
+}
+
 function openShop({ faction, gold, onClose, unlimited=false, story=false }){
 
   const map = { vikings:'Furioso', animais:'Furioso', pescadores:'Sombras', floresta:'Percepcao', convergentes:'Percepcao' };
@@ -321,6 +351,14 @@ function openShop({ faction, gold, onClose, unlimited=false, story=false }){
   $('#shopGold').textContent = shopState.gold;
   $('#shopMsg').textContent = '';
   renderShop();
+  // Atualiza texto do botão de remoção com custo dinâmico
+  const removeBtn = document.getElementById('btnRemoveCard');
+  if(removeBtn){
+    const baseCost = getRemovalCost();
+    const removalText = shopState.removals > 0 ? ` (${shopState.removals} removidas)` : '';
+    removeBtn.textContent = `🔥 Remover Carta (${baseCost}+ ouro)${removalText}`;
+    removeBtn.disabled = shopState.gold < baseCost;
+  }
   // ensure the close button is enabled and clickable
   const closeBtn = document.getElementById('closeShop');
   if(closeBtn){ closeBtn.disabled = false; }
@@ -370,4 +408,42 @@ document.getElementById('btnReroll')?.addEventListener('click', () => {
   updateRerollBtn();
   if(window.playSfx) window.playSfx('reroll');
 });
+
+document.getElementById('btnRemoveCard')?.addEventListener('click', () => {
+  const cost = getRemovalCost();
+  if(shopState.gold < cost){ 
+    showShopMsg('Sem ouro suficiente!'); 
+    if(window.playSfx) window.playSfx('error'); 
+    return; 
+  }
+  // Lazy attach if not defined yet but game.js loaded
+  if(!window.showCardRemoval && typeof window.showCardRemoval!=='function'){
+    if(typeof window.showCardRemoval==='undefined' && typeof window.gameReady==='function'){
+      try{ window.gameReady(); }catch(_){ }
+    }
+  }
+  if(typeof window.showCardRemoval!=='function'){
+    showShopMsg('Sistema de remoção indisponível.');
+    return;
+  }
+  
+  // Deduct gold and show removal modal
+  shopState.gold -= cost;
+  $('#shopGold').textContent = shopState.gold;
+  if(window.log) window.log(`💰 Custo de remoção: ${cost} ouro (base + ${shopState.removals * 5} incremental)`);
+  closeShop();
+  
+  window.showCardRemoval(() => {
+    shopState.removals++;
+    // Re-open shop after removal
+    openShop({
+      faction: shopState.faction,
+      gold: shopState.gold,
+      onClose: shopState.onClose,
+      unlimited: shopState.unlimited,
+      story: shopState.story
+    });
+  });
+});
+
 document.getElementById('closeShop')?.addEventListener('click', closeShop);

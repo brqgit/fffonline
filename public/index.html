@@ -165,6 +165,12 @@
   <div class="options-menu" id="testModal" style="display:none" role="dialog" aria-modal="true" aria-labelledby="testTitle" aria-hidden="true">
     <div class="panel">
       <h2 id="testTitle">Testes</h2>
+      <label style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <input type="checkbox" id="toggleInstantWin"> Habilitar "Vitória Instantânea"
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+        <input type="checkbox" id="toggleSilentArt" checked> Usar arte placeholder (sem requisições)
+      </label>
       <button class="btn" id="testShopBtn">Abrir Loja</button>
       <button class="btn" id="testStoryWinBtn">Vitória instantânea (História)</button>
       <button class="btn" id="testTotemBtn">Totens</button>
@@ -216,25 +222,29 @@
       </div>
     </div>
     </div>
-    <div class="active-effects" id="activeEffects" aria-live="polite">
-      <div class="effects-title">Efeitos Ativos</div>
+    <div class="active-effects" id="activeEffects" aria-live="polite" style="display:none">
+      <div class="effects-title">Relíquias da Campanha</div>
       <div class="effects-list" id="effectsList"></div>
+    </div>
+    <div class="active-relics" id="activeRelics" style="display:none">
+      <div class="relics-title">⚡ Relíquias Ativas</div>
+      <div class="relics-list" id="relicsList"></div>
     </div>
     <div class="row enemy-row">
   <div class="pile" id="aiDrawPile"><img src="img/decks/fJord-fishers/deck-backs/jf-db-default.webp" alt="deck" loading="lazy" decoding="async"><div class="pile-label">DECK</div></div>
       <div class="board" id="aiBoard"></div>
   <div class="pile" id="aiDiscardPile"><img src="img/decks/fJord-fishers/deck-backs/jf-db-default.webp" alt="discard" loading="lazy" decoding="async"><div class="pile-label">DESCARTE</div></div>
     </div>
-    <div class="turn-bar"><div class="turn-indicator" id="turnIndicator"></div><button class="btn" id="endTurnBtn">Encerrar turno</button><button class="btn" id="instantWinBtn" type="button" style="display:none;margin-left:8px;background:linear-gradient(180deg,#7a2e36,#5a1f25);border:1px solid #fb7185" aria-label="Vitória instantânea (teste)">⚡ Vitória Instantânea</button></div>
+    <div class="turn-bar"><div class="turn-indicator" id="turnIndicator"></div><button class="btn" id="endTurnBtn">Encerrar turno</button><button class="btn" id="instantWinBtn" type="button" aria-label="Vitória instantânea (teste)">⚡ Vitória Instantânea</button></div>
     <div class="row">
   <div class="pile" id="drawPile"><img src="img/decks/fJord-fishers/deck-backs/jf-db-default.webp" alt="deck" loading="lazy" decoding="async"><div class="count" id="drawCount">0</div><div class="pile-label">SEU DECK</div></div>
       <div class="board" id="playerBoard"></div>
   <div class="pile" id="discardPile"><img src="img/decks/fJord-fishers/deck-backs/jf-db-default.webp" alt="discard" loading="lazy" decoding="async"><div class="count" id="discardCount">0</div><div class="pile-label">DESCARTE</div></div>
       <div class="log-wrap"><div class="zone-title">Registro</div><div class="log" id="log"></div></div>
     </div>
+    <div class="effects-hud" id="effectsHud"></div>
     <div class="totem-bar" id="totemBar"></div>
     <div class="hand" id="playerHand"></div>
-    <div class="footer"><div class="face">👤 Você <span class="gem hp" id="playerHP2">30</span></div><div class="face">🧿 Inimigo <span class="gem hp" id="aiHP2">30</span></div></div>
     <div class="emoji-bar" id="emojiBar">
       <button class="emoji-btn" data-emoji="😡">😡</button>
       <button class="emoji-btn" data-emoji="🤔">🤔</button>
@@ -285,6 +295,7 @@
         <h2 id="shopTitle" style="margin:0">Loja</h2>
   <span style="margin-left:auto"><span class="coin-icon"></span> <b id="shopGold">0</b></span>
         <button class="btn" id="btnReroll">Re-rolar</button>
+        <button class="btn" id="btnRemoveCard" style="background:linear-gradient(180deg,#7a2e36,#5a1f25)">🔥 Remover Carta (15 ouro)</button>
       </div>
       <div id="shopMsg" class="shop-msg" aria-live="polite"></div>
       <div class="shop-grid" id="shopChoices"></div>
@@ -305,10 +316,66 @@
     </div>
   </div>
 
+  <!-- Rewards Modal (Story mode) -->
+  <div id="rewardsModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="rewardsTitle" aria-hidden="true">
+    <div class="box" style="max-width: 600px">
+      <h2 id="rewardsTitle" style="margin-top:0">🎁 Escolha sua Recompensa</h2>
+      <p class="sub" style="margin-bottom:20px">Selecione uma recompensa para fortalecer seu deck:</p>
+      <div id="rewardsChoices" class="rewards-grid"></div>
+      <div id="rewardsMsg" style="color:#ffa500;margin-top:12px;min-height:20px"></div>
+    </div>
+  </div>
+
+  <!-- Relic Choice Modal (Boss rewards) -->
+  <div id="relicModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="relicTitle" aria-hidden="true">
+    <div class="box" style="max-width: 700px">
+      <h2 id="relicTitle" style="margin-top:0">✨ Relíquia do Boss</h2>
+      <p class="sub" style="margin-bottom:20px">Escolha uma relíquia poderosa para sua jornada:</p>
+      <div id="relicChoices" class="rewards-grid"></div>
+      <div id="relicMsg" style="color:#ffa500;margin-top:12px;min-height:20px"></div>
+    </div>
+  </div>
+
+  <!-- Event Modal (Random encounters) -->
+  <div id="eventModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="eventTitle" aria-hidden="true">
+    <div class="box" style="max-width: 650px">
+      <div style="text-align:center;font-size:64px;margin-bottom:16px" id="eventIcon"></div>
+      <h2 id="eventTitle" style="margin-top:0;text-align:center"></h2>
+      <p id="eventDesc" class="sub" style="margin-bottom:24px;text-align:center;font-size:16px"></p>
+      <div id="eventChoices" class="event-choices"></div>
+      <div id="eventResult" style="color:#4ade80;margin-top:16px;min-height:24px;text-align:center;font-weight:600"></div>
+    </div>
+  </div>
+
+  <!-- Card Removal Modal -->
+  <div id="removalModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="removalTitle" aria-hidden="true">
+    <div class="box" style="max-width: 800px">
+      <h2 id="removalTitle" style="margin-top:0">🔥 Remover Carta do Deck</h2>
+      <p class="sub" style="margin-bottom:20px">Selecione uma carta para remover permanentemente:</p>
+      <div id="removalChoices" class="removal-grid"></div>
+      <div style="margin-top:16px;text-align:right">
+        <button class="btn-ghost" id="cancelRemoval">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
   <div id="encounterBanner"></div>
   <div id="encounterTransition"></div>
+  <script src="js/particles.js" defer></script>
   <script src="js/player-id.js" defer></script>
-  <script src="socket.io/socket.io.js" defer></script>
+  <script>
+    // Conditionally load socket.io only when Node server is running (not Live Server)
+    (function(){
+      try{
+        if(window.io) return; // already present
+        // Skip if running on Live Server (port 5500/5501/5502)
+        if(/:(5500|5501|5502)/.test(window.location.href)) return;
+        fetch('/socket.io/socket.io.js', { method:'HEAD' })
+          .then(r=>{ if(r.ok){ var s=document.createElement('script'); s.src='/socket.io/socket.io.js'; s.defer=true; document.head.appendChild(s);} })
+          .catch(()=>{/* no multiplayer in static preview */});
+      }catch(_){ }
+    })();
+  </script>
   <script src="js/net-client.js" defer></script>
   <script src="js/multiplayer.js" defer></script>
   <script src="js/menu.js" defer></script>

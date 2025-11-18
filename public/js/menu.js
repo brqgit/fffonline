@@ -22,6 +22,8 @@
     var closeTest = document.getElementById('closeTest');
     var testShopBtn = document.getElementById('testShopBtn');
     var testTotemBtn = document.getElementById('testTotemBtn');
+    var toggleInstantWin = document.getElementById('toggleInstantWin');
+    var toggleSilentArt = document.getElementById('toggleSilentArt');
     var diffLabel = document.querySelector('label[for="difficulty"]');
     var diffSelect = document.getElementById('difficulty');
     var encyBtn = document.getElementById('openEncy');
@@ -33,6 +35,17 @@
 
     function setElementHidden(el, hidden) {
       if (!el) return;
+      try {
+        if (hidden) {
+          var ae = document.activeElement;
+          if (ae && el.contains(ae)) {
+            try { ae.blur(); } catch (_) { }
+          }
+          el.setAttribute('inert', '');
+        } else {
+          el.removeAttribute('inert');
+        }
+      } catch (_) { }
       el.setAttribute('aria-hidden', hidden ? 'true' : 'false');
     }
 
@@ -220,6 +233,9 @@
         if (testModal && testModal.classList) {
           testModal.classList.add('show');
           setElementHidden(testModal, false);
+          // Initialize toggles with current values
+          if (toggleInstantWin) toggleInstantWin.checked = !!window.storyTestMode;
+          if (toggleSilentArt) toggleSilentArt.checked = (window.silentArtPlaceholders !== false);
         }
       });
     }
@@ -269,6 +285,22 @@
         }
         if (window.openShop) window.openShop({ faction: 'random', gold: 30, unlimited: true });
       });
+    }
+
+    if (toggleInstantWin) {
+      toggleInstantWin.addEventListener('change', function(){
+        window.storyTestMode = !!toggleInstantWin.checked;
+        // Reflect immediately if already in a battle
+        try{ if(window.els && els.instantWinBtn){ els.instantWinBtn.style.display = (window.storyTestMode && (window.G && G.mode==='story')) ? 'inline-block' : 'none'; } }catch(_){ }
+      });
+    }
+
+    if (toggleSilentArt) {
+      toggleSilentArt.addEventListener('change', function(){
+        window.silentArtPlaceholders = !!toggleSilentArt.checked;
+      });
+      // default to true in tests to avoid 404 noise
+      if (typeof window.silentArtPlaceholders === 'undefined') window.silentArtPlaceholders = true;
     }
 
     var testStoryWinBtn = document.getElementById('testStoryWinBtn');
@@ -419,8 +451,12 @@
               }
               brand.classList.add('logo-secret-active');
               fanTimeout = setTimeout(function () {
-                brand.classList.remove('logo-secret-active');
-              }, 2000);
+                brand.classList.add('logo-secret-fadeout');
+                setTimeout(function(){
+                  brand.classList.remove('logo-secret-active');
+                  brand.classList.remove('logo-secret-fadeout');
+                }, 800);
+              }, 3000);
             }
           }
         });

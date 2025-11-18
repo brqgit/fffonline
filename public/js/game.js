@@ -1,7 +1,7 @@
 (function(){const $=s=>document.querySelector(s),$$=s=>Array.from(document.querySelectorAll(s));const logBox=$('#log');const log=t=>{if(!logBox)return;const d=document.createElement('div');d.textContent=t;logBox.prepend(d)};const rand=a=>a[Math.floor(Math.random()*a.length)],clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),uid=()=>(Math.random().toString(36).slice(2));
-const setAriaHidden=(node,hidden)=>{if(!node)return;node.setAttribute('aria-hidden',hidden?'true':'false')};
+const setAriaHidden=(node,hidden)=>{if(!node)return;try{if(hidden){const ae=document.activeElement; if(ae && node.contains(ae)){ try{ae.blur()}catch(_){ } } node.setAttribute('inert','');} else { node.removeAttribute('inert'); }}catch(_){ } node.setAttribute('aria-hidden',hidden?'true':'false')};
 const focusDialog=node=>{if(!node)return;const target=node.querySelector('[autofocus],button,[href],input,select,textarea,[tabindex]:not([tabindex="-1"])');if(target&&typeof target.focus==='function'){target.focus()}};
-const AUDIO_ENABLED = false;
+const AUDIO_ENABLED = true;
 const AudioCtor = (typeof window!=='undefined') ? (window.AudioContext || window.webkitAudioContext) : null;
 const AudioCtx = AUDIO_ENABLED ? AudioCtor : null;
 let actx = null,
@@ -596,15 +596,429 @@ convergentes:[
   ["Sábio Prismal","","Convergente",3,5,4,"Entra: +1/+1 aleatório","M","BR1"],
   ["Avatar Mutagênico","","Convergente",6,6,6,"","M"],
 ]};
+
+// ===== RELICS SYSTEM =====
+const RELICS = {
+  // Tier 1 - Comuns
+  'bencao-freyja': {
+    id: 'bencao-freyja',
+    name: 'Bênção de Freyja',
+    icon: '🍃',
+    rarity: 'common',
+    desc: 'Cura 3 HP no início de cada combate.',
+    effect: 'healStart',
+    value: 3
+  },
+  'amuleto-trovao': {
+    id: 'amuleto-trovao',
+    name: 'Amuleto do Trovão',
+    icon: '⚡',
+    rarity: 'common',
+    desc: 'A primeira carta jogada em cada turno custa 1 de mana a menos.',
+    effect: 'firstCardDiscount',
+    value: 1
+  },
+  'coracao-urso': {
+    id: 'coracao-urso',
+    name: 'Coração do Urso',
+    icon: '🐻',
+    rarity: 'common',
+    desc: 'Inicie cada combate com +5 HP temporário.',
+    effect: 'tempHP',
+    value: 5
+  },
+  'runa-pescador': {
+    id: 'runa-pescador',
+    name: 'Runa do Pescador',
+    icon: '🎣',
+    rarity: 'common',
+    desc: 'Compre +1 carta no início de cada turno.',
+    effect: 'extraDraw',
+    value: 1
+  },
+  'dente-lobo': {
+    id: 'dente-lobo',
+    name: 'Dente de Lobo',
+    icon: '🦷',
+    rarity: 'common',
+    desc: 'Suas unidades com Furioso ganham +1 ATK.',
+    effect: 'buffFurious',
+    value: 1
+  },
+  
+  // Tier 2 - Raras
+  'machado-ancestral': {
+    id: 'machado-ancestral',
+    name: 'Machado Ancestral',
+    icon: '🪓',
+    rarity: 'rare',
+    desc: 'Ganhe +2 de ouro por vitória.',
+    effect: 'extraGold',
+    value: 2
+  },
+  'escudo-runico': {
+    id: 'escudo-runico',
+    name: 'Escudo Rúnico',
+    icon: '🛡️',
+    rarity: 'rare',
+    desc: 'A primeira unidade que você jogar ganha Protetor.',
+    effect: 'firstUnitProtector',
+    value: true
+  },
+  'chifre-alce': {
+    id: 'chifre-alce',
+    name: 'Chifre do Alce',
+    icon: '🦌',
+    rarity: 'rare',
+    desc: 'Suas unidades com Protetor ganham +0/+2.',
+    effect: 'buffProtector',
+    value: 2
+  },
+  'orbe-aurora': {
+    id: 'orbe-aurora',
+    name: 'Orbe da Aurora',
+    icon: '🔮',
+    rarity: 'rare',
+    desc: 'Ao jogar uma spell, compre 1 carta.',
+    effect: 'spellDraw',
+    value: 1
+  },
+  'pena-corvo': {
+    id: 'pena-corvo',
+    name: 'Pena do Corvo Sábio',
+    icon: '🪶',
+    rarity: 'rare',
+    desc: 'Comece cada combate com +1 de mana.',
+    effect: 'startMana',
+    value: 1
+  },
+  
+  // Tier 3 - Épicas
+  'coroa-jarl': {
+    id: 'coroa-jarl',
+    name: 'Coroa do Jarl',
+    icon: '👑',
+    rarity: 'epic',
+    desc: 'Todas as suas unidades ganham +1/+1.',
+    effect: 'allBuff',
+    value: {atk: 1, hp: 1}
+  },
+  'garra-kraken': {
+    id: 'garra-kraken',
+    name: 'Garra do Kraken',
+    icon: '🦑',
+    rarity: 'epic',
+    desc: 'Ao destruir uma unidade inimiga, ganhe 2 de mana.',
+    effect: 'killMana',
+    value: 2
+  },
+  'totem-primordial': {
+    id: 'totem-primordial',
+    name: 'Totem Primordial',
+    icon: '🗿',
+    rarity: 'epic',
+    desc: 'Seus totens custam 1 de mana a menos e concedem +1/+1 adicional.',
+    effect: 'totemBoost',
+    value: 1
+  },
+  'anel-convergencia': {
+    id: 'anel-convergencia',
+    name: 'Anel da Convergência',
+    icon: '💍',
+    rarity: 'epic',
+    desc: 'Cartas de todas as facções custam 1 a menos.',
+    effect: 'allCardsDiscount',
+    value: 1
+  },
+  
+  // Tier 4 - Lendárias (Amaldiçoadas - risco/recompensa)
+  'caveira-draugr': {
+    id: 'caveira-draugr',
+    name: 'Caveira do Draugr',
+    icon: '💀',
+    rarity: 'legendary',
+    desc: 'Suas unidades ganham +2 ATK, mas você perde 1 HP no início de cada turno.',
+    effect: 'cursedPower',
+    value: {buff: 2, cost: 1}
+  },
+  'olho-odin': {
+    id: 'olho-odin',
+    name: 'Olho de Odin',
+    icon: '👁️',
+    rarity: 'legendary',
+    desc: 'Veja as 3 próximas cartas do seu deck. Comece cada combate com -5 HP máximo.',
+    effect: 'vision',
+    value: {cards: 3, hpCost: 5}
+  },
+  'estrela-polar': {
+    id: 'estrela-polar',
+    name: 'Estrela Polar',
+    icon: '⭐',
+    rarity: 'legendary',
+    desc: 'No início do combate, invoca uma unidade 2/2 aleatória do seu deck.',
+    effect: 'startSummon',
+    value: {atk: 2, hp: 2}
+  }
+};
+
+// ===== RANDOM EVENTS SYSTEM =====
+const STORY_EVENTS = [
+  {
+    id: 'shaman-ritual',
+    name: 'Ritual do Xamã',
+    icon: '🔥',
+    desc: 'Um xamã oferece um ritual ancestral.',
+    choices: [
+      {
+        text: 'Participar do ritual',
+        effect: 'upgrade2Cards',
+        result: 'O xamã abençoa 2 de suas cartas. Elas evoluem (+1/+1)!',
+        cost: {hp: 5}
+      },
+      {
+        text: 'Recusar educadamente',
+        effect: 'gainGold',
+        result: 'O xamã respeita sua decisão e oferece 15 moedas de ouro.',
+        reward: {gold: 15}
+      }
+    ]
+  },
+  {
+    id: 'ancient-library',
+    name: 'Biblioteca Ancestral',
+    icon: '📚',
+    desc: 'Você encontra uma biblioteca esquecida nas montanhas.',
+    choices: [
+      {
+        text: 'Estudar os tomos antigos',
+        effect: 'upgradeCard',
+        result: 'Você aprende técnicas antigas. Evolua 1 carta (+2/+2)!',
+        reward: {upgradeCard: 2}
+      },
+      {
+        text: 'Procurar por tesouros',
+        effect: 'gainGold',
+        result: 'Entre as prateleiras, você encontra um baú com 25 moedas!',
+        reward: {gold: 25}
+      },
+      {
+        text: 'Queimar a biblioteca',
+        effect: 'removeCard',
+        result: 'As chamas purificam sua alma. Remova 1 carta do deck.',
+        reward: {removeCard: 1}
+      }
+    ]
+  },
+  {
+    id: 'merchant-caravan',
+    name: 'Caravana de Mercadores',
+    icon: '🛒',
+    desc: 'Uma caravana de mercadores cruza seu caminho.',
+    choices: [
+      {
+        text: 'Negociar (30 ouro)',
+        effect: 'buyRelic',
+        result: 'Você adquire uma relíquia misteriosa!',
+        cost: {gold: 30},
+        reward: {relic: 'random'}
+      },
+      {
+        text: 'Oferecer ajuda',
+        effect: 'helpMerchants',
+        result: 'Gratidão! Eles lhe dão uma carta rara.',
+        reward: {card: 'rare'}
+      },
+      {
+        text: 'Seguir em frente',
+        effect: 'nothing',
+        result: 'Você continua sua jornada.',
+        reward: {}
+      }
+    ]
+  },
+  {
+    id: 'frozen-shrine',
+    name: 'Santuário Congelado',
+    icon: '❄️',
+    desc: 'Um santuário antigo brilha sob o gelo.',
+    choices: [
+      {
+        text: 'Orar no santuário',
+        effect: 'heal',
+        result: 'Uma luz reconfortante cura todas as suas feridas!',
+        reward: {healFull: true}
+      },
+      {
+        text: 'Quebrar o gelo',
+        effect: 'riskReward',
+        result: '50% de chance: Relíquia OU perde 10 HP',
+        risk: true
+      }
+    ]
+  },
+  {
+    id: 'wolf-pack',
+    name: 'Matilha de Lobos',
+    icon: '🐺',
+    desc: 'Uma matilha de lobos cerca você, mas não atacam.',
+    choices: [
+      {
+        text: 'Alimentar os lobos (10 ouro)',
+        effect: 'feedWolves',
+        result: 'Os lobos se tornam seus aliados! Ganhe uma carta Lobo.',
+        cost: {gold: 10},
+        reward: {card: 'wolf'}
+      },
+      {
+        text: 'Lutar',
+        effect: 'fight',
+        result: 'Você afugenta os lobos, mas sai ferido (-8 HP).',
+        cost: {hp: 8},
+        reward: {gold: 5}
+      },
+      {
+        text: 'Recuar lentamente',
+        effect: 'nothing',
+        result: 'Você escapa ileso.',
+        reward: {}
+      }
+    ]
+  },
+  {
+    id: 'aurora-spring',
+    name: 'Fonte da Aurora',
+    icon: '💎',
+    desc: 'Uma fonte luminosa emana energia arcana.',
+    choices: [
+      {
+        text: 'Beber da fonte',
+        effect: 'randomEffect',
+        result: 'Efeito aleatório: Buff, Debuff ou Nada!',
+        risk: true
+      },
+      {
+        text: 'Encher cantis (+20 ouro)',
+        effect: 'sellWater',
+        result: 'Você vende a água mágica na próxima vila.',
+        reward: {gold: 20}
+      }
+    ]
+  },
+  {
+    id: 'village-blacksmith',
+    name: 'Ferreiro da Vila',
+    icon: '⚒️',
+    desc: 'Um ferreiro oferece seus serviços.',
+    choices: [
+      {
+        text: 'Forjar equipamento (25 ouro)',
+        effect: 'forge',
+        result: 'Suas unidades ganham +1 ATK permanentemente!',
+        cost: {gold: 25},
+        reward: {buffAll: {atk: 1}}
+      },
+      {
+        text: 'Ajudar na forja',
+        effect: 'helpForge',
+        result: 'O ferreiro ensina técnicas. Evolua 1 carta (+1/+1).',
+        cost: {hp: 3},
+        reward: {upgradeCard: 1}
+      },
+      {
+        text: 'Seguir viagem',
+        effect: 'nothing',
+        result: 'Você agradece e parte.',
+        reward: {}
+      }
+    ]
+  },
+  {
+    id: 'totem-grove',
+    name: 'Bosque dos Totens',
+    icon: '🌲',
+    desc: 'Totens ancestrais erguem-se entre as árvores.',
+    choices: [
+      {
+        text: 'Meditar entre os totens',
+        effect: 'gainTotem',
+        result: 'Os espíritos lhe concedem um totem sagrado!',
+        reward: {totem: true}
+      },
+      {
+        text: 'Derrubar uma árvore',
+        effect: 'anger',
+        result: 'Os espíritos se irritam! Você perde 10 HP mas ganha 30 ouro.',
+        cost: {hp: 10},
+        reward: {gold: 30}
+      }
+    ]
+  },
+  {
+    id: 'lost-traveler',
+    name: 'Viajante Perdido',
+    icon: '🧳',
+    desc: 'Um viajante perdido pede ajuda.',
+    choices: [
+      {
+        text: 'Guiá-lo (custa 1 turno)',
+        effect: 'help',
+        result: 'Ele revela ser um nobre! Recompensa: 40 ouro.',
+        reward: {gold: 40}
+      },
+      {
+        text: 'Dar direções',
+        effect: 'directions',
+        result: 'Ele agradece e lhe dá um mapa. Escolha sua próxima recompensa.',
+        reward: {extraChoice: true}
+      },
+      {
+        text: 'Ignorar',
+        effect: 'nothing',
+        result: 'Você segue seu caminho.',
+        reward: {}
+      }
+    ]
+  },
+  {
+    id: 'cursed-altar',
+    name: 'Altar Amaldiçoado',
+    icon: '⚰️',
+    desc: 'Um altar sombrio pulsa com energia maligna.',
+    choices: [
+      {
+        text: 'Destruir o altar',
+        effect: 'destroy',
+        result: 'Você liberta as almas presas! Remova 2 cartas do deck.',
+        cost: {hp: 7},
+        reward: {removeCard: 2}
+      },
+      {
+        text: 'Fazer uma oferenda',
+        effect: 'curse',
+        result: 'Você ganha poder sombrio! +2 ATK em todas as unidades, mas perde 10 HP máximo.',
+        reward: {buffAll: {atk: 2}, maxHPLoss: 10}
+      },
+      {
+        text: 'Fugir',
+        effect: 'nothing',
+        result: 'Melhor não arriscar...',
+        reward: {}
+      }
+    ]
+  }
+];
+
 class StoryMode{
-  constructor({level=1}={}){this.level=level;this.round=0;this.totems=[];this.deck=[];this.scaling=0;this.xp=0;this.gold=30;this.bossInterval=10;this.eliteEvery=5;this.currentEncounter='normal';this.bonuses={startMana:0,killMana:0,allyBuff:{atk:0,hp:0},totemBonus:{atk:0,hp:0},items:[]};this._startManaGranted=false;}
-  nextRound(){this.round+=1;this.scaling=Math.floor(this.round/2)+(this.level-1);const isBoss=this.round%this.bossInterval===0;const isElite=!isBoss&&this.round%this.eliteEvery===0;this.currentEncounter=isBoss?'boss':isElite?'elite':'normal';return{isBoss,isElite};}
-  handleVictory(){const xpGain=this.currentEncounter==='boss'?20:this.currentEncounter==='elite'?10:5;const goldGain=this.currentEncounter==='boss'?20:this.currentEncounter==='elite'?10:5;this.xp+=xpGain;this.gold+=goldGain;const leveled=this.checkLevelUp();return{leveled,rewards:this.rewardOptions(),goldGain};}
-  rewardOptions(){return['Nova carta','Evoluir carta','Ganhar Totem','Buff permanente'];}
+  constructor({level=1}={}){this.level=level;this.round=0;this.totems=[];this.deck=[];this.scaling=0;this.xp=0;this.gold=30;this.bossInterval=10;this.eliteEvery=5;this.currentEncounter='normal';this.bonuses={startMana:0,killMana:0,allyBuff:{atk:0,hp:0},totemBonus:{atk:0,hp:0},items:[]};this.relics=[];this.eventsSeen=[];this._startManaGranted=false;}
+  nextRound(){this.round+=1;this.scaling=Math.floor(this.round/2)+(this.level-1);const isBoss=this.round%this.bossInterval===0;const isElite=!isBoss&&this.round%this.eliteEvery===0;const isEvent=!isBoss&&!isElite&&this.round%4===0&&this.round>2;this.currentEncounter=isBoss?'boss':isElite?'elite':isEvent?'event':'normal';return{isBoss,isElite,isEvent};}
+  handleVictory(){const xpGain=this.currentEncounter==='boss'?20:this.currentEncounter==='elite'?10:5;const goldGain=this.currentEncounter==='boss'?20:this.currentEncounter==='elite'?10:5;this.xp+=xpGain;this.gold+=goldGain;const leveled=this.checkLevelUp();return{leveled,rewards:this.rewardOptions(),goldGain,isBoss:this.currentEncounter==='boss'};}
+  rewardOptions(){const isBoss=this.currentEncounter==='boss';const baseRewards=['Nova carta','Evoluir carta','Ganhar Totem'];if(isBoss||Math.random()<0.3){baseRewards.push('Buff permanente');}return baseRewards;}
   checkLevelUp(){const need=this.level*50;if(this.xp>=need){this.level+=1;this.xp-=need;return true}return false}
   addTotem(t){if(this.totems.length>=3)return false;this.totems.push(t);return true}
+  addRelic(relic){if(!this.relics.find(r=>r.id===relic.id)){this.relics.push(relic);return true;}return false;}
+  hasRelic(id){return this.relics.some(r=>r.id===id);}
   registerBonus(bonus,src){if(!bonus)return'';const notes=[];if(bonus.startMana){this.bonuses.startMana+=bonus.startMana;notes.push(`+${bonus.startMana} mana inicial`);}if(bonus.killMana){this.bonuses.killMana+=bonus.killMana;notes.push(`+${bonus.killMana} mana por eliminação`);}if(bonus.allyBuff){this.bonuses.allyBuff.atk+=bonus.allyBuff.atk||0;this.bonuses.allyBuff.hp+=bonus.allyBuff.hp||0;if(bonus.allyBuff.atk)notes.push(`Aliados +${bonus.allyBuff.atk} ATK`);if(bonus.allyBuff.hp)notes.push(`Aliados +${bonus.allyBuff.hp} HP`);}if(bonus.totemBonus){this.bonuses.totemBonus.atk+=bonus.totemBonus.atk||0;this.bonuses.totemBonus.hp+=bonus.totemBonus.hp||0;if(bonus.totemBonus.atk||bonus.totemBonus.hp)notes.push('Totens fortalecidos');}if(src&&src.name){this.bonuses.items.push(src.name);}return notes.join(', ');}
-  reset(){this.round=0;this.totems=[];this.deck=[];this.xp=0;this.gold=30;this.currentEncounter='normal';this.bonuses={startMana:0,killMana:0,allyBuff:{atk:0,hp:0},totemBonus:{atk:0,hp:0},items:[]};this._startManaGranted=false;}
+  reset(){this.round=0;this.totems=[];this.deck=[];this.xp=0;this.gold=30;this.currentEncounter='normal';this.bonuses={startMana:0,killMana:0,allyBuff:{atk:0,hp:0},totemBonus:{atk:0,hp:0},items:[]};this.relics=[];this.eventsSeen=[];this._startManaGranted=false;}
 }
 const ALL_DECKS=Object.keys(TEMPLATES);
 const G={playerHP:30,aiHP:30,turn:0,playerMana:0,playerManaCap:0,aiMana:0,aiManaCap:0,current:'player',playerDeck:[],aiDeck:[],playerHand:[],aiHand:[],playerBoard:[],aiBoard:[],playerDiscard:[],aiDiscard:[],chosen:null,playerDeckChoice:'vikings',aiDeckChoice:rand(ALL_DECKS),customDeck:null,mode:'solo',story:null,enemyScaling:0,maxHandSize:5,totems:[]};
@@ -685,6 +1099,32 @@ function iconUrl(deck,idx){
   return null;
 }
 
+// Inline SVG placeholder (question mark) used only when no art exists
+function makeArtPlaceholder(card){
+  try{
+    const deck = (card && card.deck) || 'default';
+    const symbol = '?';
+    const bg = deck==='vikings'?'#1f2937':deck==='animais'?'#065f46':deck==='pescadores'?'#0e7490':deck==='floresta'?'#14532d':deck==='convergentes'?'#4c1d95':'#334155';
+    const fg = '#e5e7eb';
+    const svg = `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns='http://www.w3.org/2000/svg' width='96' height='96' viewBox='0 0 96 96'>
+  <defs>
+    <linearGradient id='g' x1='0' y1='0' x2='1' y2='1'>
+      <stop offset='0%' stop-color='${bg}' stop-opacity='0.95'/>
+      <stop offset='100%' stop-color='${bg}' stop-opacity='0.6'/>
+    </linearGradient>
+  </defs>
+  <rect x='0' y='0' width='96' height='96' rx='12' fill='url(#g)'/>
+  <circle cx='78' cy='18' r='8' fill='rgba(255,255,255,0.12)'/>
+  <circle cx='18' cy='78' r='10' fill='rgba(255,255,255,0.08)'/>
+  <text x='50' y='58' font-family='Inter,Segoe UI,Arial' font-size='54' text-anchor='middle' fill='${fg}' font-weight='800'>${symbol}</text>
+</svg>`;
+    return 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg);
+  }catch(_){
+    return 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc5NicgaGVpZ2h0PSc5Nic+PHJlY3Qgd2lkdGg9Jzk2JyBoZWlnaHQ9Jzk2JyBmaWxsPScjMzM0MTU1JyByeD0nMTInLz48dGV4dCB4PSc0OCcgeT0nNTEnIGZpbGw9JyNlNWU3ZWInIGZvbnQtc2l6ZT0nNDgnIHRleHQtYW5jaG9yPSdtaWRkbGUnPkM8L3RleHQ+PC9zdmc+';
+  }
+}
+
 // Helpers: build candidates from the card name
 function stripAcc(s){ try{ return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,''); }catch(_){ return s; } }
 function wordsOf(s){ return stripAcc(String(s||'')).replace(/[^A-Za-z0-9]+/g,' ').trim().split(/\s+/).filter(Boolean); }
@@ -748,9 +1188,13 @@ function createProjection(container,card){
 
   const showFallback=()=>{
     if(container.querySelector('canvas,.img-missing')) return;
-    if(card.emoji){
+    if(card && card.emoji){
       const c=document.createElement('canvas'); c.width=96; c.height=96; const ctx=c.getContext('2d'); ctx.font='72px serif'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(card.emoji,48,60); container.appendChild(c);
-    }else{ const ph=document.createElement('div'); ph.className='img-missing'; ph.textContent='?'; container.appendChild(ph); }
+    } else {
+      const img=document.createElement('img'); img.width=96; img.height=96; img.loading='eager'; img.alt='';
+      img.src = makeArtPlaceholder(card);
+      container.appendChild(img);
+    }
   };
 
   if(urls.length){
@@ -788,7 +1232,16 @@ function cardNode(c,owner,onBoard=false){
   // if caller marked card to be hidden during summon animation, start hidden
   if(c && c._hideDuringSummon){ d.style.visibility='hidden'; }
   d.dataset.id=c.id;
-  const manaDots=`<span class="mana-dot ${c.deck}"></span>`.repeat(c.cost);
+  const totalDots = Math.min(c.cost, 15); // Cap display at 15
+  const dotsPerRow = 5;
+  let manaDots = '';
+  if(totalDots <= dotsPerRow){
+    manaDots = `<span class="mana-dot ${c.deck}"></span>`.repeat(totalDots);
+  } else {
+    const firstRow = `<span class="mana-dot ${c.deck}"></span>`.repeat(dotsPerRow);
+    const secondRow = `<span class="mana-dot ${c.deck}"></span>`.repeat(Math.min(totalDots - dotsPerRow, dotsPerRow));
+    manaDots = `<div class="mana-row">${firstRow}</div><div class="mana-row">${secondRow}</div>`;
+  }
   const kwTags=[];
   (c.kw||[]).forEach(k=>{const tip=KW_TIPS[k]||'';kwTags.push(`<span class='keyword' data-tip='${tip}'>${k}</span>`)});
   if(c.battlecry){
@@ -862,9 +1315,9 @@ function updateMeters(){
 function updateOpponentLabel(){if(!els.opponentLabel)return;if(window.isMultiplayer){els.opponentLabel.textContent=window.opponentName?` ${window.opponentName}`:'';}else if(G.mode==='story'){els.opponentLabel.textContent='';}else{const t=DECK_TITLES[G.aiDeckChoice]||'';els.opponentLabel.textContent=t?` ${t}`:'';}}
 function renderAll(){
   els.pHP.textContent=G.playerHP;
-  els.pHP2.textContent=G.playerHP;
+  if(els.pHP2) els.pHP2.textContent=G.playerHP;
   els.aHP.textContent=G.aiHP;
-  els.aHP2.textContent=G.aiHP;
+  if(els.aHP2) els.aHP2.textContent=G.aiHP;
   els.mana.textContent=`${G.playerMana}/${G.playerManaCap}`;
   try{ if(els.aiMana){ els.aiMana.textContent = `${G.aiMana}/${G.aiManaCap}`; } }catch(_){ }
   // disable the button and hide it when it's not the player's turn; pulse highlight on your turn
@@ -880,7 +1333,7 @@ function renderAll(){
   }
   els.drawCount.textContent=G.playerDeck.length;
   els.discardCount.textContent=G.playerDiscard.length;
-  updateMeters();updateOpponentLabel();renderHand();renderBoard();renderTotems()
+  updateMeters();updateOpponentLabel();renderHand();renderBoard();renderTotems();renderStoryEffects();updateDirectAttackHint()
 }
 function renderHand(){
   els.pHand.innerHTML='';
@@ -913,80 +1366,10 @@ function renderHand(){
 
 // Animate a sequential flip for newly drawn cards.
 // ids: array of card ids in the order they appear in hand (left to right)
-function animateDrawFlip(ids=[]){
-  if(!ids.length) return;
-  // ensure hand is rendered first
-  const cards = $$('#playerHand .card');
-  // map id -> node and keep left-to-right order from DOM
-  const domOrder = cards.slice().sort((a,b)=>Number(a.style.zIndex||0)-Number(b.style.zIndex||0));
-  // find nodes for ids, in DOM left-to-right order
-  const nodes = domOrder.filter(n=>ids.includes(n.dataset.id));
-  nodes.forEach((node,i)=>{
-    // prepare back/front faces if not present
-    if(!node.querySelector('.flip-inner')){
-      const inner=document.createElement('div'); inner.className='flip-inner';
-      // create front and back wrappers
-      const front=document.createElement('div'); front.className='face front';
-      const back=document.createElement('div'); back.className='face back';
-      // back image: use deck-specific back if available
-      const deckKey = (G.playerDeckChoice||'vikings');
-      const info = DECK_ASSETS[deckKey] || DECK_ASSETS.vikings;
-  const backUrl = `img/decks/${info.folder}/card-backs/${info.back}-cb-default.${info.cbExt}`;
-      back.innerHTML = `<img src='${backUrl}' alt='back' style='width:90%;height:auto;max-height:80%;object-fit:contain'>`;
-      // move existing content into front
-      while(node.firstChild) front.appendChild(node.firstChild);
-      inner.appendChild(front);
-      inner.appendChild(back);
-      node.appendChild(inner);
-      node.classList.add('show-back');
-    }
-    // schedule flip with stagger (50% faster)
-    setTimeout(()=>{
-      // toggle class to rotate inner once
-      node.classList.remove('show-back');
-      // after flip, cleanup: unwrap front children back into card root
-      setTimeout(()=>{
-        const inner=node.querySelector('.flip-inner');
-        if(inner){
-          const front=inner.querySelector('.face.front');
-          while(front && front.firstChild) node.insertBefore(front.firstChild, node.firstChild);
-          inner.remove();
-        }
-        node.classList.remove('show-back');
-      },175);
-    }, i*45);
-  });
-}
+// Removido efeito de flip ao comprar cartas: função agora é no-op
+function animateDrawFlip(ids=[]){ return; }
 
-function animateDrawFlipOne(id){
-  return new Promise(resolve=>{
-    const node = document.querySelector(`#playerHand .card[data-id='${id}']`);
-    if(!node) return resolve();
-    // prepare faces if absent
-    if(!node.querySelector('.flip-inner')){
-      const inner=document.createElement('div'); inner.className='flip-inner';
-      const front=document.createElement('div'); front.className='face front';
-      const back=document.createElement('div'); back.className='face back';
-      const deckKey = (G.playerDeckChoice||'vikings');
-      const info = DECK_ASSETS[deckKey] || DECK_ASSETS.vikings;
-  const backUrl = `img/decks/${info.folder}/card-backs/${info.back}-cb-default.${info.cbExt}`;
-      back.innerHTML = `<img src='${backUrl}' alt='back' style='width:90%;height:auto;max-height:80%;object-fit:contain'>`;
-      while(node.firstChild) front.appendChild(node.firstChild);
-      inner.appendChild(front); inner.appendChild(back); node.appendChild(inner);
-      node.classList.add('show-back');
-    }
-    // trigger flip (50% faster)
-    requestAnimationFrame(()=>{
-      node.classList.remove('show-back');
-      setTimeout(()=>{
-        const inner=node.querySelector('.flip-inner');
-        if(inner){ const front=inner.querySelector('.face.front'); while(front && front.firstChild) node.insertBefore(front.firstChild, node.firstChild); inner.remove(); }
-        node.classList.remove('show-back');
-        resolve();
-      },175);
-    });
-  });
-}
+function animateDrawFlipOne(id){ return Promise.resolve(); }
 
   document.addEventListener('click', e => {
     if(!G.chosen) return;
@@ -1042,14 +1425,122 @@ function renderBoard(){
 function renderTotems(){
   const bar=document.getElementById('totemBar');
   if(!bar) return;
+  // Only show actual acquired totems; remove fixed placeholder slots
   bar.innerHTML='';
-  for(let i=0;i<3;i++){
-    const slot=document.createElement('div');
-    slot.className='totem-slot';
-    if(G.totems[i]){ slot.textContent=G.totems[i].icon||'🗿'; }
-    bar.appendChild(slot);
+  if(Array.isArray(G.totems)){
+    G.totems.forEach(t=>{
+      const slot=document.createElement('div');
+      slot.className='totem-slot';
+      slot.style.display='none'; // hidden bar; effects are shown in effects-hud
+      if(t){ slot.textContent=t.icon||'🗿'; }
+      bar.appendChild(slot);
+    });
   }
 }
+function renderStoryEffects(){
+  const panel = document.getElementById('activeEffects');
+  const list = document.getElementById('effectsList');
+  if(!panel || !list) return;
+  if(G.mode !== 'story' || !G.story || !G.story.bonuses) {
+    panel.style.display = 'none';
+    return;
+  }
+  const b = G.story.bonuses;
+  const effects = [];
+  if(b.startMana > 0) effects.push({ icon: '💠', text: `+${b.startMana} mana inicial`, title: 'Elixir de Mana Primordial' });
+  if(b.killMana > 0) effects.push({ icon: '🪘', text: `+${b.killMana} mana por kill`, title: 'Tambor dos Conquistadores' });
+  if(b.allyBuff && (b.allyBuff.atk > 0 || b.allyBuff.hp > 0)) {
+    const parts = [];
+    if(b.allyBuff.atk > 0) parts.push(`+${b.allyBuff.atk} ATK`);
+    if(b.allyBuff.hp > 0) parts.push(`+${b.allyBuff.hp} HP`);
+    effects.push({ icon: '⚔️', text: parts.join(' / ') + ' permanente', title: 'Relíquias de Buff' });
+  }
+  if(b.totemBonus && (b.totemBonus.atk > 0 || b.totemBonus.hp > 0)) {
+    const parts = [];
+    if(b.totemBonus.atk > 0) parts.push(`+${b.totemBonus.atk} ATK`);
+    if(b.totemBonus.hp > 0) parts.push(`+${b.totemBonus.hp} HP`);
+    effects.push({ icon: '🗿', text: `Totens ${parts.join('/')} extra`, title: 'Talismã Totêmico Ancestral' });
+  }
+  
+  // Update new unified effects HUD
+  updateEffectsHud();
+  
+  if(effects.length === 0) {
+    panel.style.display = 'none';
+    return;
+  }
+  list.innerHTML = '';
+  effects.forEach(e => {
+    const item = document.createElement('div');
+    item.className = 'effect-item';
+    item.setAttribute('data-tip', e.title);
+    item.innerHTML = `<span class="effect-icon">${e.icon}</span><span class="effect-text">${e.text}</span>`;
+    list.appendChild(item);
+  });
+  panel.style.display = 'block';
+}
+
+function updateEffectsHud(){
+  const hud = document.getElementById('effectsHud');
+  if(!hud) return;
+  
+  hud.innerHTML = '';
+  const items = [];
+  
+  // Add active totems
+  if(G.totems && G.totems.length > 0){
+    G.totems.forEach(totem => {
+      items.push({
+        type: 'totem',
+        icon: totem.icon || '🗿',
+        tip: `${totem.name}\n${totem.effect || ''}`
+      });
+    });
+  }
+  
+  // Add active relics
+  if(G.story && G.story.relics && G.story.relics.length > 0){
+    G.story.relics.forEach(relic => {
+      items.push({
+        type: 'relic',
+        icon: relic.icon,
+        tip: `${relic.name}\n${relic.desc}`
+      });
+    });
+  }
+  
+  // Add story bonuses (buffs permanentes)
+  if(G.mode === 'story' && G.story && G.story.bonuses){
+    const b = G.story.bonuses;
+    if(b.startMana > 0) items.push({type:'buff', icon:'💠', tip:`Elixir de Mana\n+${b.startMana} mana ao início do combate`});
+    if(b.killMana > 0) items.push({type:'buff', icon:'🪘', tip:`Tambor dos Conquistadores\n+${b.killMana} mana por eliminação`});
+    if(b.allyBuff && (b.allyBuff.atk > 0 || b.allyBuff.hp > 0)){
+      const parts = [];
+      if(b.allyBuff.atk > 0) parts.push(`+${b.allyBuff.atk} ATK`);
+      if(b.allyBuff.hp > 0) parts.push(`+${b.allyBuff.hp} HP`);
+      items.push({type:'buff', icon:'⚔️', tip:`Buff Permanente\n${parts.join(' / ')} em todas as cartas`});
+    }
+    if(b.totemBonus && (b.totemBonus.atk > 0 || b.totemBonus.hp > 0)){
+      const parts = [];
+      if(b.totemBonus.atk > 0) parts.push(`+${b.totemBonus.atk} ATK`);
+      if(b.totemBonus.hp > 0) parts.push(`+${b.totemBonus.hp} HP`);
+      items.push({type:'buff', icon:'🗿', tip:`Talismã Totêmico\nTotens ganham ${parts.join('/')}`});
+    }
+  }
+  
+  // Render items
+  items.forEach(item => {
+    const el = document.createElement('div');
+    el.className = 'effect-item';
+    el.setAttribute('data-type', item.type);
+    el.setAttribute('data-tip', item.tip);
+    el.textContent = item.icon;
+    hud.appendChild(el);
+  });
+  
+  hud.style.display = items.length > 0 ? 'flex' : 'none';
+}
+
 function openStanceChooser(anchor,cb,onCancel){
   closeStanceChooser();
   anchor.classList.add('chosen');
@@ -1118,6 +1609,7 @@ function applyStoryDeckBonuses(){
   if(!(G.mode==='story'&&G.story&&G.story.bonuses)) return;
   const buff=G.story.bonuses.allyBuff||{};
   if(!buff.atk&&!buff.hp) return;
+  let count = 0;
   G.playerDeck.forEach(c=>{
     if(c.type==='spell'||isTotem(c)) return;
     if(buff.atk){c.atk+=buff.atk;}
@@ -1126,7 +1618,14 @@ function applyStoryDeckBonuses(){
     if(c.hp<1)c.hp=1;
     c.baseAtk=c.atk;
     c.baseHp=c.hp;
+    count++;
   });
+  if(count > 0){
+    const msgs = [];
+    if(buff.atk) msgs.push(`+${buff.atk} ATK`);
+    if(buff.hp) msgs.push(`+${buff.hp} HP`);
+    log(`⚔️ Relíquias da campanha aplicadas: ${msgs.join(' / ')} em ${count} unidades!`);
+  }
 }
 // Configuração central do delay de compra inicial ao continuar história
 const STORY_CONTINUE_DEAL_DELAY = 800; // ms
@@ -1135,7 +1634,6 @@ let GAME_SESSION_ID = 0;
 
 function startGame(opts='player') {
   GAME_SESSION_ID++;
-  const sessionId = GAME_SESSION_ID;
   updateCardSize();
   const isObj = typeof opts === 'object';
   const first = isObj ? (opts.first || 'player') : opts;
@@ -1146,6 +1644,24 @@ function startGame(opts='player') {
     if (!G.story) G.story = new StoryMode({ level: 1 });
     G.story.nextRound();
     G.story._startManaGranted = false;
+    
+    // Check if this round is an event
+    if(G.story.currentEncounter === 'event'){
+      showRandomEvent(() => {
+        // After event, continue to next round (combat)
+        G.story.nextRound();
+        G.aiDeckChoice = rand(ALL_DECKS);
+        const boss = G.story.currentEncounter === 'boss';
+        G.enemyScaling = G.story.scaling;
+        G.currentEnemyName = pickEnemyName(G.aiDeckChoice, boss);
+        log(`Round ${G.story.round}: ${G.currentEnemyName} (${G.story.currentEncounter})`);
+        try{ showEncounterIntro({ name:G.currentEnemyName, round:G.story.round, kind: boss?'boss':'enemy', deckKey:G.aiDeckChoice }); }
+        catch(_){ showEncounterBanner(G.currentEnemyName, boss ? 'boss' : 'enemy'); }
+        continueGameSetup();
+      });
+      return; // Wait for event to complete
+    }
+    
     G.aiDeckChoice = rand(ALL_DECKS);
     const boss = G.story.currentEncounter === 'boss';
     G.enemyScaling = G.story.scaling;
@@ -1159,30 +1675,86 @@ function startGame(opts='player') {
     G.enemyScaling = 0;
     G.maxHandSize = 5;
   }
+  
+  continueGameSetup();
+}
+
+function continueGameSetup(){
+  const sessionId = GAME_SESSION_ID;
+  const sanitize = c => { if (c.hp < 1) c.hp = 1; if (c.atk < 0) c.atk = 0; return c; };
+  const continuing = G.mode === 'story' && G.story && G.story.round > 1;
+  const first = 'player'; // Default first player
+  
   if (G.mode === 'story' && continuing) {
     // Recoloca todas as cartas usadas de volta no deck e limpa zonas antes de nova compra
+    const deckBefore = G.playerDeck.length;
+    const handCards = G.playerHand.length;
+    const boardCards = G.playerBoard.length;
+    const discardCards = G.playerDiscard.length;
     G.playerDeck.push(...G.playerHand, ...G.playerBoard, ...G.playerDiscard);
     G.playerHand = [];
     G.playerBoard = [];
     G.playerDiscard = [];
+    log(`🔄 Deck: ${deckBefore} + Mão: ${handCards} + Mesa: ${boardCards} + Descarte: ${discardCards} = ${G.playerDeck.length} cartas`);
+
+    // Limpa completamente zonas do inimigo ao avançar de round
+    G.aiHand = [];
+    G.aiBoard = [];
+    G.aiDiscard = [];
+    // Add purchased cards from story progression
+    if (G.story && G.story.deck && G.story.deck.length) {
+      const deckSizeBefore = G.playerDeck.length;
+      log(`🔍 Adicionando ${G.story.deck.length} cartas de G.story.deck ao deck (continuing)`);
+      G.story.deck.forEach(it => {
+        const raw = [it.name, it.emoji||'', it.tribe||'', it.atk || 0, it.hp || 0, it.cost || 0, it.desc || it.text || ''];
+        const c = makeCard(raw);
+        if (it.type) { c.type = it.type; applyClassDefaults(c, c.tribe); }
+        // Preserve deck hint for proper art rendering
+        if(it.deck) c.deck = it.deck;
+        c.owner = 'player';
+        c.deck = (G.playerDeckChoice === 'custom' ? 'custom' : G.playerDeckChoice);
+        G.playerDeck.push(c);
+        log(`📦 Carta da campanha adicionada: ${c.name}`);
+      });
+      // Clear story deck after adding to prevent duplicates
+      G.story.deck = [];
+      log(`✅ Deck aumentou de ${deckSizeBefore} para ${G.playerDeck.length} cartas`);
+    }
     // Em continuidade não era feito shuffle antes: adicionamos agora para garantir aleatoriedade
     shuffle(G.playerDeck);
     // Limpa imediatamente a UI para não parecer que as cartas foram somadas
-    try { renderAll(); } catch(_) {}
+    try { 
+      els.pHand.innerHTML = '';
+      els.pBoard.innerHTML = '';
+      els.aiBoard.innerHTML = '';
+    } catch(_) {}
   } else {
     G.totems = [];
     G.playerDeck = (G.playerDeckChoice === 'custom' && G.customDeck ? G.customDeck.slice() : TEMPLATES[G.playerDeckChoice].map(makeCard));
+    // Start with 10 random cards from deck
+    if(G.playerDeck.length > 10){
+      shuffle(G.playerDeck);
+      G.playerDeck = G.playerDeck.slice(0, 10);
+    }
+    log(`📋 Deck inicial criado com ${G.playerDeck.length} cartas (${G.playerDeckChoice})`);
     if (G.mode === 'story') {
       const t = makeCard(["Totem de Força", "🗿", "Totem", 0, 0, 2, "Ative: +1/+1 em um aliado"]);
       t.type = 'totem';
       G.playerDeck.push(t);
+      log(`🗿 Totem de Força adicionado. Deck agora: ${G.playerDeck.length} cartas`);
+      // Add purchased cards from story progression
       if (G.story && G.story.deck && G.story.deck.length) {
         G.story.deck.forEach(it => {
-          const raw = [it.name, '', '', it.atk || 0, it.hp || 0, it.cost || 0, it.desc || ''];
+          const raw = [it.name, it.emoji||'', it.tribe||'', it.atk || 0, it.hp || 0, it.cost || 0, it.desc || it.text || ''];
           const c = makeCard(raw);
           if (it.type) { c.type = it.type; applyClassDefaults(c, c.tribe); }
+          // Preserve deck hint for proper art rendering
+          if(it.deck) c.deck = it.deck;
           G.playerDeck.push(c);
+          log(`📦 Carta da campanha adicionada: ${c.name}`);
         });
+        // Clear story deck after adding to prevent duplicates in next initialization
+        G.story.deck = [];
       }
       applyStoryDeckBonuses();
     }
@@ -1222,6 +1794,13 @@ function startGame(opts='player') {
   const doInitialDeal = async () => {
     // Se outra partida já iniciou, aborta este deal atrasado
     if (sessionId !== GAME_SESSION_ID) return;
+    
+    // Apply relic effects at combat start
+    if(G.mode==='story' && G.story){
+      applyRelicEffects('combatStart');
+      updateRelicsDisplay();
+    }
+    
     if (first === 'player') await draw('player', 5); else await draw('ai', 5);
     newTurn(true);
     renderAll();
@@ -1308,7 +1887,50 @@ function showMultiplayerDeckSelect(){
 }
 function showTurnIndicator(){if(!els.turnIndicator)return;els.turnIndicator.textContent=G.current==='player'?'Seu turno':'Turno do oponente'}
 function showEmoji(side,e){const el=side==='player'?els.playerEmoji:els.opponentEmoji;if(!el)return;el.textContent=e;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),1500)}
-function newTurn(skipDraw=false,prev){if(prev)applyEndTurnEffects(prev);G.turn++;if(G.current==='player'){if(!skipDraw){if(G.playerDeck.length<=4){G.playerDeck.push(...shuffle(G.playerDiscard.splice(0)))}draw('player',5)}G.playerManaCap=clamp(G.playerManaCap+1,0,10);G.playerMana=G.playerManaCap;if(G.mode==='story'&&G.story){if(!G.story._startManaGranted){const bonus=G.story.bonuses&&G.story.bonuses.startMana||0;if(bonus){const beforeCap=G.playerManaCap;G.playerManaCap=clamp(G.playerManaCap+bonus,0,10);G.playerMana=Math.min(G.playerMana+bonus,G.playerManaCap);if(G.playerManaCap>beforeCap||bonus){log('Os suprimentos da campanha concedem mana extra ao clã.');}}G.story._startManaGranted=true;}}G.playerBoard.forEach(c=>c.canAttack=true)}else{if(!skipDraw){if(G.aiDeck.length<=4){G.aiDeck.push(...shuffle(G.aiDiscard.splice(0)))}draw('ai',5)}G.aiManaCap=clamp(G.aiManaCap+1,0,10);G.aiMana=G.aiManaCap;G.aiBoard.forEach(c=>c.canAttack=true)}renderAll();showTurnIndicator()}
+function newTurn(skipDraw=false,prev){
+  if(prev)applyEndTurnEffects(prev);
+  G.turn++;
+  
+  // Apply relic effects at turn start
+  if(G.mode==='story' && G.story){
+    applyRelicEffects('turnStart');
+  }
+  
+  if(G.current==='player'){
+    if(!skipDraw){
+      if(G.playerDeck.length<=4){G.playerDeck.push(...shuffle(G.playerDiscard.splice(0)))}
+      draw('player',5)
+    }
+    G.playerManaCap=clamp(G.playerManaCap+1,0,10);
+    G.playerMana=G.playerManaCap;
+    if(G.mode==='story'&&G.story){
+      if(!G.story._startManaGranted){
+        const bonus=G.story.bonuses&&G.story.bonuses.startMana||0;
+        if(bonus){
+          const beforeCap=G.playerManaCap;
+          G.playerManaCap=clamp(G.playerManaCap+bonus,0,10);
+          G.playerMana=Math.min(G.playerMana+bonus,G.playerManaCap);
+          if(G.playerManaCap>beforeCap||bonus){
+            log(`💫 Elixir de Mana Primordial: Você começa com +${bonus} de mana!`);
+          }
+        }
+        G.story._startManaGranted=true;
+      }
+    }
+    G.playerBoard.forEach(c=>c.canAttack=true)
+  }else{
+    if(!skipDraw){
+      if(G.aiDeck.length<=4){G.aiDeck.push(...shuffle(G.aiDiscard.splice(0)))}
+      draw('ai',5)
+    }
+    G.aiManaCap=clamp(G.aiManaCap+1,0,10);
+    G.aiMana=G.aiManaCap;
+    G.aiBoard.forEach(c=>c.canAttack=true)
+  }
+  renderAll();
+  showTurnIndicator();
+  updateRelicsDisplay();
+}
 function endTurn(){if(G.current!=='player')return;discardHand('player');G.current='ai';G.chosen=null;updateTargetingUI();newTurn(false,'player');sfx('end');if(window.isMultiplayer){NET.sendTurn('end')}else{setTimeout(aiTurn,500)}}
 function playFromHand(id,st){if(G.current!=='player')return;const i=G.playerHand.findIndex(c=>c.id===id);if(i<0)return;const c=G.playerHand[i];const boardFull=c.type!=='totem'&&G.playerBoard.length>=5;if(c.cost>G.playerMana||boardFull)return;G.playerHand.splice(i,1);G.playerMana-=c.cost;if(c.type==='totem'){if(G.totems.length>=3){log('Número máximo de Totens atingido.');G.playerDiscard.push(c);}else{const t={name:c.name,buffs:c.buffs||{atk:1,hp:1}};G.totems.push(t);applyTotemBuffs();log(`${c.name} ativado.`);}renderAll();return;}summon('player',c,st);renderAll();sfx(st==='defense'?'defense':'play')}
 function summon(side,c,st='attack',skipBC=false){
@@ -1407,8 +2029,7 @@ function triggerBattlecry(side,c){
         const t=rand(allies);
         t.hp=Math.min(t.hp+2,20);
         fxTextOnCard(t.id,'+2','heal');
-        const n=nodeById(t.id);
-        if(n){const r=n.getBoundingClientRect();screenParticle('healing',r.left+r.width/2,r.top+r.height/2);}
+        if(window.playParticleEffect) particleOnCard(t.id, 'water-ball', {scale: 0.8});
         log(`${c.name}: curou 2 em ${t.name}.`);
         playAbilityCue('heal',c);
         effects.push({type:'heal',targetId:t.id,amount:2});
@@ -1420,7 +2041,7 @@ function triggerBattlecry(side,c){
       if(foes.length){
         const t=rand(foes);
         damageMinion(t,1);
-        particleOnCard(t.id,'attack');
+        if(window.playParticleEffect) particleOnCard(t.id, 'fire-arrow', {scale: 0.7});
         fxTextOnCard(t.id,'-1','dmg');
         log(`${c.name}: 1 de dano em ${t.name}.`);
         playAbilityCue('debuff',c);
@@ -1510,7 +2131,7 @@ function triggerBattlecry(side,c){
   }
   return effects;
 }
-function applyBattlecryEffects(side,effects){effects.forEach(e=>{if(e.type==='heal'){const allies=side==='player'?G.playerBoard:G.aiBoard;const t=allies.find(x=>x.id===e.targetId);if(t){t.hp=Math.min(t.hp+e.amount,20);fxTextOnCard(t.id,'+'+e.amount,'heal');particleOnCard(t.id,'healing')}}else if(e.type==='damage'){const foes=side==='player'?G.aiBoard:G.playerBoard;const t=foes.find(x=>x.id===e.targetId);if(t){damageMinion(t,e.amount);particleOnCard(t.id,'attack');fxTextOnCard(t.id,'-'+e.amount,'dmg')}}else if(e.type==='buff'){const allies=side==='player'?G.playerBoard:G.aiBoard;const t=allies.find(x=>x.id===e.targetId);if(t){t.atk+=e.atk;t.hp+=e.hp;fxTextOnCard(t.id,'+'+e.atk+(e.hp?'/'+e.hp:''),'buff');particleOnCard(t.id,'magic')}}else if(e.type==='mana'){if(side==='player'){G.playerManaCap=clamp(G.playerManaCap+e.amount,0,10);G.playerMana=Math.min(G.playerMana+e.amount,G.playerManaCap);}else{G.aiManaCap=clamp(G.aiManaCap+e.amount,0,10);G.aiMana=Math.min(G.aiMana+e.amount,G.aiManaCap);}}else if(e.type==='sacMana'){const allies=side==='player'?G.playerBoard:G.aiBoard;const discard=side==='player'?G.playerDiscard:G.aiDiscard;const t=allies.find(x=>x.id===e.targetId);if(t){allies.splice(allies.indexOf(t),1);discard.push(t);resetCardState(t);particleOnCard(t.id,'explosion');}if(side==='player'){G.playerMana=Math.min(G.playerMana+e.amount,G.playerManaCap);}else{G.aiMana=Math.min(G.aiMana+e.amount,G.aiManaCap);}}});checkDeaths()}
+function applyBattlecryEffects(side,effects){effects.forEach(e=>{if(e.type==='heal'){const allies=side==='player'?G.playerBoard:G.aiBoard;const t=allies.find(x=>x.id===e.targetId);if(t){t.hp=Math.min(t.hp+e.amount,20);fxTextOnCard(t.id,'+'+e.amount,'heal');if(window.playParticleEffect)particleOnCard(t.id,'water-ball',{scale:0.8})}}else if(e.type==='damage'){const foes=side==='player'?G.aiBoard:G.playerBoard;const t=foes.find(x=>x.id===e.targetId);if(t){damageMinion(t,e.amount);if(window.playParticleEffect)particleOnCard(t.id,'fire-arrow',{scale:0.7});fxTextOnCard(t.id,'-'+e.amount,'dmg')}}else if(e.type==='buff'){const allies=side==='player'?G.playerBoard:G.aiBoard;const t=allies.find(x=>x.id===e.targetId);if(t){t.atk+=e.atk;t.hp+=e.hp;fxTextOnCard(t.id,'+'+e.atk+(e.hp?'/'+e.hp:''),'buff');if(window.playParticleEffect)particleOnCard(t.id,'water-spell',{scale:0.75})}}else if(e.type==='mana'){if(side==='player'){G.playerManaCap=clamp(G.playerManaCap+e.amount,0,10);G.playerMana=Math.min(G.playerMana+e.amount,G.playerManaCap);}else{G.aiManaCap=clamp(G.aiManaCap+e.amount,0,10);G.aiMana=Math.min(G.aiMana+e.amount,G.aiManaCap);}}else if(e.type==='sacMana'){const allies=side==='player'?G.playerBoard:G.aiBoard;const discard=side==='player'?G.playerDiscard:G.aiDiscard;const t=allies.find(x=>x.id===e.targetId);if(t){allies.splice(allies.indexOf(t),1);discard.push(t);resetCardState(t);particleOnCard(t.id,'explosion');}if(side==='player'){G.playerMana=Math.min(G.playerMana+e.amount,G.playerManaCap);}else{G.aiMana=Math.min(G.aiMana+e.amount,G.aiManaCap);}}});checkDeaths()}
 
 function absorbFromAlly(side,c){const board=side==='player'?G.playerBoard:G.aiBoard;const allies=board.filter(x=>x.id!==c.id&&x.kw&&x.kw.length);if(!allies.length)return;const src=rand(allies);const choices=src.kw.filter(k=>!c.kw.includes(k));if(!choices.length)return;const kw=rand(choices);c.kw.push(kw);particleOnCard(c.id,'magic');fxTextOnCard(c.id,kw,'buff');log(`${c.name} absorveu ${kw}.`);if(c.name==='Sombra Rúnica'){c.atk+=1;c.hp+=1;}if(c.name==='Capataz de Runas'){const foes=side==='player'?G.aiBoard:G.playerBoard;foes.forEach(t=>{damageMinion(t,1);particleOnCard(t.id,'attack');fxTextOnCard(t.id,'-1','dmg')});checkDeaths()}}
 
@@ -1547,10 +2168,17 @@ function updateFaceAttackZone(){
 function legalTarget(side,target){const b=side==='ai'?G.aiBoard:G.playerBoard;return hasGuard(b)?(target.kw.includes('Protetor')||target.stance==='defense'):true}
 const nodeById=id=>document.querySelector(`.card[data-id="${id}"]`);
 const addAnim=(n,c,d=400)=>{n&&n.classList.add(c);setTimeout(()=>n&&n.classList.remove(c),d)};
-const animateAttack=(aId,tId)=>{const a=nodeById(aId),t=tId?nodeById(tId):null;addAnim(a,'attack-lunge',350);if(t)addAnim(t,'hit-shake',350)};
+// (replaced below with sequenced version) original animateAttack removed to avoid duplicate const redeclaration
 const animateDefense=id=>{const n=nodeById(id);addAnim(n,'shield-flash',600)};
 function screenSlash(x,y,ang){const fx=document.createElement('div');fx.className='fx fx-slash';fx.style.left=x+'px';fx.style.top=y+'px';fx.style.setProperty('--ang',ang+'deg');document.body.appendChild(fx);setTimeout(()=>fx.remove(),380)}
-function screenParticle(n,x,y){const fx=document.createElement('div');fx.className='fx fx-'+n;fx.style.left=x+'px';fx.style.top=y+'px';document.body.appendChild(fx);setTimeout(()=>fx.remove(),600)}
+function screenParticle(n,x,y){
+  if(window.playParticleEffect){
+    const key=(window.PARTICLE_MAP&&window.PARTICLE_MAP[n])?window.PARTICLE_MAP[n]:n;
+    playParticleEffect(key,x,y,{scale:0.8});
+    return;
+  }
+  const fx=document.createElement('div');fx.className='fx fx-'+n;fx.style.left=x+'px';fx.style.top=y+'px';document.body.appendChild(fx);setTimeout(()=>fx.remove(),600)
+}
 function applyOnPlayRewards(side,card){
   if(!card||!card.onPlay)return;
   const info=card.onPlay;
@@ -1617,15 +2245,45 @@ function openVictoryModal(enemyName,onContinue){
   const btn = document.getElementById('victoryContinueBtn');
   if(title) title.textContent = 'Vitória!';
   if(text) text.textContent = enemyName ? `Você derrotou ${enemyName}.` : 'Inimigo derrotado.';
-  const cleanup = ()=>{ modal.classList.remove('show'); modal.style.display='none'; modal.setAttribute('aria-hidden','true'); };
-  if(btn){ btn.onclick = ()=>{ cleanup(); onContinue&&onContinue(); }; }
+  
+  // Hide button - auto-advance after animation
+  if(btn) btn.style.display = 'none';
+  
+  const cleanup = ()=>{ 
+    modal.classList.remove('show'); 
+    modal.style.display='none'; 
+    if(window.setAriaHidden) setAriaHidden(modal, true);
+    else modal.setAttribute('aria-hidden','true');
+  };
+  
   modal.classList.add('show');
   modal.style.display = 'grid';
-  modal.setAttribute('aria-hidden','false');
-  try{ btn&&btn.focus(); }catch(_){ }
+  if(window.setAriaHidden) setAriaHidden(modal, false);
+  else modal.setAttribute('aria-hidden','false');
+  
   try{ sfx('reward'); }catch(_){ }
+  
+  // Auto-advance after 2s with fade
+  setTimeout(() => {
+    modal.style.transition = 'opacity 0.3s ease-out';
+    modal.style.opacity = '0';
+    setTimeout(() => {
+      cleanup();
+      modal.style.opacity = '';
+      modal.style.transition = '';
+      onContinue&&onContinue();
+    }, 300);
+  }, 2000);
 }
-function particleOnCard(cid,n){const t=nodeById(cid);if(!t)return;const r=t.getBoundingClientRect();screenParticle(n,r.left+r.width/2,r.top+r.height/2)}
+function particleOnCard(cid,n){
+  const t=nodeById(cid);if(!t)return;const r=t.getBoundingClientRect();
+  if(window.playParticleEffect){
+    const key=(window.PARTICLE_MAP&&window.PARTICLE_MAP[n])?window.PARTICLE_MAP[n]:n;
+    playParticleEffect(key,r.left+r.width/2,r.top+r.height/2,{scale:0.85});
+  } else {
+    screenParticle(n,r.left+r.width/2,r.top+r.height/2)
+  }
+}
 function particleOnFace(side,n){
   // Prefer HP meters in the HUD; fallback to hidden bottom faces if present
   const anchor = side==='ai' ? (els.barAHP || els.aHP2) : (els.barPHP || els.pHP2);
@@ -1634,6 +2292,26 @@ function particleOnFace(side,n){
   screenParticle(n, r.left + r.width/2, r.top + r.height/2);
 }
 function fxTextOnCard(cid,text,cls){const n=document.querySelector(`.card[data-id="${cid}"]`);if(!n)return;const r=n.getBoundingClientRect();const fx=document.createElement('div');fx.className='fx-float '+(cls||'');fx.textContent=text;fx.style.left=(r.left+r.width/2)+'px';fx.style.top=(r.top+r.height/2)+'px';document.body.appendChild(fx);setTimeout(()=>fx.remove(),950);}
+
+function updateDirectAttackHint(){
+  const board=document.getElementById('aiBoard');
+  if(!board) return;
+  let hint=document.getElementById('directAttackHint');
+  if(!hint){
+    hint=document.createElement('div');
+    hint.id='directAttackHint';
+    hint.className='direct-attack-hint';
+    hint.innerHTML = '<div class="label"><span class="sword">⚔️</span> ATACAR DIRETO <span class="sword">⚔️</span></div>';
+    board.appendChild(hint);
+  }
+  // Conditions: player's turn, has at least one ready attacker, and enemy board empty
+  const yourTurn = (G.current==='player');
+  const hasAttacker = G.playerBoard && G.playerBoard.some(c=>c&&c.canAttack&&c.stance!=='defense');
+  const enemyEmpty = (G.aiBoard && G.aiBoard.length===0);
+  const targeting = !!G.chosen;
+  const shouldShow = yourTurn && hasAttacker && enemyEmpty && !targeting;
+  hint.classList.toggle('show', shouldShow);
+}
 function applyKillRewards(attacker,target){
   if(!attacker||!target) return;
   const onPlayerBoard=G.playerBoard.includes(attacker);
@@ -1666,8 +2344,8 @@ function applyKillRewards(attacker,target){
     log(`${attacker.name} saqueou ${amount} carta${amount>1?'s':''} após derrotar ${target.name}.`);
     if(res&&typeof res.then==='function'){res.then(()=>{try{renderAll();}catch(_){ }});}
   }
-  if(cardMana){log(`${attacker.name} drenou energia de ${target.name}.`);}
-  if(storyMana){log('Os artefatos de campanha revertem a energia da batalha em mana.');}
+  if(cardMana){log(`⚡ ${attacker.name} drenou energia de ${target.name}.`);}
+  if(storyMana){log(`🪘 Tambor dos Conquistadores: +${storyMana} mana por eliminação!`);}
 }
 const ATTACK_FX_BY_CLASS={tank:'heavy',dps:'flame',support:'mystic',control:'storm'};
 const ATTACK_FX_RULES=[
@@ -1681,6 +2359,15 @@ const ATTACK_FX_RULES=[
   {test:/urso|lobo|fera|raposa|felin|garra|garou|javali|falca|lince|alce/,fx:'feral'}
 ];
 const ATTACK_SFX_VARIANT={flame:'flame',storm:'storm',feral:'feral',mystic:'mystic',heavy:'heavy',totem:'totem',frost:'storm',poison:'mystic',tidal:'storm',attack:'heavy'};
+// Tunable combat sequencing constants
+const ATTACK_SEQUENCE_DELAY = 320; // ms between initial strike and counter resolution
+const TARGET_HIT_ANIM_DELAY = 180; // ms after lunge starts to begin target hit shake
+const DEBUG_COMBAT_SEQUENCE = false;
+const animateAttack=(aId,tId)=>{
+  const a=nodeById(aId),t=tId?nodeById(tId):null;
+  if(a) addAnim(a,'attack-lunge',350);
+  if(t) setTimeout(()=>addAnim(t,'hit-shake',350), TARGET_HIT_ANIM_DELAY);
+};
 function normalizeText(txt){return (txt||'').normalize('NFD').replace(/[^a-zA-Z0-9\s]/g,'').toLowerCase();}
 function detectAttackFx(card){if(!card)return'attack';const nameNorm=normalizeText(card.name);const tribeNorm=normalizeText(card.tribe);if(card.type==='totem'||ATTACK_FX_RULES[0].test.test(nameNorm))return'totem';for(const rule of ATTACK_FX_RULES){if(rule.test.test(nameNorm))return rule.fx;}if(tribeNorm.includes('animal')||tribeNorm.includes('fera'))return'feral';if(tribeNorm.includes('pesc')||tribeNorm.includes('mar')||tribeNorm.includes('oceano'))return'tidal';if(tribeNorm.includes('floresta')||tribeNorm.includes('bosque'))return'feral';if(tribeNorm.includes('converg'))return'mystic';if(tribeNorm.includes('viking'))return'heavy';const cls=card.classe&&card.classe.toLowerCase();if(cls&&ATTACK_FX_BY_CLASS[cls])return ATTACK_FX_BY_CLASS[cls];return'attack';}
 function attackCard(attacker,target){
@@ -1692,43 +2379,59 @@ function attackCard(attacker,target){
   const a=nodeById(attacker.id),t=nodeById(target.id);
   if(a&&t){const ar=a.getBoundingClientRect(),tr=t.getBoundingClientRect();screenSlash(ar.right,ar.top+ar.height/2,15);}
   animateAttack(attacker.id,target.id);
-  if(target.stance==='defense')animateDefense(target.id);
-  particleOnCard(target.id,fx||'attack');
-  const pre=target.hp,overflow=Math.max(0,attacker.atk-pre);
-  damageMinion(target,attacker.atk);
+  if(target.stance==='defense') setTimeout(()=>animateDefense(target.id), TARGET_HIT_ANIM_DELAY);
+  if(window.playParticleEffect) particleOnCard(target.id, 'fire-arrow', {scale: 0.75});
+
+  // Sequential damage resolution: first target, then attacker (counter)
+  const preHP = target.hp;
+  const overflow = Math.max(0, attacker.atk - preHP);
+
+  // Step 1: target takes damage
+  damageMinion(target, attacker.atk, { defer:true });
   playCharacterCue(target,'hit');
-  damageMinion(attacker,target.atk);
-  const targetDied=target.hp<=0;
   sfx('hit');
-  if(overflow>0&&target.hp<=0){
-    const isP=G.playerBoard.includes(attacker);
-    sfx('overflow');
-    const faceFx=fx||'attack';
-    if(isP){
-      G.aiHP=clamp(G.aiHP-overflow,0,99);
-      log(`${attacker.name} excedeu em ${overflow} e causou dano direto ao Inimigo!`);
-      particleOnFace('ai',faceFx);
-    }else{
-      G.playerHP=clamp(G.playerHP-overflow,0,99);
-      log(`${attacker.name} excedeu em ${overflow} e causou dano direto a Você!`);
-      particleOnFace('player',faceFx);
+  if(DEBUG_COMBAT_SEQUENCE) log(`[SEQ] ${attacker.name} hit ${target.name} for ${attacker.atk}`);
+
+  // Step 2 (slight delay): attacker takes counter-damage
+  setTimeout(()=>{
+    damageMinion(attacker, target.atk, { defer:true });
+    if(window.playParticleEffect && target.atk>0) particleOnCard(attacker.id, 'water-ball', {scale: 0.6});
+    if(DEBUG_COMBAT_SEQUENCE) log(`[SEQ] ${target.name} countered ${attacker.name} for ${target.atk}`);
+    // Overflow to face after resolving both sides (if target died)
+    if(overflow>0 && target.hp<=0){
+      const isP = G.playerBoard.includes(attacker);
+      sfx('overflow');
+      const faceFx=fx||'attack';
+      if(isP){
+        G.aiHP=clamp(G.aiHP-overflow,0,99);
+        log(`${attacker.name} excedeu em ${overflow} e causou dano direto ao Inimigo!`);
+        particleOnFace('ai',faceFx);
+      }else{
+        G.playerHP=clamp(G.playerHP-overflow,0,99);
+        log(`${attacker.name} excedeu em ${overflow} e causou dano direto a Você!`);
+        particleOnFace('player',faceFx);
+      }
+      checkWin();
     }
-    checkWin();
-  }
-  if(targetDied){
-    playCharacterCue(target,'death');
-    applyKillRewards(attacker,target);
-  }
-  attacker.canAttack=false;
-  log(`${attacker.name} atacou ${target.name}.`);
-  checkDeaths();
-  renderAll();
-  if(window.isMultiplayer&&G.current==='player'){
-    NET.sendMove({type:'attack',attackerId:attacker.id,targetId:target.id});
-  }
-  G.chosen=null;
-  updateTargetingUI();
-  els.aBoard.classList.remove('face-can-attack');
+
+    const targetDied = target.hp<=0;
+    if(targetDied){
+      playCharacterCue(target,'death');
+      if(attacker.hp>0) applyKillRewards(attacker,target);
+    }
+
+    attacker.canAttack=false;
+    log(`${attacker.name} atacou ${target.name}.`);
+    // Now process deaths and re-render
+    checkDeaths();
+    renderAll();
+    if(window.isMultiplayer&&G.current==='player'){
+      NET.sendMove({type:'attack',attackerId:attacker.id,targetId:target.id});
+    }
+    G.chosen=null;
+    updateTargetingUI();
+    els.aBoard.classList.remove('face-can-attack');
+  }, ATTACK_SEQUENCE_DELAY);
 }
 function attackFace(attacker,face){
   if(!attacker||!attacker.canAttack||attacker.stance==='defense')return;
@@ -1760,8 +2463,13 @@ function attackFace(attacker,face){
   els.aBoard.classList.remove('face-can-attack');
   renderAll();
 }
-function damageMinion(m,amt){if(!m||typeof amt!=='number')return;m.hp=clamp(m.hp-amt,0,99);if(m.hp<=0) setTimeout(checkDeaths,10)}
-function checkDeaths(){const deadA=G.aiBoard.filter(c=>c.hp<=0);deadA.forEach(c=>{particleOnCard(c.id,'explosion');resetCardState(c);});if(deadA.length){G.aiBoard=G.aiBoard.filter(c=>c.hp>0);G.aiDiscard.push(...deadA);log('Uma criatura inimiga caiu.')}const deadP=G.playerBoard.filter(c=>c.hp<=0);deadP.forEach(c=>{particleOnCard(c.id,'explosion');resetCardState(c);});if(deadP.length){G.playerBoard=G.playerBoard.filter(c=>c.hp>0);G.playerDiscard.push(...deadP);log('Sua criatura caiu.')}els.discardCount.textContent=G.playerDiscard.length}
+function damageMinion(m,amt,opts){
+  if(!m||typeof amt!=='number')return;
+  m.hp=clamp(m.hp-amt,0,99);
+  const defer = opts && opts.defer;
+  if(m.hp<=0 && !defer) setTimeout(checkDeaths,10);
+}
+function checkDeaths(){const deadA=G.aiBoard.filter(c=>c.hp<=0);deadA.forEach(c=>{if(window.playParticleEffect)particleOnCard(c.id,'fire-ball',{scale:0.9});resetCardState(c);});if(deadA.length){G.aiBoard=G.aiBoard.filter(c=>c.hp>0);G.aiDiscard.push(...deadA);log('Uma criatura inimiga caiu.')}const deadP=G.playerBoard.filter(c=>c.hp<=0);deadP.forEach(c=>{if(window.playParticleEffect)particleOnCard(c.id,'fire-ball',{scale:0.9});resetCardState(c);});if(deadP.length){G.playerBoard=G.playerBoard.filter(c=>c.hp>0);G.playerDiscard.push(...deadP);log('Sua criatura caiu.')}els.discardCount.textContent=G.playerDiscard.length}
 async function aiTurn(){
   const skill=G.aiSkill||1;
   const playable=G.aiHand.filter(c=>c.cost<=G.aiMana);
@@ -1803,16 +2511,479 @@ async function aiTurn(){
 function fireworks(win){const b=document.createElement('div');b.className='boom';b.style.left='50%';b.style.top='50%';b.style.background=`radial-gradient(circle at 50% 50%, ${win?'#8bf5a2':'#ff8a8a'}, transparent)`;document.body.appendChild(b);setTimeout(()=>b.remove(),650);} 
 function endGame(win){stopMenuMusic();els.endMsg.textContent=win?'You WIN!':'You Lose...';els.endMsg.style.color=win?'#8bf5a2':'#ff8a8a';els.endSub.textContent=win?'Parabéns! Quer continuar jogando?':'Tentar de novo ou voltar ao menu.';els.endOverlay.classList.add('show');setAriaHidden(els.endOverlay,false);focusDialog(els.endOverlay);setTimeout(()=>fireworks(win),1000);} 
 const hideEndOverlay=()=>{if(!els.endOverlay)return;els.endOverlay.classList.remove('show');setAriaHidden(els.endOverlay,true)};
+
+function showRewardsModal(rewardOptions, onComplete){
+  const modal = document.getElementById('rewardsModal');
+  const grid = document.getElementById('rewardsChoices');
+  const msg = document.getElementById('rewardsMsg');
+  if(!modal || !grid) return onComplete?.();
+  
+  grid.innerHTML = '';
+  msg.textContent = '';
+  let selectedReward = null;
+
+  const rewardData = {
+    'Nova carta': { icon: '🎴', desc: 'Adicione uma carta aleatória ao seu deck' },
+    'Evoluir carta': { icon: '⬆️', desc: 'Melhore uma carta existente (+1/+1)' },
+    'Ganhar Totem': { icon: '🗿', desc: 'Adicione um totem ao seu deck' },
+    'Buff permanente': { icon: '✨', desc: 'Ganhe +1 HP ou +1 ATK em todas as cartas' }
+  };
+
+  rewardOptions.forEach(reward => {
+    const data = rewardData[reward] || { icon: '🎁', desc: reward };
+    const option = document.createElement('div');
+    option.className = 'reward-option';
+    option.innerHTML = `
+      <span class="reward-icon">${data.icon}</span>
+      <div class="reward-name">${reward}</div>
+      <div class="reward-desc">${data.desc}</div>
+    `;
+    option.onclick = () => {
+      grid.querySelectorAll('.reward-option').forEach(o => o.classList.remove('selected'));
+      option.classList.add('selected');
+      selectedReward = reward;
+      msg.textContent = `Selecionado: ${reward}`;
+      setTimeout(() => {
+        applyReward(reward);
+        modal.style.display = 'none';
+        modal.setAttribute('aria-hidden', 'true');
+        if(window.playSfx) window.playSfx('reward');
+        onComplete?.();
+      }, 800);
+    };
+    grid.appendChild(option);
+  });
+
+  modal.style.display = 'grid';
+  modal.setAttribute('aria-hidden', 'false');
+  if(window.playSfx) window.playSfx('start');
+}
+
+function applyReward(rewardType){
+  if(!G.story) return;
+  
+  switch(rewardType){
+    case 'Nova carta':
+      // Add a random card from defeated enemy's deck faction
+      const enemyDeck = G.aiDeckChoice || G.playerDeckChoice;
+      const pool = TEMPLATES[enemyDeck] || [];
+      if(pool.length){
+        const randomCard = pool[Math.floor(Math.random() * pool.length)];
+        const entry = {
+          name: randomCard[0],
+          emoji: randomCard[1] || '',
+          tribe: randomCard[2] || '',
+          atk: randomCard[3] || 0,
+          hp: randomCard[4] || 0,
+          cost: randomCard[5] || 0,
+          desc: randomCard[6] || '',
+          text: randomCard[6] || '',
+          type: 'unit',
+          deck: enemyDeck
+        };
+        G.story.deck = G.story.deck || [];
+        G.story.deck.push(entry);
+        log(`🎴 Recompensa: ${entry.name} (${enemyDeck}) adicionado ao deck!`);
+      }
+      break;
+      
+    case 'Evoluir carta':
+      // Upgrade a random card in the story deck
+      if(G.story.deck && G.story.deck.length){
+        const idx = Math.floor(Math.random() * G.story.deck.length);
+        G.story.deck[idx].atk += 1;
+        G.story.deck[idx].hp += 1;
+        log(`⬆️ Recompensa: ${G.story.deck[idx].name} evoluiu para ${G.story.deck[idx].atk}/${G.story.deck[idx].hp}!`);
+      } else {
+        log(`⬆️ Recompensa: Nenhuma carta para evoluir (ganhando ouro extra)`);
+        G.story.gold += 10;
+      }
+      break;
+      
+    case 'Ganhar Totem':
+      // Add a totem card
+      const totemEntry = {
+        name: 'Totem Místico',
+        emoji: '🗿',
+        tribe: 'Totem',
+        atk: 0,
+        hp: 0,
+        cost: 3,
+        desc: 'Ative: +1/+1 em um aliado',
+        text: 'Ative: +1/+1 em um aliado',
+        type: 'totem',
+        deck: G.playerDeckChoice
+      };
+      G.story.deck = G.story.deck || [];
+      G.story.deck.push(totemEntry);
+      log(`🗿 Recompensa: Totem Místico adicionado ao deck!`);
+      break;
+      
+    case 'Buff permanente':
+      // Apply permanent buff to all cards
+      const buffType = Math.random() > 0.5 ? 'atk' : 'hp';
+      G.story.bonuses.allyBuff[buffType] += 1;
+      log(`✨ Recompensa: Todas as suas unidades ganham +1 ${buffType.toUpperCase()}!`);
+      break;
+  }
+}
+
+// ===== RELIC SYSTEM FUNCTIONS =====
+function showRelicChoice(onComplete){
+  if(!G.story) return onComplete?.();
+  
+  const modal = document.getElementById('relicModal');
+  const grid = document.getElementById('relicChoices');
+  const msg = document.getElementById('relicMsg');
+  if(!modal || !grid) return onComplete?.();
+  
+  // Get 3 random relics
+  const allRelics = Object.values(RELICS);
+  const available = allRelics.filter(r => !G.story.hasRelic(r.id));
+  if(available.length === 0) {
+    log('🔮 Sem novas relíquias disponíveis!');
+    return onComplete?.();
+  }
+  
+  const choices = [];
+  while(choices.length < 3 && available.length > 0){
+    const idx = Math.floor(Math.random() * available.length);
+    choices.push(available.splice(idx, 1)[0]);
+  }
+  
+  grid.innerHTML = '';
+  msg.textContent = '';
+  
+  choices.forEach(relic => {
+    const option = document.createElement('div');
+    option.className = 'reward-option';
+    option.dataset.rarity = relic.rarity;
+    option.innerHTML = `
+      <span class="reward-icon">${relic.icon}</span>
+      <div class="reward-name">${relic.name}</div>
+      <div class="reward-desc">${relic.desc}</div>
+      <div style="font-size:11px;margin-top:8px;color:var(--muted)">${relic.rarity.toUpperCase()}</div>
+    `;
+    option.onclick = () => {
+      G.story.addRelic(relic);
+      log(`✨ ${relic.name} adquirido!`);
+      modal.style.display = 'none';
+      modal.setAttribute('aria-hidden', 'true');
+      updateRelicsDisplay();
+      if(window.playSfx) window.playSfx('reward');
+      setTimeout(() => onComplete?.(), 300);
+    };
+    grid.appendChild(option);
+  });
+  
+  modal.style.display = 'grid';
+  modal.setAttribute('aria-hidden', 'false');
+  if(window.playSfx) window.playSfx('start');
+}
+
+function updateRelicsDisplay(){
+  const panel = document.getElementById('activeRelics');
+  const list = document.getElementById('relicsList');
+  if(!panel || !list || !G.story || !G.story.relics.length) {
+    if(panel) panel.style.display = 'none';
+    return;
+  }
+  
+  panel.style.display = 'block';
+  list.innerHTML = '';
+  
+  G.story.relics.forEach(relic => {
+    const item = document.createElement('div');
+    item.className = 'relic-item';
+    item.dataset.rarity = relic.rarity;
+    item.textContent = relic.icon;
+    item.title = `${relic.name}\n${relic.desc}`;
+    list.appendChild(item);
+  });
+}
+
+function applyRelicEffects(trigger, context = {}){
+  if(!G.story || !G.story.relics.length) return;
+  
+  G.story.relics.forEach(relic => {
+    switch(relic.effect){
+      case 'healStart':
+        if(trigger === 'combatStart'){
+          G.playerHP = Math.min(G.playerHP + relic.value, 30);
+          log(`🍃 ${relic.name}: Curou ${relic.value} HP`);
+        }
+        break;
+      case 'tempHP':
+        if(trigger === 'combatStart'){
+          // Implementar HP temporário
+          log(`🐻 ${relic.name}: +${relic.value} HP temporário`);
+        }
+        break;
+      case 'startMana':
+        if(trigger === 'combatStart'){
+          G.playerMana += relic.value;
+          log(`🪶 ${relic.name}: +${relic.value} mana inicial`);
+        }
+        break;
+      case 'extraDraw':
+        if(trigger === 'turnStart' && G.current === 'player'){
+          draw('player', relic.value);
+        }
+        break;
+      case 'killMana':
+        if(trigger === 'onKill' && context.killer?.owner === 'player'){
+          G.playerMana = Math.min(G.playerMana + relic.value, G.playerManaCap);
+          log(`🦑 ${relic.name}: +${relic.value} mana`);
+        }
+        break;
+    }
+  });
+}
+
+// ===== EVENT SYSTEM FUNCTIONS =====
+function showRandomEvent(onComplete){
+  if(!G.story) return onComplete?.();
+  
+  const available = STORY_EVENTS.filter(e => !G.story.eventsSeen.includes(e.id));
+  if(!available.length) return onComplete?.();
+  
+  const event = available[Math.floor(Math.random() * available.length)];
+  G.story.eventsSeen.push(event.id);
+  
+  const modal = document.getElementById('eventModal');
+  const icon = document.getElementById('eventIcon');
+  const title = document.getElementById('eventTitle');
+  const desc = document.getElementById('eventDesc');
+  const choices = document.getElementById('eventChoices');
+  const result = document.getElementById('eventResult');
+  
+  if(!modal) return onComplete?.();
+  
+  icon.textContent = event.icon;
+  title.textContent = event.name;
+  desc.innerHTML = `<div style="margin-bottom:12px;font-size:16px;color:#fbbf24;font-weight:bold">💰 Ouro disponível: ${G.story.gold}</div>${event.desc}`;
+  choices.innerHTML = '';
+  result.textContent = '';
+  
+  event.choices.forEach(choice => {
+    const canAfford = !choice.cost || 
+      (!choice.cost.gold || G.story.gold >= choice.cost.gold) &&
+      (!choice.cost.hp || G.playerHP > choice.cost.hp);
+    
+    const btn = document.createElement('div');
+    btn.className = 'event-choice' + (!canAfford ? ' disabled' : '');
+    btn.innerHTML = `
+      <div class="event-choice-text">${choice.text}</div>
+      ${choice.cost ? `<div class="event-choice-cost">Custo: ${choice.cost.gold ? choice.cost.gold + ' ouro' : ''}${choice.cost.hp ? choice.cost.hp + ' HP' : ''}</div>` : ''}
+      ${choice.reward && choice.reward.gold ? `<div class="event-choice-reward">+${choice.reward.gold} ouro</div>` : ''}
+    `;
+    
+    if(canAfford){
+      btn.onclick = () => {
+        executeEventChoice(event, choice, result, () => {
+          setTimeout(() => {
+            modal.style.display = 'none';
+            modal.setAttribute('aria-hidden', 'true');
+            onComplete?.();
+          }, 2000);
+        });
+      };
+    }
+    
+    choices.appendChild(btn);
+  });
+  
+  modal.style.display = 'grid';
+  modal.setAttribute('aria-hidden', 'false');
+  if(window.playSfx) window.playSfx('start');
+}
+
+function executeEventChoice(event, choice, resultEl, onDone){
+  // Apply costs
+  if(choice.cost){
+    if(choice.cost.gold) G.story.gold -= choice.cost.gold;
+    if(choice.cost.hp) G.playerHP = Math.max(1, G.playerHP - choice.cost.hp);
+  }
+  
+  // Apply rewards
+  if(choice.reward){
+    if(choice.reward.gold) {
+      G.story.gold += choice.reward.gold;
+      log(`💰 +${choice.reward.gold} ouro`);
+    }
+    if(choice.reward.healFull) {
+      G.playerHP = 30;
+      log(`💚 HP restaurado!`);
+    }
+    if(choice.reward.upgradeCard) {
+      if(G.story.deck.length){
+        const idx = Math.floor(Math.random() * G.story.deck.length);
+        G.story.deck[idx].atk += choice.reward.upgradeCard || 1;
+        G.story.deck[idx].hp += choice.reward.upgradeCard || 1;
+        log(`⬆️ ${G.story.deck[idx].name} evoluiu!`);
+      }
+    }
+    if(choice.reward.removeCard) {
+      showCardRemoval(() => onDone?.());
+      return; // Callback handled by removal modal
+    }
+    if(choice.reward.relic === 'random') {
+      showRelicChoice(() => onDone?.());
+      return;
+    }
+    if(choice.reward.totem) {
+      const totemEntry = {
+        name: 'Totem Místico',
+        emoji: '🗿',
+        tribe: 'Totem',
+        atk: 0,
+        hp: 0,
+        cost: 3,
+        desc: 'Ative: +1/+1 em um aliado',
+        text: 'Ative: +1/+1 em um aliado',
+        type: 'totem',
+        deck: G.playerDeckChoice
+      };
+      G.story.deck = G.story.deck || [];
+      G.story.deck.push(totemEntry);
+      log(`🗿 Totem Místico adicionado!`);
+    }
+    if(choice.reward.buffAll) {
+      if(choice.reward.buffAll.atk) {
+        G.story.bonuses.allyBuff.atk += choice.reward.buffAll.atk;
+        log(`⚔️ Aliados +${choice.reward.buffAll.atk} ATK!`);
+      }
+    }
+  }
+  
+  // Risk/random effects
+  if(choice.risk) {
+    const lucky = Math.random() > 0.5;
+    if(choice.effect === 'riskReward') {
+      if(lucky) {
+        showRelicChoice(() => onDone?.());
+        resultEl.textContent = '✨ Você teve sorte! Ganhou uma relíquia!';
+        return;
+      } else {
+        G.playerHP = Math.max(1, G.playerHP - 10);
+        resultEl.textContent = '💔 Azar! Você perdeu 10 HP.';
+      }
+    }
+  }
+  
+  resultEl.textContent = choice.result;
+  if(window.playSfx) window.playSfx('reward');
+  onDone?.();
+}
+
+// ===== CARD REMOVAL SYSTEM =====
+function showCardRemoval(onComplete){
+  const modal = document.getElementById('removalModal');
+  const grid = document.getElementById('removalChoices');
+  const cancelBtn = document.getElementById('cancelRemoval');
+  // Expose globally for shop integration if not already
+  try{ window.showCardRemoval = showCardRemoval; }catch(_){ }
+  
+  if(!modal || !grid) {
+    log('⚠️ Modal de remoção não encontrado!');
+    return onComplete?.();
+  }
+  
+  // Collect all player cards from all zones
+  const allCards = [
+    ...(G.playerDeck || []),
+    ...(G.playerHand || []),
+    ...(G.playerBoard || []),
+    ...(G.playerDiscard || [])
+  ];
+  
+  // Remove duplicates by ID
+  const uniqueCards = [];
+  const seenIds = new Set();
+  allCards.forEach(c => {
+    if(!c) return;
+    const id = c.id || (c._rid ||= uid());
+    if(!seenIds.has(id)){
+      seenIds.add(id);
+      uniqueCards.push(c);
+    }
+  });
+  
+  if(!uniqueCards.length) {
+    log('⚠️ Nenhuma carta disponível para remover!');
+    if(onComplete) setTimeout(onComplete, 100);
+    return;
+  }
+  
+  grid.innerHTML = '';
+  
+  uniqueCards.forEach((card) => {
+    const cardWrapper = document.createElement('div');
+    cardWrapper.className = 'removal-card';
+    
+    try {
+      const node = cardNode(card, 'player');
+      cardWrapper.appendChild(node);
+    } catch(err) {
+      console.error('Error creating card node:', err);
+      return;
+    }
+    
+    cardWrapper.onclick = () => {
+      if(!confirm(`Remover ${card.name} permanentemente do seu deck?`)) return;
+      cardWrapper.classList.add('removing');
+      const rarity = (card.rarity || 'comum').toLowerCase();
+      const rarityLabel = {'common':'comum','rare':'raro','epic':'épico','legendary':'lendário'}[rarity] || rarity;
+      setTimeout(()=>{
+        const removeById = (arr) => {
+          if(!arr) return;
+          const foundIdx = arr.findIndex(c => c && c.id === card.id);
+          if(foundIdx >= 0) arr.splice(foundIdx, 1);
+        };
+        [G.playerDeck,G.playerHand,G.playerBoard,G.playerDiscard].forEach(zone=>removeById(zone));
+        if(G.story && Array.isArray(G.story.pool)){
+          const idx = G.story.pool.findIndex(x=>x && x.id===card.id);
+          if(idx>-1) G.story.pool.splice(idx,1);
+        }
+        log(`🔥 ${card.name} (${rarityLabel}) foi removido do deck!`);
+        modal.style.display = 'none';
+        if(window.setAriaHidden) setAriaHidden(modal, true);
+        else modal.setAttribute('aria-hidden', 'true');
+        if(window.playSfx) window.playSfx('error');
+        onComplete?.();
+      },350);
+    };
+    
+    grid.appendChild(cardWrapper);
+  });
+  
+  if(cancelBtn){
+    cancelBtn.onclick = () => {
+      modal.style.display = 'none';
+      if(window.setAriaHidden) setAriaHidden(modal, true);
+      else modal.setAttribute('aria-hidden', 'true');
+      onComplete?.();
+    };
+  }
+  
+  modal.style.display = 'grid';
+  if(window.setAriaHidden) setAriaHidden(modal, false);
+  else modal.setAttribute('aria-hidden', 'false');
+  // Focus first card for accessibility
+  try{ const first = grid.querySelector('.removal-card'); first && first.focus && first.focus(); }catch(_){ }
+}
+
 function checkWin(){
   if(G.aiHP<=0){
     if(G.mode==='story'&&G.story){
-      const {leveled,rewards,goldGain}=G.story.handleVictory();
-      log(`Recompensas disponíveis: ${rewards.join(', ')}`);
+      const {leveled,rewards,goldGain,isBoss}=G.story.handleVictory();
       log(`Você ganhou ${goldGain} ouro.`);
       if(leveled) log(`Você alcançou o nível ${G.story.level}!`);
 
+      // Show shop every 3 rounds
+      const shouldShowShop = G.story.round % 3 === 0;
+
       const openStoryShop = () => {
-        // Small banner that we're entering the shop
         showEncounterBanner('Loja do Clã','shop');
         openShop({
           faction:G.playerDeckChoice,
@@ -1832,26 +3003,54 @@ function checkWin(){
                       if(note){ log(`Campanha: ${item.name} concedeu ${note}.`); }
                     }catch(err){ console.error('register bonus',err); }
                   }else if(item && ['unit','spell','totem'].includes(item.type)){
-                    // Persist purchased cards into the campaign deck
                     try{
                       G.story.deck = G.story.deck || [];
-                      const entry = { name:item.name, atk:item.atk||0, hp:item.hp||0, cost:item.cost||0, desc:item.desc||item.text||'', type:item.type };
+                      const entry = { 
+                        name:item.name, 
+                        atk:item.atk||0, 
+                        hp:item.hp||0, 
+                        cost:item.cost||0, 
+                        desc:item.desc||item.text||'', 
+                        text:item.text||item.desc||'',
+                        type:item.type,
+                        deck:item.deck||G.playerDeckChoice,
+                        emoji:item.emoji||'',
+                        tribe:item.tribe||''
+                      };
                       G.story.deck.push(entry);
-                      log(`Campanha: ${item.name} foi adicionado ao seu baralho.`);
+                      log(`✅ Campanha: ${item.name} foi adicionado ao seu baralho!`);
                     }catch(err){ console.error('add purchased card',err); }
                   }
                 });
               }
             }
-            // proceed to next round
             const proceed=()=>encounterTransition(()=>startGame({continueStory:true}));
             proceed();
           }
         });
       };
 
-      // Victory modal first, then shop
-      try{ openVictoryModal(G.currentEnemyName, openStoryShop); }catch(_){ openStoryShop(); }
+      const afterRewards = () => {
+        // Boss defeated: give relic choice
+        if(isBoss){
+          showRelicChoice(() => {
+            if(shouldShowShop){
+              try{ openVictoryModal(G.currentEnemyName, openStoryShop); }catch(_){ openStoryShop(); }
+            } else {
+              const proceedNext = () => encounterTransition(()=>startGame({continueStory:true}));
+              try{ openVictoryModal(G.currentEnemyName, proceedNext); }catch(_){ proceedNext(); }
+            }
+          });
+        } else if(shouldShowShop){
+          try{ openVictoryModal(G.currentEnemyName, openStoryShop); }catch(_){ openStoryShop(); }
+        } else {
+          const proceedNext = () => encounterTransition(()=>startGame({continueStory:true}));
+          try{ openVictoryModal(G.currentEnemyName, proceedNext); }catch(_){ proceedNext(); }
+        }
+      };
+
+      // Show rewards modal
+      showRewardsModal(rewards, afterRewards);
       return;
     }
     endGame(true);
@@ -2062,22 +3261,21 @@ function applyTotemBuffsWithFx(t){
   const fx = (t.buffs&&t.buffs.atk)&&(t.buffs&&t.buffs.hp) ? 'magic' : (t.buffs&&t.buffs.atk) ? 'attack' : 'healing';
   const storyBonus = (G.mode==='story'&&G.story&&G.story.bonuses&&G.story.bonuses.totemBonus)?G.story.bonuses.totemBonus:null;
   picks.forEach(u=>{
-    if(t.buffs&&t.buffs.atk)u.atk+=t.buffs.atk;
-    if(t.buffs&&t.buffs.hp)u.hp+=t.buffs.hp;
+    let totalAtk = (t.buffs&&t.buffs.atk)||0;
+    let totalHp = (t.buffs&&t.buffs.hp)||0;
     if(storyBonus){
-      if(storyBonus.atk) u.atk+=storyBonus.atk;
-      if(storyBonus.hp) u.hp+=storyBonus.hp;
+      if(storyBonus.atk) totalAtk += storyBonus.atk;
+      if(storyBonus.hp) totalHp += storyBonus.hp;
     }
+    if(totalAtk) u.atk += totalAtk;
+    if(totalHp) u.hp += totalHp;
     try{ particleOnCard(u.id, fx); }catch(_){ }
-    if(t.buffs&&t.buffs.atk){ try{ fxTextOnCard(u.id, `+${t.buffs.atk} ATK`,'buff'); }catch(_){ } }
-    if(t.buffs&&t.buffs.hp){ try{ fxTextOnCard(u.id, `+${t.buffs.hp} HP`,'buff'); }catch(_){ } }
-    if(storyBonus){
-      try{
-        if(storyBonus.atk){ fxTextOnCard(u.id, `+${storyBonus.atk} ATK`,'buff'); }
-        if(storyBonus.hp){ fxTextOnCard(u.id, `+${storyBonus.hp} HP`,'buff'); }
-      }catch(_){ }
-    }
+    if(totalAtk){ try{ fxTextOnCard(u.id, `+${totalAtk} ATK`,'buff'); }catch(_){ } }
+    if(totalHp){ try{ fxTextOnCard(u.id, `+${totalHp} HP`,'buff'); }catch(_){ } }
   });
+  if(storyBonus && (storyBonus.atk||storyBonus.hp)){
+    log(`🗿 Talismã Totêmico: Totem fortalecido com bônus da relíquia!`);
+  }
 }
 function openTotemConfirm(anchor, onConfirm, onCancel){
   const box=document.createElement('div');
