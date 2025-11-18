@@ -52,7 +52,7 @@ function getPlayerId(){
   return fallback;
 }
 
-let shopState = { faction: '', gold: 0, onClose: null, unlimited: false, purchased: [], story: false, removals: 0 };
+let shopState = { faction: '', gold: 0, onClose: null, unlimited: false, purchased: [], story: false, removals: 0, pending: [] };
 let rerollCount = 0;
 
 const REMOVAL_COST_BY_RARITY = {
