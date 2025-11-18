@@ -38,8 +38,11 @@ function loadShop(){
 test('queues multiple purchases and resets on close', async () => {
   const ctx = loadShop();
   ctx.fetch = global.fetch = jest.fn(() =>
-    Promise.resolve({ json: () => Promise.resolve({ gold: 100 }) })
+    Promise.resolve({ ok: true, json: () => Promise.resolve({ gold: 100 }) })
   );
+  
+  // Force server-side purchase mode so pending queue is used
+  ctx.window.usePurchaseAPI = true;
 
   ctx.openShop({ faction: 'Furioso', gold: 100 });
   const buttons = document.querySelectorAll('.price-btn');
