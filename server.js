@@ -11,7 +11,7 @@ const io = new Server(server);
 const PORT = process.env.PORT || 3000;
 
 // Decks permitidos no modo multiplayer
-const VALID_DECKS = new Set(['vikings', 'animais', 'pescadores', 'floresta', 'convergentes', 'custom']);
+const VALID_DECKS = new Set(['vikings', 'animais', 'pescadores', 'floresta', 'custom']);
 
 // Informações sobre salas em memória
 const rooms = new Map();

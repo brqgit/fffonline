@@ -1472,38 +1472,37 @@ function fxTextOnFace(side, text, cls) {
   setTimeout(() => fx.remove(), 950);
 }
 function attackCard(attacker, target) {
-  if (!attacker || !attacker.canAttack || attacker.stance === "defense")
-    return;
+  if (!attacker || !attacker.canAttack || attacker.stance === "defense") return;
   sfx("attack");
-  const a = nodeById(attacker.id),
-    t = nodeById(target.id);
+  const a = nodeById(attacker.id), t = nodeById(target.id);
   if (a && t) {
-    const ar = a.getBoundingClientRect(),
-      tr = t.getBoundingClientRect();
+    const ar = a.getBoundingClientRect(), tr = t.getBoundingClientRect();
     screenSlash(ar.right, ar.top + ar.height / 2, 15);
   }
   animateAttack(attacker.id, target.id);
   if (target.stance === "defense") animateDefense(target.id);
   particleOnCard(target.id, "attack");
-  const pre = target.hp,
-    overflow = Math.max(0, attacker.atk - pre);
-  damageMinion(target, attacker.atk);
-  damageMinion(attacker, target.atk);
+  const preTargetHP = Math.max(0, target.hp);
+  const attackerDamage = Math.max(0, attacker.atk);
+  const overflow = Math.max(0, attackerDamage - preTargetHP);
+
+  damageMinion(target, attackerDamage, { defer:true });
+
+  const shouldCounter = target.stance !== "defense" && target.atk > 0;
+  if (shouldCounter) {
+    damageMinion(attacker, Math.max(0, target.atk), { defer:true });
+  }
   sfx("hit");
   if (overflow > 0 && target.hp <= 0) {
     const isP = G.playerBoard.includes(attacker);
     sfx("overflow");
     if (isP) {
-      G.aiHP = clamp(G.aiHP - overflow, 0, 99);
-      log(
-        `${attacker.name} excedeu em ${overflow} e causou dano direto ao Inimigo!`,
-      );
+      G.aiHP = Math.max(0, G.aiHP - overflow);
+      log(`${attacker.name} excedeu em ${overflow} e causou dano direto ao Inimigo!`);
       particleOnFace("ai", "attack");
     } else {
-      G.playerHP = clamp(G.playerHP - overflow, 0, 99);
-      log(
-        `${attacker.name} excedeu em ${overflow} e causou dano direto a Você!`,
-      );
+      G.playerHP = Math.max(0, G.playerHP - overflow);
+      log(`${attacker.name} excedeu em ${overflow} e causou dano direto a Você!`);
       particleOnFace("player", "attack");
     }
     checkWin();
@@ -1517,8 +1516,7 @@ function attackCard(attacker, target) {
   els.aBoard.classList.remove("face-can-attack");
 }
 function attackFace(attacker, face) {
-  if (!attacker || !attacker.canAttack || attacker.stance === "defense")
-    return;
+  if (!attacker || !attacker.canAttack || attacker.stance === "defense") return;
   sfx("attack");
   const a = nodeById(attacker.id);
   if (a) {
@@ -1546,36 +1544,38 @@ function attackFace(attacker, face) {
   els.aBoard.classList.remove("face-can-attack");
   renderAll();
 }
-function damageMinion(m, amt) {
+function damageMinion(m, amt, opts) {
   if (!m || typeof amt !== "number") return;
+  if (amt < 0) amt = 0;
   fxTextOnCard(m.id, "-" + amt, "dmg");
   m.hp = clamp(m.hp - amt, 0, 99);
-  if (m.hp <= 0) setTimeout(checkDeaths, 10);
+  const defer = opts && opts.defer;
+  if (m.hp <= 0 && !defer) setTimeout(checkDeaths, 10);
 }
 function checkDeaths() {
   const deadA = G.aiBoard.filter((c) => c.hp <= 0);
-  deadA.forEach((c) => {
-    particleOnCard(c.id, "explosion");
-    sfx("death");
-    resetCardState(c);
-  });
   if (deadA.length) {
+    deadA.forEach((c) => {
+      particleOnCard(c.id, "explosion");
+      sfx("death");
+    });
     G.aiBoard = G.aiBoard.filter((c) => c.hp > 0);
+    deadA.forEach(resetCardState);
     G.aiDiscard.push(...deadA);
     log("Uma criatura inimiga caiu.");
   }
   const deadP = G.playerBoard.filter((c) => c.hp <= 0);
-  deadP.forEach((c) => {
-    particleOnCard(c.id, "explosion");
-    sfx("death");
-    resetCardState(c);
-  });
   if (deadP.length) {
+    deadP.forEach((c) => {
+      particleOnCard(c.id, "explosion");
+      sfx("death");
+    });
     G.playerBoard = G.playerBoard.filter((c) => c.hp > 0);
+    deadP.forEach(resetCardState);
     G.playerDiscard.push(...deadP);
     log("Sua criatura caiu.");
   }
-  els.discardCount.textContent = G.playerDiscard.length;
+  if(els.discardCount) els.discardCount.textContent = G.playerDiscard.length;
 }
       attackFace(a, "player");
     }
@@ -1768,3 +1768,5 @@ window.addEventListener(
   },
   { once: true },
 );
+
+

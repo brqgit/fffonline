@@ -12,6 +12,15 @@
     'water-ball': { frames: 12, fps: 24, path: 'Water Ball', name: 'Water Ball' },
     'water-spell': { frames: 8, fps: 22, path: 'Water Spell', name: 'Water Spell' }
   };
+  const EFFECT_ALIASES = {
+    heavy: 'fire-arrow',
+    feral: 'fire-arrow',
+    frost: 'water-arrow',
+    tidal: 'water-ball',
+    storm: 'water-arrow',
+    poison: 'fire-ball',
+    mystic: 'water-spell'
+  };
 
   // Preload effect frames
   const frameCache = {};
@@ -33,9 +42,11 @@
 
   // Play animated particle effect
   window.playParticleEffect = function(effectKey, x, y, options = {}){
-    const effect = EFFECTS[effectKey];
-    if(!effect || !frameCache[effectKey]) {
-      console.warn(`Effect "${effectKey}" not found`);
+    let key = effectKey;
+    if(!EFFECTS[key] && EFFECT_ALIASES[key]) key = EFFECT_ALIASES[key];
+    if(!EFFECTS[key]) key = 'water-ball';
+    const effect = EFFECTS[key];
+    if(!effect || !frameCache[key]) {
       return;
     }
 
@@ -70,7 +81,7 @@
     container.appendChild(img);
     document.body.appendChild(container);
 
-    const frames = frameCache[effectKey];
+    const frames = frameCache[key];
     let currentFrame = 0;
     const frameTime = duration ? duration / frames.length : 1000 / effect.fps;
     

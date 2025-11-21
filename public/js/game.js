@@ -1,4 +1,65 @@
 (function(){const $=s=>document.querySelector(s),$$=s=>Array.from(document.querySelectorAll(s));const logBox=$('#log');const log=t=>{if(!logBox)return;const d=document.createElement('div');d.textContent=t;logBox.prepend(d)};const rand=a=>a[Math.floor(Math.random()*a.length)],clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),uid=()=>(Math.random().toString(36).slice(2));
+function ensureCardBase(card){
+  if(!card) return;
+  if(card.baseAtk===undefined) card.baseAtk = card.atk;
+  if(card.baseHp===undefined) card.baseHp = card.hp;
+}
+
+function addBuffBadge(card, stat, amount, { icon, sourceId, sourceType, temporary }={}){
+  if(!card || !amount) return;
+  card.buffBadges = card.buffBadges || { atk:[], hp:[] };
+  const list = card.buffBadges[stat] || (card.buffBadges[stat]=[]);
+  list.push({ amount, icon: icon || '✨', sourceId: sourceId || null, sourceType: sourceType || null, temporary: !!temporary });
+}
+
+function removeBuffBadges(card, predicate, opts={ adjustStats:true }){
+  if(!card || !card.buffBadges) return;
+  const adjust = opts && opts.adjustStats !== false;
+  ['atk','hp'].forEach(stat=>{
+    const list = card.buffBadges[stat];
+    if(!list || !list.length) return;
+    const keep=[];
+    list.forEach(entry=>{
+      if(predicate(entry, stat)){
+        if(adjust && typeof entry.amount==='number'){
+          const current = typeof card[stat]==='number' ? card[stat] : 0;
+          const next = current - entry.amount;
+          card[stat] = stat==='hp' ? Math.max(0,next) : next;
+        }
+      }else{
+        keep.push(entry);
+      }
+    });
+    if(keep.length){ card.buffBadges[stat]=keep; }
+    else{ delete card.buffBadges[stat]; }
+  });
+  if(card.buffBadges && !Object.keys(card.buffBadges).some(k=>card.buffBadges[k] && card.buffBadges[k].length)){
+    delete card.buffBadges;
+  }
+}
+
+function buffIconFor(card, stat){
+  if(!card || !card.buffBadges) return '';
+  const list = card.buffBadges[stat];
+  if(!list || !list.length) return '';
+  const icons = list.map(entry => entry && entry.icon ? entry.icon : '?').filter(Boolean);
+  return icons.join(' ');
+}
+
+function applyCardBuff(card,{ atk=0, hp=0, icon, sourceId, sourceType, permanent=false }={}){
+  if(!card) return;
+  ensureCardBase(card);
+  if(atk){
+    card.atk += atk;
+    addBuffBadge(card,'atk',atk,{icon,sourceId,sourceType,temporary:!permanent});
+    if(permanent) card.baseAtk = card.atk;
+  }
+  if(hp){
+    card.hp += hp;
+    addBuffBadge(card,'hp',hp,{icon,sourceId,sourceType,temporary:!permanent});
+    if(permanent) card.baseHp = card.hp;
+  }
+}
 const setAriaHidden=(node,hidden)=>{if(!node)return;try{if(hidden){const ae=document.activeElement; if(ae && node.contains(ae)){ try{ae.blur()}catch(_){ } } node.setAttribute('inert','');} else { node.removeAttribute('inert'); }}catch(_){ } node.setAttribute('aria-hidden',hidden?'true':'false')};
 const focusDialog=node=>{if(!node)return;const target=node.querySelector('[autofocus],button,[href],input,select,textarea,[tabindex]:not([tabindex="-1"])');if(target&&typeof target.focus==='function'){target.focus()}};
 const AUDIO_ENABLED = true;
@@ -6,22 +67,15 @@ const AudioCtor = (typeof window!=='undefined') ? (window.AudioContext || window
 const AudioCtx = AUDIO_ENABLED ? AudioCtor : null;
 let actx = null,
     master = null,
-    musicGain = null,
-    musicLoopId = null,
-    musicOn = false,
-    musicPreset = 'menu',
-    musicMuted = false,
     sfxMuted = false,
-    musicVolume = 1,
     sfxVolume = 1,
-    musicBase = .18,
     allMuted = false;
 
 const SFX_ROOT = 'sfx/';
 const SFX_DIRECTORIES = ['GameSFX','Instruments','Voices'];
 
 const SFX_CLIPS = {
-  start: ['Voices/Level Completed.wav', 'Voices/You Win.wav'],
+  start: [],
   end: ['Voices/Time Out.wav'],
   play: {
     default: ['GameSFX/Retro Blip 07.wav'],
@@ -92,7 +146,7 @@ const CHARACTER_DEATH_CUES = {
 };
 
 const ABILITY_CUES = {
-  heal: ['Voices/You Win.wav'],
+  heal: [],
   buff: ['GameSFX/Retro Blip 15.wav'],
   mana: ['GameSFX/Retro Ring 01.wav'],
   draw: ['GameSFX/Retro Beeep 06.wav'],
@@ -113,7 +167,6 @@ const BATTLE_THEME_AUDIO = {
   pescadores: 'Instruments/Retro Instrument - choir bass - C04.wav',
   animais: 'GameSFX/Retro Beeep 20.wav',
   floresta: 'Instruments/Retro Instrument - choir bass - C01.wav',
-  convergentes: 'Instruments/Retro Instrument - choir bass - C07.wav',
   sombras: 'Instruments/Retro Instrument - choir bass - C08.wav',
   furioso: 'Instruments/Retro Instrument - choir bass - C06.wav',
   percepcao: 'Instruments/Retro Instrument - choir bass - C03.wav',
@@ -123,50 +176,17 @@ const BATTLE_THEME_AUDIO = {
 const audioBufferCache = new Map();
 let ambientLoop = null;
 
-function ensureMusicChain(){
-  if(!AudioCtx) return null;
-  initAudio();
-  if(!actx) return null;
-  if(!musicGain){
-    try{
-      musicGain = actx.createGain();
-      musicGain.gain.value = musicMuted ? 0 : musicBase * musicVolume;
-      musicGain.connect(master);
-    }catch(_){
-      musicGain = null;
-    }
-  }
-  return musicGain;
-}
-
 function stopMenuMusic(){
-  musicOn = false;
-  musicLoopId = null;
   try{ setBattleAmbience(null); }
   catch(_){ }
 }
 
 function startMenuMusic(preset){
-  const key = (preset || 'menu').toLowerCase();
-  musicPreset = key;
-  initAudio();
-  ensureMusicChain();
-  ensureRunning();
-  if(musicMuted || !AudioCtx){
-    musicOn = false;
-    return;
-  }
-  musicOn = true;
-  const theme = key==='menu' ? 'default' : key;
-  try{ setBattleAmbience(theme); }
-  catch(_){ }
+  // Music removed - only SFX remain
 }
 
 function tryStartMenuMusicImmediate(){
-  if(musicOn && musicPreset){
-    return;
-  }
-  startMenuMusic(musicPreset || 'menu');
+  // Music removed - only SFX remain
 }
 
 try{
@@ -199,7 +219,11 @@ function loadSfxBuffer(file){
   const pending = fetch(url)
     .then(res=>{ if(!res.ok) throw new Error('SFX load failed'); return res.arrayBuffer(); })
     .then(buf=>actx.decodeAudioData(buf))
-    .catch(err=>{ console.warn('Falha ao carregar SFX', file, err); return null; });
+    .catch(err=>{ 
+      try{ audioBufferCache.set(file, Promise.resolve(null)); }catch(_){ }
+      console.warn('Falha ao carregar SFX', file);
+      return null; 
+    });
   audioBufferCache.set(file, pending);
   return pending;
 }
@@ -257,10 +281,12 @@ function pickClip(entry,variant){
 }
 
 function sfx(name,variant,opts){
-  if(!AudioCtx) return Promise.resolve();
-  const clip = pickClip(SFX_CLIPS[name], variant);
-  if(!clip) return Promise.resolve();
-  return playBufferedClip(clip, opts||{});
+  // SFX temporarily disabled
+  return Promise.resolve();
+  // if(!AudioCtx) return Promise.resolve();
+  // const clip = pickClip(SFX_CLIPS[name], variant);
+  // if(!clip) return Promise.resolve();
+  // return playBufferedClip(clip, opts||{});
 }
 
 function stopAmbientLoop(fade=.25){
@@ -285,39 +311,14 @@ function stopAmbientLoop(fade=.25){
 }
 
 function setBattleAmbience(theme){
-  if(!AudioCtx){ return; }
-  if(!theme){ stopAmbientLoop(); return; }
-  const key = (theme||'').toLowerCase();
-  const clip = BATTLE_THEME_AUDIO[key] || BATTLE_THEME_AUDIO.default;
-  stopAmbientLoop();
-  if(!clip) return;
-  playBufferedClip(clip, { loop:true, volume:.35, fade:.4 }).then(ctrl=>{
-    if(!ctrl) return;
-    ambientLoop = ctrl;
-    if(ctrl.gain){
-      const target = sfxMuted ? 0 : ctrl.base * sfxVolume;
-      try{ ctrl.gain.gain.setValueAtTime(target, actx.currentTime); }
-      catch(_){ ctrl.gain.gain.value = target; }
-    }
-  });
-}
-
-function setMusicVolume(v){
-  musicVolume = clamp(v,0,1);
-  if(musicGain) musicGain.gain.value = musicMuted ? 0 : musicBase * musicVolume;
+  // Music removed - function is now a no-op
 }
 
 function setSfxVolume(v){
   sfxVolume = clamp(v,0,1);
   if(master) master.gain.value = sfxMuted ? 0 : 1;
-  if(ambientLoop && ambientLoop.gain){
-    const target = sfxMuted ? 0 : ambientLoop.base * sfxVolume;
-    try{ ambientLoop.gain.gain.setValueAtTime(target, actx.currentTime); }
-    catch(_){ ambientLoop.gain.gain.value = target; }
-  }
 }
 
-window.setMusicVolume = setMusicVolume;
 window.setSfxVolume = setSfxVolume;
 window.playSfx = sfx;
 window.sfx = sfx;
@@ -524,78 +525,73 @@ function applyClassDefaults(card, tribeHint){
 function deriveStatsFromName(name){const n=name.toLowerCase();let atk=3,hp=3,kw='',bc='',text='';if(/guard/i.test(n)){atk=2;hp=5;kw='P';text='Protetor'}else if(/mago|mistico/.test(n)){atk=2;hp=3;bc='H2';text='Entra: cura 2'}else if(/guerreiro|batalhador|raider|lobo|raposa/.test(n)){atk=4;hp=2;kw='F';text='Furioso'}else if(/fogueira|estandarte/.test(n)){atk=1;hp=1;bc='BR1';text='Entra: +1/+1 aleatório'}else if(/coruja/.test(n)){atk=1;hp=2;bc='D1';text='Entra: compre 1'}else if(/serpente/.test(n)){atk=5;hp=4}else if(/alce|urso|bode|cervo/.test(n)){atk=4;hp=5;kw='P';text='Protetor'}return{atk,hp,kw,bc,text};}
 function buildDeck(key){const tribe=key==='vikings'||key==='pescadores'?'Viking':'Animal';return (DECK_IMAGES[key]||[]).map(fn=>{const name=normalizeCardName(fn);const s=deriveStatsFromName(name);const cost=Math.max(1,Math.round((s.atk+s.hp)/2));return [name,'',tribe,s.atk,s.hp,cost,s.text,s.kw,s.bc,fn];});}
 const TEMPLATES={
-vikings:[...buildDeck('vikings'),
-  ["Camponês Vigilante","","Viking",2,4,3,"Protetor","P","",""],
-  ["Herbalista do Vilarejo","","Viking",1,3,2,"Entra: cura 2","","H2",""],
-  ["Batedor da Aldeia","","Viking",3,2,2,"Entra: dano 1 aleatório","","P1",""],
-  ["Ancião do Trigo","","Viking",2,2,3,"","","BR1","",{text:"Entra: +1/+1 aleatório. Canaliza 1 de mana.",onPlay:{mana:1}}],
-  ["Patriarca da Fazenda","","Viking",4,5,5,"","","BA1","",{text:"Aliados +1 ATK. Ao destruir um inimigo, compre 1 carta.",onKill:{draw:1}}],
-  ["Rastreador do Fiorde","","Viking",1,2,1,"Entra: compre 1. Ao destruir uma unidade, ganha 1 de mana.","","D1","",{onKill:{mana:1}}],
-  ["Ceifeira Ágil","","Viking",3,2,2,"Furioso","F","",""],
-  ["Defensor do Arado","","Viking",1,5,3,"Protetor","P","",""],
-  ["Runomante Rural","","Viking",2,3,3,"Entra: +1/+1 aleatório","","BR1",""],
-  ["Guerreiro da Foice","","Viking",5,3,4,"Furioso","F","",""],
-],
-animais:[...buildDeck('animais'),
-  ["Lobo Alfa","","Animal",5,4,4,"Furioso","F","",""],
-  ["Lince Ártico","","Animal",3,3,3,"Veloz","","",""],
-  ["Falcão das Montanhas","","Animal",2,3,3,"Entra: compre 1","","D1",""],
-  ["Caribu Selvagem","","Animal",4,5,4,"","P","","",{text:"Protetor. Entra: gera 1 mana temporária.",onPlay:{mana:1}}],
-  ["Texugo Ártico","","Animal",3,2,2,"Furioso","F","",""],
-  ["Foca do Gelo","","Animal",2,3,2,"Entra: compre 1","","D1",""],
-  ["Lobo Uivante","","Animal",4,3,4,"Furioso. Ao destruir uma unidade inimiga, ganha 1 de mana.","F","","",{onKill:{mana:1}}],
-  ["Raposa Escarlate","","Animal",3,2,2,"Furioso","F","",""],
-  ["Touro das Neves","","Animal",5,5,5,"Protetor","P","",""],
-  ["Corvo Astuto","","Animal",1,2,2,"Entra: compre 1","","D1",""],
-  ["Fera das Cavernas","","Animal",6,6,6,"Furioso","F","",""],
-],
-pescadores:[...buildDeck('pescadores'),
-  ["Curandeiro do Mar","","Viking",1,4,3,"Entra: cura 2","","H2",""],
-  ["Bardo do Porto","","Viking",2,3,3,"Aliados +1 ATK","","BA1",""],
-  ["Caçador de Tesouros","","Viking",2,2,2,"Entra: compre 1","","D1",""],
-  ["Escudeiro do Convés","","Viking",2,5,4,"Protetor","P","",""],
-  ["Guarda do Cais","","Viking",3,2,3,"Entra: dano 1 aleatório","","P1",""],
-  ["Aprendiz de Rede","","Viking",1,2,1,"Entra: compre 1","","D1",""],
-  ["Baleeiro Leal","","Viking",2,4,3,"Protetor","P","",""],
-  ["Atirador do Convés","","Viking",3,2,2,"Entra: dano 1 aleatório","","P1",""],
-  ["Sacerdote das Ondas","","Viking",2,3,3,"Entra: canaliza 2 de mana.","","M2",""],
-  ["Corsário Intrépido","","Viking",4,2,3,"","F","","",{text:"Furioso. Ao destruir um inimigo, ganha 1 de mana.",onKill:{mana:1}}],
-],
-floresta:[...buildDeck('floresta'),
-  ["Lince da Sombra","","Animal",4,2,3,"Furioso","F","",""],
-  ["Corvo Observador","","Animal",1,2,2,"Entra: compre 1","","D1",""],
-  ["Guardião Musgoso","","Animal",3,5,4,"Protetor","P","",""],
-  ["Cervo Rúnico","","Animal",3,3,3,"Entra: +1/+1 aleatório","","BR1",""],
-  ["Javali Voraz","","Animal",5,3,4,"Furioso","F","",""],
-  ["Lebre da Névoa","","Animal",1,1,1,"Veloz","","",""],
-  ["Guardião da Clareira","","Animal",2,5,3,"","P","","",{text:"Protetor. Entra: concede 1 mana temporária.",onPlay:{mana:1}}],
-  ["Raposa Sombria","","Animal",3,2,2,"Furioso","F","",""],
-  ["Urso Musgoso","","Animal",5,6,5,"Protetor","P","",""],
-  ["Coruja Mensageira","","Animal",1,2,2,"Entra: compre 1","","D1",""],
-  ["Cervo das Runas","","Animal",3,3,3,"Entra: +1/+1 aleatório","","BR1",""],
-],
-convergentes:[
-  ["Neófito Convergente","🌀","Convergente",2,2,1,"Entra: copia uma palavra-chave de um aliado","A"],
-  ["Proteiforme da Aurora","🌈","Convergente",3,3,3,"","M"],
-  ["Guardião Quimérico","🛡️🐺","Convergente",2,6,4,"","P|M"],
-  ["Raider Metamorfo","⚔️🌊","Convergente",4,2,3,"","F|M"],
-  ["Runa Voraz","🌀🪨","Convergente",1,4,2,"Ganha +1 ATK sempre que um aliado morre."],
-  ["Totem Absorvente","🪵🌀","Convergente",0,5,3,"Fim de turno: copia uma palavra-chave de um inimigo aleatório.","P"],
-  ["Arauto da Aurora","✨👑","Convergente",5,5,6,"Se você copiou ≥3 palavras-chave na partida, aliados +1/+1."],
-  ["Sombra Rúnica","🌘🌀","Convergente",3,3,3,"Sempre que absorver, ganha +1/+1.","A"],
-  ["Guerreiro Sincrético","⚔️🛡️","Convergente",4,4,4,"Entra: escolha Furioso ou Protetor; ganha essa palavra-chave."],
-  ["Lince Metamórfico","🐱🌈","Convergente",3,2,2,"","F|M"],
-  ["Capataz de Runas","🌀⚙️","Convergente",2,4,3,"Ao absorver, causa 1 de dano a todos os inimigos.","A"],
-  ["Colosso Alquímico","🗿🌈","Convergente",7,7,7,"Entra: copia uma palavra-chave de cada aliado.","M"],
-  ["Essência Convergente","💠","Convergente",0,0,1,"Entra com ATK/HP iguais ao nº de palavras-chave diferentes que você controla.","A"],
-  ["Discípulo Maleável","","Convergente",1,3,2,"","M"],
-  ["Sentinela Vórtice","","Convergente",2,4,3,"Entra: copia uma palavra-chave de um aliado","P|A"],
-  ["Tecelão Cambiante","","Convergente",2,3,3,"Entra: compre 1","A","D1"],
-  ["Eco Mutante","","Convergente",4,4,4,"","A|M"],
-  ["Bruto Assimilador","","Convergente",5,5,5,"","A|M"],
-  ["Sábio Prismal","","Convergente",3,5,4,"Entra: +1/+1 aleatório","M","BR1"],
-  ["Avatar Mutagênico","","Convergente",6,6,6,"","M"],
-]};
+vikings:[...buildDeck('vikings')],
+animais:[...buildDeck('animais')],
+pescadores:[...buildDeck('pescadores')],
+floresta:[...buildDeck('floresta')],
+};
+
+const CARD_TEMPLATE_INDEX=(()=>{
+  const map=new Map();
+  Object.entries(TEMPLATES).forEach(([deckKey,entries])=>{
+    entries.forEach(entry=>{
+      try{
+        const card=makeCard(entry);
+        const key=(card.name||'').trim().toLowerCase();
+        if(!key) return;
+        const snapshot={
+          name:card.name,
+          deck:deckKey,
+          atk:card.atk,
+          hp:card.hp,
+          cost:card.cost,
+          icon:card.icon,
+          emoji:card.emoji,
+          img:card.img,
+          type:card.type,
+          tribe:card.tribe,
+          text:card.text||'',
+          kw:Array.isArray(card.kw)?card.kw.slice():[],
+          battlecry:card.battlecry||'',
+          classe:card.classe,
+          subclasse:card.subclasse
+        };
+        map.set(key,snapshot);
+      }catch(_){ }
+    });
+  });
+  return map;
+})();
+
+function lookupCardTemplate(name){
+  if(!name) return null;
+  return CARD_TEMPLATE_INDEX.get(name.trim().toLowerCase())||null;
+}
+
+function hydrateCardArt(card){
+  if(!card||!card.name) return card;
+  const template=lookupCardTemplate(card.name);
+  if(!template) return card;
+  const enriched=Object.assign({},card);
+  ['deck','icon','emoji','img','type','tribe','classe','subclasse'].forEach(field=>{
+    if(enriched[field]==null && template[field]!=null) enriched[field]=template[field];
+  });
+  if(!enriched.kw && template.kw) enriched.kw=template.kw.slice();
+  if(!enriched.battlecry && template.battlecry) enriched.battlecry=template.battlecry;
+  if(enriched.baseAtk===undefined && template.atk!==undefined) enriched.baseAtk=template.atk;
+  if(enriched.baseHp===undefined && template.hp!==undefined) enriched.baseHp=template.hp;
+  if(enriched.atk===undefined && template.atk!==undefined) enriched.atk=template.atk;
+  if(enriched.hp===undefined && template.hp!==undefined) enriched.hp=template.hp;
+  if(enriched.cost===undefined && template.cost!==undefined) enriched.cost=template.cost;
+  // Ensure we keep a valid icon to avoid missing art lookups
+  if(!enriched.icon && enriched.deck && DECK_IMAGES[enriched.deck] && DECK_IMAGES[enriched.deck].length){
+    enriched.icon = DECK_IMAGES[enriched.deck][0];
+  }
+  return enriched;
+}
+
+window.lookupCardTemplate=lookupCardTemplate;
+window.hydrateCardArt=hydrateCardArt;
 
 // ===== RELICS SYSTEM =====
 const RELICS = {
@@ -1009,23 +1005,34 @@ const STORY_EVENTS = [
 ];
 
 class StoryMode{
-  constructor({level=1}={}){this.level=level;this.round=0;this.totems=[];this.deck=[];this.scaling=0;this.xp=0;this.gold=30;this.bossInterval=10;this.eliteEvery=5;this.currentEncounter='normal';this.bonuses={startMana:0,killMana:0,allyBuff:{atk:0,hp:0},totemBonus:{atk:0,hp:0},items:[]};this.relics=[];this.eventsSeen=[];this._startManaGranted=false;}
-  nextRound(){this.round+=1;this.scaling=Math.floor(this.round/2)+(this.level-1);const isBoss=this.round%this.bossInterval===0;const isElite=!isBoss&&this.round%this.eliteEvery===0;const isEvent=!isBoss&&!isElite&&this.round%4===0&&this.round>2;this.currentEncounter=isBoss?'boss':isElite?'elite':isEvent?'event':'normal';return{isBoss,isElite,isEvent};}
-  handleVictory(){const xpGain=this.currentEncounter==='boss'?20:this.currentEncounter==='elite'?10:5;const goldGain=this.currentEncounter==='boss'?20:this.currentEncounter==='elite'?10:5;this.xp+=xpGain;this.gold+=goldGain;const leveled=this.checkLevelUp();return{leveled,rewards:this.rewardOptions(),goldGain,isBoss:this.currentEncounter==='boss'};}
+  constructor({level=1,bossInterval=10,eliteEvery=5,eventEvery=4,startGold=30,maxTotems=3}={}){this.level=level;this.round=0;this.totems=[];this.deck=[];this.scaling=0;this.xp=0;this.gold=startGold;this.startGold=startGold;this.bossInterval=bossInterval;this.eliteEvery=eliteEvery;this.eventEvery=eventEvery;this.currentEncounter='normal';this.bonuses={startMana:0,killMana:0,allyBuff:{atk:0,hp:0},totemBonus:{atk:0,hp:0},items:[]};this.relics=[];this.eventsSeen=[];this._startManaGranted=false;this.lastShopEventRound=0;this.maxTotems=maxTotems;}
+  nextRound(){this.round+=1;this.scaling=Math.floor(this.round/2)+(this.level-1);const isBoss=this.round%this.bossInterval===0;const isElite=!isBoss&&this.round%this.eliteEvery===0;const isEvent=!isBoss&&!isElite&&this.eventEvery>0&&this.round>2&&this.round%this.eventEvery===0;this.currentEncounter=isBoss?'boss':isElite?'elite':isEvent?'event':'normal';return{isBoss,isElite,isEvent};}
+  handleVictory(){const xpGain=this.currentEncounter==='boss'?20:this.currentEncounter==='elite'?10:5;const goldGain=this.currentEncounter==='boss'?20:this.currentEncounter==='elite'?10:5;this.xp+=xpGain;this.gold+=goldGain;if(typeof updateGoldHUD==='function')updateGoldHUD();const leveled=this.checkLevelUp();return{leveled,rewards:this.rewardOptions(),goldGain,isBoss:this.currentEncounter==='boss'};}
   rewardOptions(){const isBoss=this.currentEncounter==='boss';const baseRewards=['Nova carta','Evoluir carta','Ganhar Totem'];if(isBoss||Math.random()<0.3){baseRewards.push('Buff permanente');}return baseRewards;}
   checkLevelUp(){const need=this.level*50;if(this.xp>=need){this.level+=1;this.xp-=need;return true}return false}
-  addTotem(t){if(this.totems.length>=3)return false;this.totems.push(t);return true}
+  addTotem(t){if(this.totems.length>=(this.maxTotems||3))return false;this.totems.push(t);return true}
   addRelic(relic){if(!this.relics.find(r=>r.id===relic.id)){this.relics.push(relic);return true;}return false;}
   hasRelic(id){return this.relics.some(r=>r.id===id);}
-  registerBonus(bonus,src){if(!bonus)return'';const notes=[];if(bonus.startMana){this.bonuses.startMana+=bonus.startMana;notes.push(`+${bonus.startMana} mana inicial`);}if(bonus.killMana){this.bonuses.killMana+=bonus.killMana;notes.push(`+${bonus.killMana} mana por eliminação`);}if(bonus.allyBuff){this.bonuses.allyBuff.atk+=bonus.allyBuff.atk||0;this.bonuses.allyBuff.hp+=bonus.allyBuff.hp||0;if(bonus.allyBuff.atk)notes.push(`Aliados +${bonus.allyBuff.atk} ATK`);if(bonus.allyBuff.hp)notes.push(`Aliados +${bonus.allyBuff.hp} HP`);}if(bonus.totemBonus){this.bonuses.totemBonus.atk+=bonus.totemBonus.atk||0;this.bonuses.totemBonus.hp+=bonus.totemBonus.hp||0;if(bonus.totemBonus.atk||bonus.totemBonus.hp)notes.push('Totens fortalecidos');}if(src&&src.name){this.bonuses.items.push(src.name);}return notes.join(', ');}
-  reset(){this.round=0;this.totems=[];this.deck=[];this.xp=0;this.gold=30;this.currentEncounter='normal';this.bonuses={startMana:0,killMana:0,allyBuff:{atk:0,hp:0},totemBonus:{atk:0,hp:0},items:[]};this.relics=[];this.eventsSeen=[];this._startManaGranted=false;}
+  registerBonus(bonus,src){if(!bonus)return'';const notes=[];if(bonus.startMana){this.bonuses.startMana+=bonus.startMana;notes.push('+'+bonus.startMana+' mana inicial');}if(bonus.killMana){this.bonuses.killMana+=bonus.killMana;notes.push('+'+bonus.killMana+' mana por eliminacao');}if(bonus.allyBuff){this.bonuses.allyBuff.atk+=bonus.allyBuff.atk||0;this.bonuses.allyBuff.hp+=bonus.allyBuff.hp||0;if(bonus.allyBuff.atk)notes.push('Aliados +'+bonus.allyBuff.atk+' ATK');if(bonus.allyBuff.hp)notes.push('Aliados +'+bonus.allyBuff.hp+' HP');}if(bonus.totemBonus){this.bonuses.totemBonus.atk+=bonus.totemBonus.atk||0;this.bonuses.totemBonus.hp+=bonus.totemBonus.hp||0;if(bonus.totemBonus.atk||bonus.totemBonus.hp)notes.push('Totens fortalecidos');}if(src&&src.name){this.bonuses.items.push(src.name);}return notes.join(', ');}
+  reset(){this.round=0;this.totems=[];this.deck=[];this.xp=0;this.gold=this.startGold||30;this.currentEncounter='normal';this.bonuses={startMana:0,killMana:0,allyBuff:{atk:0,hp:0},totemBonus:{atk:0,hp:0},items:[]};this.relics=[];this.eventsSeen=[];this._startManaGranted=false;if(typeof updateGoldHUD==='function')updateGoldHUD();}
 }
+
 const ALL_DECKS=Object.keys(TEMPLATES);
-const G={playerHP:30,aiHP:30,turn:0,playerMana:0,playerManaCap:0,aiMana:0,aiManaCap:0,current:'player',playerDeck:[],aiDeck:[],playerHand:[],aiHand:[],playerBoard:[],aiBoard:[],playerDiscard:[],aiDiscard:[],chosen:null,playerDeckChoice:'vikings',aiDeckChoice:rand(ALL_DECKS),customDeck:null,mode:'solo',story:null,enemyScaling:0,maxHandSize:5,totems:[]};
+const G={playerHP:30,aiHP:30,turn:0,playerMana:0,playerManaCap:0,aiMana:0,aiManaCap:0,current:'player',playerDeck:[],aiDeck:[],playerHand:[],aiHand:[],playerBoard:[],aiBoard:[],playerDiscard:[],aiDiscard:[],chosen:null,lastChosenId:null,playerDeckChoice:'vikings',aiDeckChoice:rand(ALL_DECKS),customDeck:null,mode:'solo',story:null,story2:null,storyVariant:null,enemyScaling:0,maxHandSize:5,totems:[]};
+const STORY2={active:false,route:[],nodeIndex:0,hand:[],drawPile:[],discard:[],board:[],enemies:[],energy:3,maxEnergy:3,turn:1,maxHand:7,hp:60,maxHp:60,rewards:[],deckKey:'vikings'};
 // expose for helpers that run outside this closure
 try{ window.G = G; }catch(_){ }
+function getStoryState(variant){
+  if(variant==='story2'){
+    if(!G.story2) G.story2=new StoryMode({level:1,bossInterval:7,eliteEvery:3,eventEvery:3,startGold:50,maxTotems:5});
+    return G.story2;
+  }
+  if(!G.story) G.story=new StoryMode({level:1});
+  return G.story;
+}
 const els={pHP:$('#playerHP'),pHP2:$('#playerHP2'),aHP:$('#aiHP'),aHP2:$('#aiHP2'),opponentLabel:$('#opponentLabel'),mana:$('#mana'),aiMana:$('#aiMana'),pHand:$('#playerHand'),pBoard:$('#playerBoard'),aBoard:$('#aiBoard'),endBtn:$('#endTurnBtn'),instantWinBtn:$('#instantWinBtn'),muteBtn:$('#muteBtn'),aAva:$('#aiAvatar'),drawCount:$('#drawCount'),discardCount:$('#discardCount'),barPHP:$('#barPlayerHP'),barAHP:$('#barAiHP'),barMana:$('#barMana'),barAiMana:$('#barAiMana'),wrap:$('#gameWrap'),start:$('#start'),openEncy:$('#openEncy'),ency:$('#ency'),encyGrid:$('#encyGrid'),encyFilters:$('#encyFilters'),closeEncy:$('#closeEncy'),startGame:$('#startGame'),endOverlay:$('#endOverlay'),endMsg:$('#endMsg'),endSub:$('#endSub'),playAgainBtn:$('#playAgainBtn'),rematchBtn:$('#rematchBtn'),menuBtn:$('#menuBtn'),openMenuBtn:$('#openMenuBtn'),gameMenu:$('#gameMenu'),closeMenuBtn:$('#closeMenuBtn'),resignBtn:$('#resignBtn'),restartBtn:$('#restartBtn'),mainMenuBtn:$('#mainMenuBtn'),turnIndicator:$('#turnIndicator'),emojiBar:$('#emojiBar'),playerEmoji:$('#playerEmoji'),opponentEmoji:$('#opponentEmoji'),deckBuilder:$('#deckBuilder'),saveDeck:$('#saveDeck')};
 const bodyEl=document.body||document.querySelector('body');
+let story2UI=null;
 function applyBattleTheme(theme){
   if(!bodyEl) return;
   const wrap = els.wrap;
@@ -1058,13 +1065,243 @@ function updateCardSize(){
   root.style.setProperty('--card-w',cardW+'px');
 }
 window.addEventListener('resize',updateCardSize);
-const DECK_TITLES={vikings:'Fazendeiros Vikings',animais:'Bestas do Norte',pescadores:'Pescadores do Fiorde',floresta:'Feras da Floresta',convergentes:'Convergentes da Aurora',custom:'Custom'};
+
+// === MODO HISTÓRIA 2 (estilo deckbuilder, separado do tabuleiro) ===
+const STORY2_CONFIG={hp:60,maxEnergy:3,handSize:7,route:['combate','combate','evento','descanso','elite','loja','combate','boss']};
+let STORY2_STATE=null;
+
+function ensureStory2UI(){
+  if(story2UI) return story2UI;
+  const wrap=document.createElement('div');
+  wrap.id='story2Wrap';
+  wrap.style.display='none';
+  wrap.innerHTML=`
+    <div class="s2-hud">
+      <div class="s2-hp"><span id="s2HpVal">60</span>/<span id="s2HpMax">60</span> HP</div>
+      <div class="s2-energy">⚡ <span id="s2Energy">3</span>/3</div>
+      <div class="s2-turn" id="s2Turn">Turno 1</div>
+      <div class="s2-controls">
+        <button id="s2EndTurn" class="btn">Fim do turno</button>
+        <button id="s2Exit" class="btn-ghost">Sair</button>
+      </div>
+    </div>
+    <div class="s2-route">
+      <div class="title">Rota</div>
+      <div id="s2Nodes" class="s2-nodes"></div>
+    </div>
+    <div class="s2-arena">
+      <div class="s2-enemies" id="s2Enemies"></div>
+      <div class="s2-allies" id="s2Allies"></div>
+    </div>
+    <div class="s2-hand" id="s2Hand"></div>
+    <div class="s2-log" id="s2Log"></div>
+  `;
+  const style=document.createElement('style');
+  style.textContent=`
+  #story2Wrap{padding:12px;display:flex;flex-direction:column;gap:12px;background:#0b1724;color:#e5e7eb;height:100vh;overflow:hidden;}
+  #story2Wrap .btn{cursor:pointer;}
+  .s2-hud{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;}
+  .s2-route{background:#111827;padding:8px;border:1px solid #1f2937;border-radius:8px;}
+  .s2-nodes{display:flex;gap:8px;flex-wrap:wrap;}
+  .s2-node{padding:6px 10px;border-radius:6px;border:1px solid #1f2937;background:#0f172a;font-size:12px;}
+  .s2-node.active{border-color:#38bdf8;color:#38bdf8;}
+  .s2-arena{flex:1;display:flex;flex-direction:column;gap:8px;border:1px solid #1f2937;background:#0f172a;padding:10px;border-radius:10px;min-height:260px;}
+  .s2-enemies,.s2-allies{display:flex;gap:10px;align-items:flex-end;min-height:100px;}
+  .s2-card{background:#111827;border:1px solid #1f2937;border-radius:8px;padding:8px;min-width:110px;max-width:150px;cursor:pointer;display:flex;flex-direction:column;gap:6px;box-shadow:0 4px 8px rgba(0,0,0,.35);}
+  .s2-hand{display:flex;gap:10px;flex-wrap:wrap;min-height:120px;}
+  .s2-enemy{background:#1e293b;border:1px solid #334155;border-radius:10px;padding:8px;min-width:90px;text-align:center;}
+  .s2-log{height:120px;overflow:auto;font-size:12px;background:#0f172a;border:1px solid #1f2937;border-radius:8px;padding:6px;}
+  `;
+  document.head.appendChild(style);
+  document.body.appendChild(wrap);
+  story2UI={
+    wrap,
+    hp:wrap.querySelector('#s2HpVal'),
+    hpMax:wrap.querySelector('#s2HpMax'),
+    energy:wrap.querySelector('#s2Energy'),
+    turn:wrap.querySelector('#s2Turn'),
+    endTurn:wrap.querySelector('#s2EndTurn'),
+    exit:wrap.querySelector('#s2Exit'),
+    nodes:wrap.querySelector('#s2Nodes'),
+    enemies:wrap.querySelector('#s2Enemies'),
+    allies:wrap.querySelector('#s2Allies'),
+    hand:wrap.querySelector('#s2Hand'),
+    log:wrap.querySelector('#s2Log')
+  };
+  story2UI.endTurn.addEventListener('click',story2EndTurn);
+  story2UI.exit.addEventListener('click',exitStory2);
+  return story2UI;
+}
+
+function story2Log(msg){
+  const ui=ensureStory2UI();
+  const line=document.createElement('div');
+  line.textContent=msg;
+  ui.log.prepend(line);
+}
+
+function exitStory2(){
+  STORY2.active=false;
+  STORY2_STATE=null;
+  if(story2UI) story2UI.wrap.style.display='none';
+  els.wrap.style.display='none';
+  els.start.style.display='flex';
+  applyBattleTheme(null);
+  window.currentGameMode=null;
+}
+
+function newStory2State(deckKey){
+  const base={deckKey:deckKey||'vikings',hp:STORY2_CONFIG.hp,maxHp:STORY2_CONFIG.hp,energy:STORY2_CONFIG.maxEnergy,maxEnergy:STORY2_CONFIG.maxEnergy,turn:1,hand:[],drawPile:[],discard:[],board:[],enemies:[],route:[],nodeIndex:0,maxHand:STORY2_CONFIG.handSize};
+  base.route=STORY2_CONFIG.route.map((t,i)=>({type:t,label:`${i+1}. ${t}`}));
+  return base;
+}
+
+function buildStory2Deck(state){
+  const pool=(TEMPLATES[state.deckKey]||[]).slice(0,12);
+  state.drawPile=shuffle(pool.map(raw=>{const c=makeCard(raw);return{id:uid(),name:c.name,atk:c.atk||1,hp:c.hp||1,cost:c.cost||1,type:'unit',deck:state.deckKey};}));
+}
+
+function drawStory2(state,count){
+  for(let i=0;i<count;i++){
+    if(!state.drawPile.length){state.drawPile=shuffle(state.discard.splice(0));}
+    if(!state.drawPile.length) break;
+    if(state.hand.length>=state.maxHand) break;
+    state.hand.push(state.drawPile.shift());
+  }
+}
+
+function renderStory2(){
+  const ui=ensureStory2UI();
+  const s=STORY2_STATE;
+  ui.hp.textContent=s.hp;
+  ui.hpMax.textContent=s.maxHp;
+  ui.energy.textContent=s.energy;
+  ui.turn.textContent=`Turno ${s.turn}`;
+  ui.nodes.innerHTML='';
+  s.route.forEach((n,idx)=>{const el=document.createElement('div');el.className='s2-node'+(idx===s.nodeIndex?' active':'');el.textContent=n.label;ui.nodes.appendChild(el);});
+  ui.enemies.innerHTML='';
+  s.enemies.forEach(e=>{const el=document.createElement('div');el.className='s2-enemy';el.innerHTML=`<div><strong>${e.name}</strong></div><div>HP ${e.hp}/${e.maxHp}</div><div>ATK ${e.atk}</div>`;ui.enemies.appendChild(el);});
+  ui.allies.innerHTML='';
+  s.board.forEach(c=>{const el=document.createElement('div');el.className='s2-card';el.innerHTML=`<div><strong>${c.name}</strong></div><div>ATK ${c.atk}</div><div>HP ${c.hp}</div>`;ui.allies.appendChild(el);});
+  ui.hand.innerHTML='';
+  s.hand.forEach(card=>{const el=document.createElement('div');el.className='s2-card';el.innerHTML=`<div><strong>${card.name}</strong></div><div>Custo ${card.cost}</div><div>${card.atk}/${card.hp}</div>`;el.addEventListener('click',()=>playStory2Card(card));ui.hand.appendChild(el);});
+  ui.wrap.style.display='flex';
+}
+
+function spawnStory2Enemies(type){
+  const set=type==='elite'?[{name:'Elite Rúnico',hp:18,atk:4},{name:'Guardião',hp:12,atk:3}]:type==='boss'?[{name:'Chefe da Aurora',hp:32,atk:6},{name:'Arauto',hp:12,atk:3}]:[{name:'Bruto',hp:12,atk:3},{name:'Lacaio',hp:8,atk:2},{name:'Simbionte',hp:6,atk:2}];
+  const count=type==='boss'?3:type==='elite'?2:Math.min(3,set.length);
+  return set.slice(0,count).map(e=>({id:uid(),name:e.name,hp:e.hp,maxHp:e.hp,atk:e.atk}));
+}
+
+function processStory2Node(){
+  const s=STORY2_STATE;
+  if(s.nodeIndex>=s.route.length){
+    story2Log('Corrida concluída!');
+    renderStory2();
+    return;
+  }
+  const node=s.route[s.nodeIndex];
+  if(node.type==='descanso'){
+    const heal=Math.ceil(s.maxHp*0.2);
+    s.hp=Math.min(s.maxHp,s.hp+heal);
+    story2Log(`Descanso: recuperou ${heal} HP.`);
+    s.nodeIndex++;
+    processStory2Node();
+    return;
+  }
+  if(node.type==='evento'){
+    s.maxEnergy+=0; // placeholder buff
+    story2Log('Evento misterioso: seus aliados ganham +1 ATK nesta corrida.');
+    s.board.forEach(a=>a.atk+=1);
+    s.nodeIndex++;
+    processStory2Node();
+    return;
+  }
+  if(node.type==='loja'){
+    s.maxHp+=2; s.hp=Math.min(s.maxHp,s.hp+2);
+    story2Log('Loja: refez suprimentos (+2 HP máximo).');
+    s.nodeIndex++;
+    processStory2Node();
+    return;
+  }
+  // Combates
+  s.enemies=spawnStory2Enemies(node.type);
+  s.hand=[];s.board=[];s.discard=[];s.drawPile=[];
+  buildStory2Deck(s);
+  drawStory2(s,5);
+  s.turn=1;
+  s.energy=s.maxEnergy;
+  renderStory2();
+}
+
+function playStory2Card(card){
+  const s=STORY2_STATE;
+  if(!s||!STORY2.active) return;
+  if(s.energy<card.cost){story2Log('Energia insuficiente.');return;}
+  if(s.board.length>=5){story2Log('Limite de 5 aliados em campo.');return;}
+  s.energy-=card.cost;
+  s.hand=s.hand.filter(c=>c.id!==card.id);
+  s.board.push(Object.assign({},card));
+  story2Log(`${card.name} entrou em campo.`);
+  renderStory2();
+}
+
+function story2EndTurn(){
+  const s=STORY2_STATE;
+  if(!s||!STORY2.active) return;
+  // aliados atacam
+  s.board.forEach(a=>{const target=s.enemies[Math.floor(Math.random()*s.enemies.length)];if(!target)return;target.hp=Math.max(0,target.hp-a.atk);story2Log(`${a.name} causou ${a.atk} em ${target.name}.`);});
+  s.enemies=s.enemies.filter(e=>e.hp>0);
+  if(!s.enemies.length){
+    story2Log('Vitória! Avançando na rota.');
+    s.nodeIndex++;
+    processStory2Node();
+    return;
+  }
+  // inimigos atacam
+  s.enemies.forEach(e=>{
+    if(s.board.length){
+      const target=s.board[Math.floor(Math.random()*s.board.length)];
+      target.hp=Math.max(0,target.hp-e.atk);
+      story2Log(`${e.name} atingiu ${target.name} por ${e.atk}.`);
+    }else{
+      s.hp=Math.max(0,s.hp-e.atk);
+      story2Log(`${e.name} causou ${e.atk} em você.`);
+    }
+  });
+  s.board=s.board.filter(a=>a.hp>0);
+  s.turn++;
+  s.energy=s.maxEnergy;
+  s.discard.push(...s.hand.splice(0));
+  drawStory2(s,5);
+  renderStory2();
+  if(s.hp<=0){story2Log('Derrota.');exitStory2();}
+}
+
+function startStory2(){
+  STORY2.active=true;
+  STORY2_STATE=newStory2State(G.playerDeckChoice||'vikings');
+  initAudio();
+  ensureRunning();
+  stopMenuMusic();
+  els.start.style.display='none';
+  if(els.wrap) els.wrap.style.display='none';
+  processStory2Node();
+  renderStory2();
+  story2Log('História 2 iniciada (beta).');
+}
+const DECK_TITLES={vikings:'Fazendeiros Vikings',animais:'Bestas do Norte',pescadores:'Pescadores do Fiorde',floresta:'Feras da Floresta',custom:'Custom'};
 const DECK_ASSETS={
   vikings:{folder:'farm-vikings',back:'fv',dbExt:'png',cbExt:'webp'},
   pescadores:{folder:'fJord-fishers',back:'jf',dbExt:'webp',cbExt:'webp'},
   floresta:{folder:'forest-beasts',back:'fb',dbExt:'webp',cbExt:'webp'},
   animais:{folder:'north-beasts',back:'nb',dbExt:'webp',cbExt:'webp'}
 };
+const DECK_ASSET_INDEX = Object.fromEntries(Object.entries(DECK_IMAGES).map(([deck,list])=>{
+  const norm = list.map(n=>n.replace(/\.[^.]+$/,'')).map(n=>n.replace(/^\d+[_-]?/, '').toLowerCase());
+  return [deck, new Set(norm)];
+}));
 const IMG_CACHE={};
 function preloadAssets(){
   for(const [key,info] of Object.entries(DECK_ASSETS)){
@@ -1093,7 +1330,10 @@ function iconUrl(deck,idx){
   if(typeof idx==='string'){
     if(idx.startsWith('img/')) return [idx];
     const base = idx.replace(/\.[^.]+$/,'');
-    if(info) return [`img/decks/${info.folder}/characters/${base}.png`];
+    const norm = base.replace(/^\d+[_-]?/, '').toLowerCase();
+    if(info && DECK_ASSET_INDEX[deck] && DECK_ASSET_INDEX[deck].has(norm)){
+      return [`img/decks/${info.folder}/characters/${base}.png`];
+    }
     return null;
   }
   return null;
@@ -1104,7 +1344,7 @@ function makeArtPlaceholder(card){
   try{
     const deck = (card && card.deck) || 'default';
     const symbol = '?';
-    const bg = deck==='vikings'?'#1f2937':deck==='animais'?'#065f46':deck==='pescadores'?'#0e7490':deck==='floresta'?'#14532d':deck==='convergentes'?'#4c1d95':'#334155';
+    const bg = deck==='vikings'?'#1f2937':deck==='animais'?'#065f46':deck==='pescadores'?'#0e7490':deck==='floresta'?'#14532d':'#334155';
     const fg = '#e5e7eb';
     const svg = `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns='http://www.w3.org/2000/svg' width='96' height='96' viewBox='0 0 96 96'>
@@ -1136,7 +1376,14 @@ function nameBasedCharUrls(deck,name){
   const keb=toKebabLower(name); if(keb) bases.push(keb);
   const snake=toSnakeTitle(name); if(snake) bases.push(snake);
   const snakeLower=wordsOf(name).join('_').toLowerCase(); if(snakeLower) bases.push(snakeLower);
-  const urls=[]; bases.forEach(b=>urls.push(`img/decks/${info.folder}/characters/${b}.png`));
+  const urls=[];
+  const idx = DECK_ASSET_INDEX[deck];
+  bases.forEach(b=>{
+    const norm = b.replace(/^\d+[_-]?/, '').toLowerCase();
+    if(idx && idx.has(norm)){
+      urls.push(`img/decks/${info.folder}/characters/${b}.png`);
+    }
+  });
   return urls;
 }
 
@@ -1158,7 +1405,7 @@ function setDeckBacks(){
 // deck builder DOM (may be null if builder UI not present)
 const poolEl=$('#pool'), chosenEl=$('#chosen'), countEl=$('#countDeck'), curveEl=$('#curve');
 // safe builder functions (no-ops if UI not present)
-function renderPool(){const all=[...TEMPLATES.vikings,...TEMPLATES.animais,...TEMPLATES.pescadores,...TEMPLATES.floresta,...TEMPLATES.convergentes];if(!poolEl)return;poolEl.innerHTML='';all.forEach(raw=>{const name=raw[0]|| (typeof raw[9]==='string'?normalizeCardName(raw[9]):'');const emoji=raw[1]||'';const row=document.createElement('div');row.className='pitem';row.innerHTML=`<span class="c">${raw[5]}</span><div>${emoji} ${name}</div><button class="add">+</button>`;row.querySelector('.add').onclick=()=>{if(!G.customDeck)G.customDeck=[];if(G.customDeck.length>=20)return;const c=makeCard(raw);G.customDeck.push(c);renderChosen();updateCurve()};poolEl.appendChild(row)})}
+function renderPool(){const all=[...TEMPLATES.vikings,...TEMPLATES.animais,...TEMPLATES.pescadores,...TEMPLATES.floresta];if(!poolEl)return;poolEl.innerHTML='';all.forEach(raw=>{const name=raw[0]|| (typeof raw[9]==='string'?normalizeCardName(raw[9]):'');const emoji=raw[1]||'';const row=document.createElement('div');row.className='pitem';row.innerHTML=`<span class="c">${raw[5]}</span><div>${emoji} ${name}</div><button class="add">+</button>`;row.querySelector('.add').onclick=()=>{if(!G.customDeck)G.customDeck=[];if(G.customDeck.length>=20)return;const c=makeCard(raw);G.customDeck.push(c);renderChosen();updateCurve()};poolEl.appendChild(row)})}
 function renderChosen(){if(!chosenEl||!countEl)return;chosenEl.innerHTML='';const list=(G.customDeck||[]);list.forEach((c,i)=>{const item=document.createElement('div');item.className='chitem';item.dataset.idx=i;item.innerHTML=`<div>${c.emoji} ${c.name} <small>(${c.cost})</small></div><button class="rm">remover</button>`;item.querySelector('.rm').onclick=()=>{const idx=Number(item.dataset.idx);if(idx>=0){G.customDeck.splice(idx,1);renderChosen();updateCurve()}};chosenEl.appendChild(item)});countEl.textContent=String(list.length)}
 function updateCurve(){if(!curveEl)return;const list=(G.customDeck||[]);const buckets=new Array(8).fill(0);list.forEach(c=>{buckets[Math.min(c.cost,7)]++});curveEl.innerHTML='';const max=Math.max(1,Math.max(...buckets));buckets.forEach(v=>{const bar=document.createElement('div');bar.className='barc';const i=document.createElement('i');i.style.width=(v/max*100)+'%';bar.appendChild(i);curveEl.appendChild(bar)})}
 // --- Global error capture ---
@@ -1233,13 +1480,15 @@ function cardNode(c,owner,onBoard=false){
   if(c && c._hideDuringSummon){ d.style.visibility='hidden'; }
   d.dataset.id=c.id;
   const totalDots = Math.min(c.cost, 15); // Cap display at 15
-  const dotsPerRow = 5;
   let manaDots = '';
-  if(totalDots <= dotsPerRow){
+  const wrapThreshold = 10;
+  if(totalDots <= wrapThreshold){
     manaDots = `<span class="mana-dot ${c.deck}"></span>`.repeat(totalDots);
   } else {
-    const firstRow = `<span class="mana-dot ${c.deck}"></span>`.repeat(dotsPerRow);
-    const secondRow = `<span class="mana-dot ${c.deck}"></span>`.repeat(Math.min(totalDots - dotsPerRow, dotsPerRow));
+    const firstRowCount = Math.ceil(totalDots / 2);
+    const secondRowCount = totalDots - firstRowCount;
+    const firstRow = `<span class="mana-dot ${c.deck}"></span>`.repeat(firstRowCount);
+    const secondRow = `<span class="mana-dot ${c.deck}"></span>`.repeat(secondRowCount);
     manaDots = `<div class="mana-row">${firstRow}</div><div class="mana-row">${secondRow}</div>`;
   }
   const kwTags=[];
@@ -1255,7 +1504,33 @@ function cardNode(c,owner,onBoard=false){
   <div class="head-bar"><div class="name">${c.name}</div><div class="cost-bar"><div class="mana-row"><span class="mana-num">${c.cost}</span>${manaDots}</div></div></div>
   <div class="art"></div>
   <div class="text" ${tip?`data-tip='${tip}'`:''}>${kwTags.join(' ')}</div>
-  <div class="stats"><span class="gem atk">⚔️ ${c.atk}</span>${c.stance?`<span class="stance-label ${c.stance}">${c.stance==='defense'?'🛡️':'⚔️'}</span>`:''}<span class="gem hp ${c.hp<=2?'low':''}">❤️ ${c.hp}</span></div>`;
+  <div class="stats"><span class="gem atk">⚔️ <span class="stat-val">${c.atk}</span></span>${c.stance?`<span class="stance-label ${c.stance}">${c.stance==='defense'?'🛡️':'⚔️'}</span>`:''}<span class="gem hp ${c.hp<=2?'low':''}">❤️ <span class="stat-val">${c.hp}</span></span></div>`;
+  
+  // Add buff glow visual effect if card has buffs
+  try{
+    ensureCardBase(c);
+    const hasAtkBuff = c.atk > c.baseAtk;
+    const hasHpBuff = c.hp > c.baseHp;
+    const atkIcon = buffIconFor(c,'atk') || '⚔️';
+    const hpIcon = buffIconFor(c,'hp') || '❤️';
+    if(hasAtkBuff || hasHpBuff){
+      if(hasAtkBuff){
+        const atkGem=d.querySelector('.gem.atk');
+        if(atkGem){
+          atkGem.classList.add('buffed');
+          atkGem.setAttribute('data-buff-icon',atkIcon);
+        }
+      }
+      if(hasHpBuff){
+        const hpGem=d.querySelector('.gem.hp');
+        if(hpGem){
+          hpGem.classList.add('buffed');
+          hpGem.setAttribute('data-buff-icon',hpIcon);
+        }
+      }
+    }
+  }catch(_){ }
+  
   try{
     const tipNodes=d.querySelectorAll('.text .keyword[data-tip], .text .chip[data-tip]');
     tipNodes.forEach((node,idx)=>{node.style.setProperty('--tip-index',idx);});
@@ -1269,20 +1544,18 @@ function cardNode(c,owner,onBoard=false){
       createProjection(p,c);
     }
   }
-  // Totem: hide stats, show name+effect in text area with tooltip
+  // Totem: hide stats, show name+effect in text area
   try{
     if(isTotem(c)){
       const textBox=d.querySelector('.text');
       if(textBox){
         const desc = describeTotem(c);
-        textBox.setAttribute('data-tip', desc);
         textBox.innerHTML = `<span class='keyword'>Totem</span> ${desc}`;
       }
       // show same icon in art area
       const art=d.querySelector('.art');
       if(art){ art.innerHTML = `<div class="totem-icon-art">${totemIcon(c)}</div>`; }
-      // make card itself show tooltip anywhere
-      d.setAttribute('data-tip', describeTotem(c));
+      // Remove tooltip from card itself to avoid redundancy
       const stats=d.querySelector('.stats');
       if(stats){ stats.innerHTML=''; }
     }
@@ -1302,15 +1575,29 @@ function resetCardState(c){
   c.stance=null;
   c.canAttack=false;
   delete c.summonTurn;
+  ensureCardBase(c);
+  c.atk = c.baseAtk;
+  c.hp = c.baseHp;
+  removeBuffBadges(c,(entry)=>entry.temporary || entry.sourceType==='totem',{adjustStats:false});
 }
 const hasGuard=b=>b.some(x=>x.kw.includes('Protetor')||x.stance==='defense');
 function updateMeters(){
   const pct=(v,max)=>(max>0?Math.max(0,Math.min(100,(v/max)*100)):0);
   els.barPHP.style.width=pct(G.playerHP,30)+'%';
-  els.barAHP.style.width=pct(G.aiHP,30)+'%';
+  if(els.barAHP){ try{ els.barAHP.style.width = pct(G.aiHP,30)+'%'; }catch(_){ } }
   els.barMana.style.width=pct(G.playerMana,G.playerManaCap)+'%';
   try{ if(els.aiMana){ els.aiMana.textContent = `${G.aiMana}/${G.aiManaCap}`; } }catch(_){ }
   try{ if(els.barAiMana){ els.barAiMana.style.width = pct(G.aiMana,G.aiManaCap)+'%'; } }catch(_){ }
+  try{ updateGoldHUD(); }catch(_){ }
+}
+// Atualiza HUD de ouro (story + loja)
+function updateGoldHUD(){
+  try{
+    const hud=document.getElementById('playerGoldHUD');
+    if(hud){ hud.textContent = (G.mode==='story' && G.story)? G.story.gold : '0'; }
+    const shopGold=document.getElementById('shopGold');
+    if(shopGold && typeof shopState!=='undefined'){ shopGold.textContent = shopState.gold; }
+  }catch(_){ }
 }
 function updateOpponentLabel(){if(!els.opponentLabel)return;if(window.isMultiplayer){els.opponentLabel.textContent=window.opponentName?` ${window.opponentName}`:'';}else if(G.mode==='story'){els.opponentLabel.textContent='';}else{const t=DECK_TITLES[G.aiDeckChoice]||'';els.opponentLabel.textContent=t?` ${t}`:'';}}
 function renderAll(){
@@ -1373,7 +1660,7 @@ function animateDrawFlipOne(id){ return Promise.resolve(); }
 
   document.addEventListener('click', e => {
     if(!G.chosen) return;
-    if(e.target.closest('#aiBoard .card.selectable') || e.target.closest('#playerBoard .card.selectable') || e.target.closest('#aiBoard .face-attack-btn')) return;
+    if(e.target.closest('#aiBoard .card.selectable') || e.target.closest('#playerBoard .card.selectable') || e.target.closest('#aiBoard .face-attack-btn') || e.target.closest('#directAttackHint')) return;
     // reset chosen hand visuals (if any)
     document.querySelectorAll('.hand .card.chosen').forEach(cn => { cn.classList.remove('chosen'); cn.style.transform = ''; });
     cancelTargeting();
@@ -1409,16 +1696,6 @@ function renderBoard(){
     els.aBoard.appendChild(d);
   }
 
-  let btn=document.querySelector('#aiBoard .face-attack-btn');
-  if(!btn){
-    btn=document.createElement('button');
-    btn.type='button';
-    btn.className='btn-ghost face-attack-btn';
-    btn.textContent='🗡️ Atacar diretamente';
-    Object.assign(btn.style,{position:'absolute',top:'8px',right:'8px',display:'none'});
-    btn.addEventListener('click',()=>{if(G.chosen)attackFace(G.chosen,'ai')});
-    els.aBoard.appendChild(btn);
-  }
   updateFaceAttackZone();
 }
 
@@ -1639,11 +1916,19 @@ function startGame(opts='player') {
   const first = isObj ? (opts.first || 'player') : opts;
   const continuing = isObj && opts.continueStory;
   const sanitize = c => { if (c.hp < 1) c.hp = 1; if (c.atk < 0) c.atk = 0; return c; };
-  G.mode = window.currentGameMode === 'story' ? 'story' : 'solo';
+  const selectedMode = window.currentGameMode;
+  const isStoryLike = selectedMode === 'story' || selectedMode === 'story2';
+  G.storyVariant = isStoryLike && selectedMode === 'story2' ? 'story2' : null;
+  G.mode = isStoryLike ? 'story' : 'solo';
   if (G.mode === 'story') {
-    if (!G.story) G.story = new StoryMode({ level: 1 });
+    const activeStory = getStoryState(G.storyVariant === 'story2' ? 'story2' : 'story');
+    if(G.storyVariant==='story2' && !continuing){ activeStory.reset(); }
+    G.story = activeStory;
     G.story.nextRound();
     G.story._startManaGranted = false;
+    if(G.storyVariant==='story2' && !continuing){
+      log('[Historia 2 - beta] Corrida inspirada em deckbuilder; ate 5 aliados ativos no campo.');
+    }
     
     // Check if this round is an event
     if(G.story.currentEncounter === 'event'){
@@ -1669,9 +1954,10 @@ function startGame(opts='player') {
     log(`Round ${G.story.round}: ${G.currentEnemyName} (${G.story.currentEncounter})`);
     try{ showEncounterIntro({ name:G.currentEnemyName, round:G.story.round, kind: boss?'boss':'enemy', deckKey:G.aiDeckChoice }); }
     catch(_){ showEncounterBanner(G.currentEnemyName, boss ? 'boss' : 'enemy'); }
-    G.maxHandSize = 10;
+    G.maxHandSize = G.storyVariant === 'story2' ? 7 : 10;
   } else {
     G.story = null;
+    G.storyVariant = null;
     G.enemyScaling = 0;
     G.maxHandSize = 5;
   }
@@ -1706,15 +1992,13 @@ function continueGameSetup(){
       const deckSizeBefore = G.playerDeck.length;
       log(`🔍 Adicionando ${G.story.deck.length} cartas de G.story.deck ao deck (continuing)`);
       G.story.deck.forEach(it => {
-        const raw = [it.name, it.emoji||'', it.tribe||'', it.atk || 0, it.hp || 0, it.cost || 0, it.desc || it.text || ''];
-        const c = makeCard(raw);
-        if (it.type) { c.type = it.type; applyClassDefaults(c, c.tribe); }
-        // Preserve deck hint for proper art rendering
-        if(it.deck) c.deck = it.deck;
-        c.owner = 'player';
-        c.deck = (G.playerDeckChoice === 'custom' ? 'custom' : G.playerDeckChoice);
-        G.playerDeck.push(c);
-        log(`📦 Carta da campanha adicionada: ${c.name}`);
+        const deckKey = it.deck || (G.playerDeckChoice === 'custom' ? 'custom' : G.playerDeckChoice);
+        const c = toStoryCard(it, deckKey);
+        if(c){
+          c.owner = 'player';
+          G.playerDeck.push(c);
+          log(`📦 Carta da campanha adicionada: ${c.name}`);
+        }
       });
       // Clear story deck after adding to prevent duplicates
       G.story.deck = [];
@@ -1745,13 +2029,12 @@ function continueGameSetup(){
       // Add purchased cards from story progression
       if (G.story && G.story.deck && G.story.deck.length) {
         G.story.deck.forEach(it => {
-          const raw = [it.name, it.emoji||'', it.tribe||'', it.atk || 0, it.hp || 0, it.cost || 0, it.desc || it.text || ''];
-          const c = makeCard(raw);
-          if (it.type) { c.type = it.type; applyClassDefaults(c, c.tribe); }
-          // Preserve deck hint for proper art rendering
-          if(it.deck) c.deck = it.deck;
-          G.playerDeck.push(c);
-          log(`📦 Carta da campanha adicionada: ${c.name}`);
+          const deckKey = it.deck || (G.playerDeckChoice === 'custom' ? 'custom' : G.playerDeckChoice);
+          const c = toStoryCard(it, deckKey);
+          if(c){
+            G.playerDeck.push(c);
+            log(`📦 Carta da campanha adicionada: ${c.name}`);
+          }
         });
         // Clear story deck after adding to prevent duplicates in next initialization
         G.story.deck = [];
@@ -1760,12 +2043,19 @@ function continueGameSetup(){
     }
     shuffle(G.playerDeck);
   }
-  G.playerDeck.forEach(c => { sanitize(c); c.owner = 'player'; c.deck = (G.playerDeckChoice === 'custom' ? 'custom' : G.playerDeckChoice); });
+  const defaultPlayerDeck = (G.playerDeckChoice === 'custom' ? 'custom' : G.playerDeckChoice);
+  G.playerDeck.forEach(c => {
+    sanitize(c);
+    c.owner = 'player';
+    if(!c.deck) c.deck = defaultPlayerDeck;
+  });
   G.aiDeck = TEMPLATES[G.aiDeckChoice].map(makeCard);
   shuffle(G.aiDeck);
   G.aiDeck.forEach(c => { sanitize(c); c.owner = 'ai'; c.deck = G.aiDeckChoice; if (G.mode === 'story') { c.atk += G.enemyScaling; c.hp += G.enemyScaling; } });
   G.playerDiscard = [];
   G.aiDiscard = [];
+  G.chosen=null;
+  G.lastChosenId=null;
   if (!(G.mode === 'story' && continuing)) {
     G.playerHand = [];
     G.aiHand = [];
@@ -1867,7 +2157,50 @@ async function draw(who,n=1){
   }
 }
 function discardHand(side){const hand=side==='player'?G.playerHand:G.aiHand;const disc=side==='player'?G.playerDiscard:G.aiDiscard;if(hand.length){if(side==='player'){const cards=$$('#playerHand .card');const pile=document.getElementById('discardPile');cards.forEach(c=>animateMove(c,pile))}disc.push(...hand.splice(0));if(side==='player'){els.discardCount.textContent=G.playerDiscard.length;setTimeout(stackHand,500)}}}
-function applyTotemBuffs(){if(!G.playerBoard.length||!G.totems.length)return;G.playerBoard.forEach(u=>{u.atk=(u.baseAtk!==undefined?u.baseAtk:u.atk);u.hp=(u.baseHp!==undefined?u.baseHp:u.hp);u.baseAtk=u.atk;u.baseHp=u.hp});G.totems.forEach(t=>{const cnt=Math.min(3,G.playerBoard.length);const picks=shuffle(G.playerBoard.slice()).slice(0,cnt);picks.forEach(u=>{if(t.buffs&&t.buffs.atk)u.atk+=t.buffs.atk;if(t.buffs&&t.buffs.hp)u.hp+=t.buffs.hp;})})}
+function storyTotemBonus(){return (G.mode==='story'&&G.story&&G.story.bonuses&&G.story.bonuses.totemBonus) ? G.story.bonuses.totemBonus : null;}
+function ensureTotemTargets(t){
+  if(!t) return [];
+  const board=G.playerBoard;
+  if(!board.length) return [];
+  const defaultTargets=Math.min(3, Math.max(1, board.length));
+  t.maxTargets = Math.min(Math.max(t.maxTargets||defaultTargets,1),3);
+  const current=(t.targets||[]).map(id=>board.find(c=>c.id===id)).filter(Boolean);
+  const desired=Math.min(t.maxTargets, board.length);
+  const available=board.filter(card=>!current.includes(card));
+  while(current.length<desired && available.length){
+    const idx=Math.floor(Math.random()*available.length);
+    current.push(available.splice(idx,1)[0]);
+  }
+  t.targets=current.map(card=>card.id);
+  return current;
+}
+function applyTotemBuffs({focusTotem=null,animate=false}={}){
+  if(!G.playerBoard.length||!G.totems.length)return;
+  G.playerBoard.forEach(card=>{
+    ensureCardBase(card);
+    removeBuffBadges(card,entry=>entry.sourceType==='totem',{adjustStats:true});
+  });
+  const storyBonus=storyTotemBonus();
+  G.totems.forEach(t=>{
+    if(!t) return;
+    const targets=ensureTotemTargets(t);
+    if(!targets.length) return;
+    const bonusAtk=(t.buffs&&t.buffs.atk)||0;
+    const bonusHp=(t.buffs&&t.buffs.hp)||0;
+    const totalAtk=bonusAtk + (storyBonus&&storyBonus.atk||0);
+    const totalHp=bonusHp + (storyBonus&&storyBonus.hp||0);
+    const icon=t.icon||totemIcon(t)||'🗿';
+    targets.forEach(card=>{
+      applyCardBuff(card,{atk:totalAtk,hp:totalHp,icon,sourceId:t.id||t.name,sourceType:'totem',permanent:false});
+      if(animate && focusTotem && focusTotem===t){
+        const fx=(totalAtk&&totalHp)?'magic':totalAtk?'attack':'healing';
+        try{ particleOnCard(card.id, fx); }catch(_){ }
+        if(totalAtk) try{ fxTextOnCard(card.id,`+${totalAtk} ATK`,'buff'); }catch(_){ }
+        if(totalHp) try{ fxTextOnCard(card.id,`+${totalHp} HP`,'buff'); }catch(_){ }
+      }
+    });
+  });
+}
 function showMultiplayerDeckSelect(){
   els.wrap.style.display='none';
   applyBattleTheme(null);
@@ -1931,14 +2264,19 @@ function newTurn(skipDraw=false,prev){
   showTurnIndicator();
   updateRelicsDisplay();
 }
-function endTurn(){if(G.current!=='player')return;discardHand('player');G.current='ai';G.chosen=null;updateTargetingUI();newTurn(false,'player');sfx('end');if(window.isMultiplayer){NET.sendTurn('end')}else{setTimeout(aiTurn,500)}}
-function playFromHand(id,st){if(G.current!=='player')return;const i=G.playerHand.findIndex(c=>c.id===id);if(i<0)return;const c=G.playerHand[i];const boardFull=c.type!=='totem'&&G.playerBoard.length>=5;if(c.cost>G.playerMana||boardFull)return;G.playerHand.splice(i,1);G.playerMana-=c.cost;if(c.type==='totem'){if(G.totems.length>=3){log('Número máximo de Totens atingido.');G.playerDiscard.push(c);}else{const t={name:c.name,buffs:c.buffs||{atk:1,hp:1}};G.totems.push(t);applyTotemBuffs();log(`${c.name} ativado.`);}renderAll();return;}summon('player',c,st);renderAll();sfx(st==='defense'?'defense':'play')}
+function endTurn(){if(G.current!=='player')return;discardHand('player');G.current='ai';G.chosen=null;G.lastChosenId=null;updateTargetingUI();newTurn(false,'player');sfx('end');if(window.isMultiplayer){NET.sendTurn('end')}else{setTimeout(aiTurn,500)}}
+function playFromHand(id,st){if(G.current!=='player')return;const i=G.playerHand.findIndex(c=>c.id===id);if(i<0)return;const c=G.playerHand[i];const boardFull=c.type!=='totem'&&G.playerBoard.length>=5;if(c.cost>G.playerMana||boardFull)return;G.playerHand.splice(i,1);G.playerMana-=c.cost;if(c.type==='totem'){if(G.totems.length>=3){log('Número máximo de Totens atingido.');G.playerDiscard.push(c);}else{const t={id:c.id,name:c.name,buffs:c.buffs||{atk:1,hp:1},icon:c.icon||totemIcon(c),theme:getTotemTheme(c),maxTargets:Math.min(3,Math.max(1,G.playerBoard.length||1))};G.totems.push(t);applyTotemBuffsWithFx(t);log(`${c.name} ativado.`);}renderAll();return;}summon('player',c,st);renderAll();sfx(st==='defense'?'defense':'play')}
 function summon(side,c,st='attack',skipBC=false){
   const board = side==='player'?G.playerBoard:G.aiBoard;
   c.stance = st;
   c.canAttack = (st==='attack') && c.kw.includes('Furioso');
   c.summonTurn = G.turn;
   board.push(c);
+  ensureCardBase(c);
+  // Only initialize stats if they are truly undefined, never restore HP
+  if(c.atk===undefined) c.atk = c.baseAtk;
+  if(c.hp===undefined) c.hp = c.baseHp;
+  removeBuffBadges(c,(entry)=>entry.sourceType==='totem',{adjustStats:false});
   particleOnCard(c.id,'summon');
   if(c.type==='totem'){ playAbilityCue('totem',c); }
   else if(c.type==='spell'){ playAbilityCue('spell',c); }
@@ -2056,8 +2394,7 @@ function triggerBattlecry(side,c){
       const allies=(side==='player'?G.playerBoard:G.aiBoard).filter(x=>x.id!==c.id);
       if(allies.length){
         const t=rand(allies);
-        t.atk+=1;
-        t.hp+=1;
+        applyCardBuff(t,{atk:1,hp:1,icon:c.emoji||'✨',sourceId:c.id,sourceType:'battlecry',permanent:true});
         fxTextOnCard(t.id,'+1/+1','buff');
         particleOnCard(t.id,'magic');
         log(`${c.name}: deu +1/+1 em ${t.name}.`);
@@ -2068,7 +2405,12 @@ function triggerBattlecry(side,c){
     }
     case 'buffAlliesAtk1':{
       const allies=(side==='player'?G.playerBoard:G.aiBoard).filter(x=>x.id!==c.id);
-      allies.forEach(x=>{x.atk+=1;fxTextOnCard(x.id,'+1 ATK','buff');particleOnCard(x.id,'magic');effects.push({type:'buff',targetId:x.id,atk:1,hp:0});});
+      allies.forEach(x=>{
+        applyCardBuff(x,{atk:1,icon:c.emoji||'✨',sourceId:c.id,sourceType:'battlecry',permanent:true});
+        fxTextOnCard(x.id,'+1 ATK','buff');
+        particleOnCard(x.id,'magic');
+        effects.push({type:'buff',targetId:x.id,atk:1,hp:0});
+      });
       if(allies.length){
         log(`${c.name}: aliados ganharam +1 de ataque.`);
         playAbilityCue('buff',c);
@@ -2133,7 +2475,7 @@ function triggerBattlecry(side,c){
 }
 function applyBattlecryEffects(side,effects){effects.forEach(e=>{if(e.type==='heal'){const allies=side==='player'?G.playerBoard:G.aiBoard;const t=allies.find(x=>x.id===e.targetId);if(t){t.hp=Math.min(t.hp+e.amount,20);fxTextOnCard(t.id,'+'+e.amount,'heal');if(window.playParticleEffect)particleOnCard(t.id,'water-ball',{scale:0.8})}}else if(e.type==='damage'){const foes=side==='player'?G.aiBoard:G.playerBoard;const t=foes.find(x=>x.id===e.targetId);if(t){damageMinion(t,e.amount);if(window.playParticleEffect)particleOnCard(t.id,'fire-arrow',{scale:0.7});fxTextOnCard(t.id,'-'+e.amount,'dmg')}}else if(e.type==='buff'){const allies=side==='player'?G.playerBoard:G.aiBoard;const t=allies.find(x=>x.id===e.targetId);if(t){t.atk+=e.atk;t.hp+=e.hp;fxTextOnCard(t.id,'+'+e.atk+(e.hp?'/'+e.hp:''),'buff');if(window.playParticleEffect)particleOnCard(t.id,'water-spell',{scale:0.75})}}else if(e.type==='mana'){if(side==='player'){G.playerManaCap=clamp(G.playerManaCap+e.amount,0,10);G.playerMana=Math.min(G.playerMana+e.amount,G.playerManaCap);}else{G.aiManaCap=clamp(G.aiManaCap+e.amount,0,10);G.aiMana=Math.min(G.aiMana+e.amount,G.aiManaCap);}}else if(e.type==='sacMana'){const allies=side==='player'?G.playerBoard:G.aiBoard;const discard=side==='player'?G.playerDiscard:G.aiDiscard;const t=allies.find(x=>x.id===e.targetId);if(t){allies.splice(allies.indexOf(t),1);discard.push(t);resetCardState(t);particleOnCard(t.id,'explosion');}if(side==='player'){G.playerMana=Math.min(G.playerMana+e.amount,G.playerManaCap);}else{G.aiMana=Math.min(G.aiMana+e.amount,G.aiManaCap);}}});checkDeaths()}
 
-function absorbFromAlly(side,c){const board=side==='player'?G.playerBoard:G.aiBoard;const allies=board.filter(x=>x.id!==c.id&&x.kw&&x.kw.length);if(!allies.length)return;const src=rand(allies);const choices=src.kw.filter(k=>!c.kw.includes(k));if(!choices.length)return;const kw=rand(choices);c.kw.push(kw);particleOnCard(c.id,'magic');fxTextOnCard(c.id,kw,'buff');log(`${c.name} absorveu ${kw}.`);if(c.name==='Sombra Rúnica'){c.atk+=1;c.hp+=1;}if(c.name==='Capataz de Runas'){const foes=side==='player'?G.aiBoard:G.playerBoard;foes.forEach(t=>{damageMinion(t,1);particleOnCard(t.id,'attack');fxTextOnCard(t.id,'-1','dmg')});checkDeaths()}}
+function absorbFromAlly(side,c){const board=side==='player'?G.playerBoard:G.aiBoard;const allies=board.filter(x=>x.id!==c.id&&x.kw&&x.kw.length);if(!allies.length)return;const src=rand(allies);const choices=src.kw.filter(k=>!c.kw.includes(k));if(!choices.length)return;const kw=rand(choices);c.kw.push(kw);particleOnCard(c.id,'magic');fxTextOnCard(c.id,kw,'buff');log(`${c.name} absorveu ${kw}.`);if(c.name==='Sombra Rúnica'){applyCardBuff(c,{atk:1,hp:1,icon:c.emoji||'✨',sourceType:'absorb',sourceId:c.id,permanent:true});}if(c.name==='Capataz de Runas'){const foes=side==='player'?G.aiBoard:G.playerBoard;foes.forEach(t=>{damageMinion(t,1);particleOnCard(t.id,'attack');fxTextOnCard(t.id,'-1','dmg')});checkDeaths()}}
 
 function applyEndTurnEffects(side){const board=side==='player'?G.playerBoard:G.aiBoard;const foeBoard=side==='player'?G.aiBoard:G.playerBoard;for(const c of board){if(c.kw.includes('Mutável')){const atk=c.atk;c.atk=c.hp;c.hp=atk;fxTextOnCard(c.id,'⇆','buff');}if(c.name==='Totem Absorvente'){const foes=foeBoard.filter(f=>f.kw&&f.kw.length);if(foes.length){const src=rand(foes);const opts=src.kw.filter(k=>!c.kw.includes(k));if(opts.length){const kw=rand(opts);c.kw.push(kw);particleOnCard(c.id,'magic');fxTextOnCard(c.id,kw,'buff');log(`${c.name} absorveu ${kw} de ${src.name}.`)}}}}}
 function updateTargetingUI(){document.body.classList.toggle('targeting',!!G.chosen)}
@@ -2145,24 +2487,40 @@ function validateChosen(){
   }
   const ref=G.playerBoard.find(x=>x.id===G.chosen.id);
   if(!ref || !ref.canAttack || ref.stance==='defense'){
-    G.chosen=null; document.body.classList.remove('targeting');
+    G.chosen=null; G.lastChosenId=null; document.body.classList.remove('targeting');
     return false;
   }
   G.chosen=ref;
+  G.lastChosenId = ref.id;
   return true;
 }
-function cancelTargeting(){if(!G.chosen)return;G.chosen=null;updateTargetingUI();els.aBoard.classList.remove('face-can-attack');renderBoard()}
-function selectAttacker(c){if(G.current!=='player'||!c.canAttack||c.stance==='defense')return;G.chosen=c;updateTargetingUI();renderBoard();updateFaceAttackZone();G.aiBoard.filter(x=>x.stance==='defense').forEach(x=>setTimeout(()=>animateDefense(x.id),20))}
+function cancelTargeting(){
+  if(!G.chosen)return;
+  G.chosen=null;
+  G.lastChosenId=null;
+  updateTargetingUI();
+  els.aBoard.classList.remove('face-can-attack');
+  renderBoard();
+  try{ updateDirectAttackHint(); }catch(_){ }
+}
+function selectAttacker(c){
+  if(G.current!=='player'||!c.canAttack||c.stance==='defense')return;
+  G.chosen=c;
+  G.lastChosenId=c.id;
+  updateTargetingUI();
+  renderBoard();
+  updateFaceAttackZone();
+  try{ updateDirectAttackHint(); }catch(_){ }
+  G.aiBoard.filter(x=>x.stance==='defense').forEach(x=>setTimeout(()=>animateDefense(x.id),20))
+}
 function updateFaceAttackZone(){
+  // Function kept for compatibility but no longer manages the corner button
   const guard=hasGuard(G.aiBoard), valid=validateChosen();
   const canFace = valid && !guard;
-  const btn=document.querySelector('#aiBoard .face-attack-btn');
   if(canFace){
     els.aBoard.classList.add('face-can-attack');
-    btn&&(btn.style.display='block');
   }else{
     els.aBoard.classList.remove('face-can-attack');
-    btn&&(btn.style.display='none');
   }
 }
 function legalTarget(side,target){const b=side==='ai'?G.aiBoard:G.playerBoard;return hasGuard(b)?(target.kw.includes('Protetor')||target.stance==='defense'):true}
@@ -2237,43 +2595,20 @@ function showEncounterIntro({ name, round, kind, deckKey }){
 }
 function encounterTransition(cb){const t=document.getElementById('encounterTransition');if(!t){cb();return;}t.classList.add('show');setTimeout(()=>{cb();setTimeout(()=>t.classList.remove('show'),400);},400)}
 // Simple victory modal for story mode
-function openVictoryModal(enemyName,onContinue){
-  const modal = document.getElementById('victoryModal');
-  if(!modal){ onContinue&&onContinue(); return; }
-  const title = document.getElementById('victoryTitle');
-  const text = document.getElementById('victoryText');
-  const btn = document.getElementById('victoryContinueBtn');
-  if(title) title.textContent = 'Vitória!';
-  if(text) text.textContent = enemyName ? `Você derrotou ${enemyName}.` : 'Inimigo derrotado.';
-  
-  // Hide button - auto-advance after animation
-  if(btn) btn.style.display = 'none';
-  
-  const cleanup = ()=>{ 
-    modal.classList.remove('show'); 
-    modal.style.display='none'; 
-    if(window.setAriaHidden) setAriaHidden(modal, true);
-    else modal.setAttribute('aria-hidden','true');
-  };
-  
-  modal.classList.add('show');
-  modal.style.display = 'grid';
-  if(window.setAriaHidden) setAriaHidden(modal, false);
-  else modal.setAttribute('aria-hidden','false');
-  
+function showVictoryBanner(enemyName,onContinue){
+  const banner = document.getElementById('encounterBanner');
+  if(!banner){
+    onContinue?.();
+    return;
+  }
+  const subtitle = enemyName ? `Você derrotou ${enemyName}.` : 'Inimigo derrotado.';
+  banner.innerHTML = `<div class="enc-title">Vitória!</div><div class="enc-sub">${subtitle}</div>`;
+  banner.className = 'victory show';
   try{ sfx('reward'); }catch(_){ }
-  
-  // Auto-advance after 2s with fade
   setTimeout(() => {
-    modal.style.transition = 'opacity 0.3s ease-out';
-    modal.style.opacity = '0';
-    setTimeout(() => {
-      cleanup();
-      modal.style.opacity = '';
-      modal.style.transition = '';
-      onContinue&&onContinue();
-    }, 300);
-  }, 2000);
+    banner.classList.remove('show');
+    onContinue?.();
+  }, 1700);
 }
 function particleOnCard(cid,n){
   const t=nodeById(cid);if(!t)return;const r=t.getBoundingClientRect();
@@ -2298,18 +2633,25 @@ function updateDirectAttackHint(){
   if(!board) return;
   let hint=document.getElementById('directAttackHint');
   if(!hint){
-    hint=document.createElement('div');
+    hint=document.createElement('button');
     hint.id='directAttackHint';
+    hint.type='button';
     hint.className='direct-attack-hint';
     hint.innerHTML = '<div class="label"><span class="sword">⚔️</span> ATACAR DIRETO <span class="sword">⚔️</span></div>';
+    hint.addEventListener('click',()=>{
+      // Require an explicitly selected attacker; never auto-pick leftmost
+      if(validateChosen() && G.chosen && G.chosen.canAttack){
+        attackFace(G.chosen,'ai');
+      }
+    });
     board.appendChild(hint);
   }
-  // Conditions: player's turn, has at least one ready attacker, and enemy board empty
+  // Show hint if player's turn, has at least one ready attacker, enemy board empty, and no guard
   const yourTurn = (G.current==='player');
   const hasAttacker = G.playerBoard && G.playerBoard.some(c=>c&&c.canAttack&&c.stance!=='defense');
   const enemyEmpty = (G.aiBoard && G.aiBoard.length===0);
-  const targeting = !!G.chosen;
-  const shouldShow = yourTurn && hasAttacker && enemyEmpty && !targeting;
+  const noGuard = !hasGuard(G.aiBoard);
+  const shouldShow = yourTurn && hasAttacker && enemyEmpty && noGuard && G.chosen && G.chosen.canAttack && G.chosen.stance!=='defense';
   hint.classList.toggle('show', shouldShow);
 }
 function applyKillRewards(attacker,target){
@@ -2382,32 +2724,40 @@ function attackCard(attacker,target){
   if(target.stance==='defense') setTimeout(()=>animateDefense(target.id), TARGET_HIT_ANIM_DELAY);
   if(window.playParticleEffect) particleOnCard(target.id, 'fire-arrow', {scale: 0.75});
 
-  // Sequential damage resolution: first target, then attacker (counter)
-  const preHP = target.hp;
-  const overflow = Math.max(0, attacker.atk - preHP);
+  // Calculate overflow BEFORE applying damage (when target HP > 0)
+  const preTargetHP = Math.max(0, target.hp);
+  const attackerDamage = Math.max(0, attacker.atk);
+  const overflow = Math.max(0, attackerDamage - preTargetHP);
 
   // Step 1: target takes damage
-  damageMinion(target, attacker.atk, { defer:true });
+  damageMinion(target, attackerDamage, { defer:true });
   playCharacterCue(target,'hit');
   sfx('hit');
-  if(DEBUG_COMBAT_SEQUENCE) log(`[SEQ] ${attacker.name} hit ${target.name} for ${attacker.atk}`);
+  if(DEBUG_COMBAT_SEQUENCE) log(`[SEQ] ${attacker.name} (${attackerDamage} ATK) hit ${target.name} (${preTargetHP} HP) → ${target.hp} HP, overflow: ${overflow}`);
 
   // Step 2 (slight delay): attacker takes counter-damage
   setTimeout(()=>{
-    damageMinion(attacker, target.atk, { defer:true });
-    if(window.playParticleEffect && target.atk>0) particleOnCard(attacker.id, 'water-ball', {scale: 0.6});
-    if(DEBUG_COMBAT_SEQUENCE) log(`[SEQ] ${target.name} countered ${attacker.name} for ${target.atk}`);
+    const shouldCounter = target.hp>0 && target.stance!=='defense' && target.atk>0;
+    if(shouldCounter){
+      const counterDamage = Math.max(0, target.atk);
+      damageMinion(attacker, counterDamage, { defer:true });
+      if(window.playParticleEffect && counterDamage>0) particleOnCard(attacker.id, 'water-ball', {scale: 0.6});
+      if(DEBUG_COMBAT_SEQUENCE) log(`[SEQ] ${target.name} (${counterDamage} ATK) countered ${attacker.name} → ${attacker.hp} HP`);
+    }else if(DEBUG_COMBAT_SEQUENCE){
+      log(`[SEQ] ${target.name} did not counter (stance=${target.stance})`);
+    }
+    
     // Overflow to face after resolving both sides (if target died)
     if(overflow>0 && target.hp<=0){
       const isP = G.playerBoard.includes(attacker);
       sfx('overflow');
       const faceFx=fx||'attack';
       if(isP){
-        G.aiHP=clamp(G.aiHP-overflow,0,99);
+        G.aiHP=Math.max(0, G.aiHP-overflow);
         log(`${attacker.name} excedeu em ${overflow} e causou dano direto ao Inimigo!`);
         particleOnFace('ai',faceFx);
       }else{
-        G.playerHP=clamp(G.playerHP-overflow,0,99);
+        G.playerHP=Math.max(0, G.playerHP-overflow);
         log(`${attacker.name} excedeu em ${overflow} e causou dano direto a Você!`);
         particleOnFace('player',faceFx);
       }
@@ -2435,6 +2785,7 @@ function attackCard(attacker,target){
 }
 function attackFace(attacker,face){
   if(!attacker||!attacker.canAttack||attacker.stance==='defense')return;
+  G.lastChosenId = attacker.id || null;
   const fx=detectAttackFx(attacker);
   const sfxVariant=ATTACK_SFX_VARIANT[fx]||ATTACK_SFX_VARIANT.attack;
   sfx('attack',sfxVariant);
@@ -2443,14 +2794,14 @@ function attackFace(attacker,face){
   if(a){const ar=a.getBoundingClientRect();screenSlash(ar.right,ar.top+ar.height/2,10);}
   animateAttack(attacker.id,null);
   particleOnFace(face,fx||'attack');
-  const dmg=attacker.atk;
+  const dmg=Math.max(0, attacker.atk);
   attacker.canAttack=false;
   if(face==='ai'){
-    G.aiHP=clamp(G.aiHP-dmg,0,99);
+    G.aiHP=Math.max(0, G.aiHP-dmg);
     log(`${attacker.name} causou ${dmg} ao Inimigo!`);
     sfx('crit');
   }else{
-    G.playerHP=clamp(G.playerHP-dmg,0,99);
+    G.playerHP=Math.max(0, G.playerHP-dmg);
     log(`${attacker.name} causou ${dmg} a Você!`);
     sfx('hit');
   }
@@ -2465,11 +2816,37 @@ function attackFace(attacker,face){
 }
 function damageMinion(m,amt,opts){
   if(!m||typeof amt!=='number')return;
-  m.hp=clamp(m.hp-amt,0,99);
+  if(amt<0) amt=0;
+  const newHP = m.hp - amt;
+  m.hp = Math.max(0, Math.min(99, newHP));
   const defer = opts && opts.defer;
   if(m.hp<=0 && !defer) setTimeout(checkDeaths,10);
 }
-function checkDeaths(){const deadA=G.aiBoard.filter(c=>c.hp<=0);deadA.forEach(c=>{if(window.playParticleEffect)particleOnCard(c.id,'fire-ball',{scale:0.9});resetCardState(c);});if(deadA.length){G.aiBoard=G.aiBoard.filter(c=>c.hp>0);G.aiDiscard.push(...deadA);log('Uma criatura inimiga caiu.')}const deadP=G.playerBoard.filter(c=>c.hp<=0);deadP.forEach(c=>{if(window.playParticleEffect)particleOnCard(c.id,'fire-ball',{scale:0.9});resetCardState(c);});if(deadP.length){G.playerBoard=G.playerBoard.filter(c=>c.hp>0);G.playerDiscard.push(...deadP);log('Sua criatura caiu.')}els.discardCount.textContent=G.playerDiscard.length}
+function checkDeaths(){
+  const deadA = G.aiBoard.filter(c=>c.hp<=0);
+  if(deadA.length){
+    deadA.forEach(c=>{
+      if(window.playParticleEffect) particleOnCard(c.id,'fire-ball',{scale:0.9});
+    });
+    G.aiBoard = G.aiBoard.filter(c=>c.hp>0);
+    deadA.forEach(resetCardState);
+    G.aiDiscard.push(...deadA);
+    log('Uma criatura inimiga caiu.');
+  }
+
+  const deadP = G.playerBoard.filter(c=>c.hp<=0);
+  if(deadP.length){
+    deadP.forEach(c=>{
+      if(window.playParticleEffect) particleOnCard(c.id,'fire-ball',{scale:0.9});
+    });
+    G.playerBoard = G.playerBoard.filter(c=>c.hp>0);
+    deadP.forEach(resetCardState);
+    G.playerDiscard.push(...deadP);
+    log('Sua criatura caiu.');
+  }
+
+  if(els.discardCount) els.discardCount.textContent = G.playerDiscard.length;
+}
 async function aiTurn(){
   const skill=G.aiSkill||1;
   const playable=G.aiHand.filter(c=>c.cost<=G.aiMana);
@@ -2512,6 +2889,22 @@ function fireworks(win){const b=document.createElement('div');b.className='boom'
 function endGame(win){stopMenuMusic();els.endMsg.textContent=win?'You WIN!':'You Lose...';els.endMsg.style.color=win?'#8bf5a2':'#ff8a8a';els.endSub.textContent=win?'Parabéns! Quer continuar jogando?':'Tentar de novo ou voltar ao menu.';els.endOverlay.classList.add('show');setAriaHidden(els.endOverlay,false);focusDialog(els.endOverlay);setTimeout(()=>fireworks(win),1000);} 
 const hideEndOverlay=()=>{if(!els.endOverlay)return;els.endOverlay.classList.remove('show');setAriaHidden(els.endOverlay,true)};
 
+// Universal cleanup function for all in-game elements
+function cleanupGameElements(){
+  // Clear all dynamic game containers
+  if(els.pHand) els.pHand.innerHTML = '';
+  if(els.pBoard) els.pBoard.innerHTML = '';
+  if(els.aBoard) els.aBoard.innerHTML = '';
+  const totemBar = document.getElementById('totemBar');
+  if(totemBar) totemBar.innerHTML = '';
+  const effectsHud = document.getElementById('effectsHud');
+  if(effectsHud) effectsHud.innerHTML = '';
+  const directHint = document.getElementById('directAttackHint');
+  if(directHint) directHint.remove();
+  // Clear any floating elements
+  document.querySelectorAll('.totem-fly, .floating-totem, .fx').forEach(el => el.remove());
+}
+
 function showRewardsModal(rewardOptions, onComplete){
   const modal = document.getElementById('rewardsModal');
   const grid = document.getElementById('rewardsChoices');
@@ -2520,13 +2913,12 @@ function showRewardsModal(rewardOptions, onComplete){
   
   grid.innerHTML = '';
   msg.textContent = '';
-  let selectedReward = null;
 
   const rewardData = {
-    'Nova carta': { icon: '🎴', desc: 'Adicione uma carta aleatória ao seu deck' },
-    'Evoluir carta': { icon: '⬆️', desc: 'Melhore uma carta existente (+1/+1)' },
-    'Ganhar Totem': { icon: '🗿', desc: 'Adicione um totem ao seu deck' },
-    'Buff permanente': { icon: '✨', desc: 'Ganhe +1 HP ou +1 ATK em todas as cartas' }
+    'Nova carta': { icon: '🎴', desc: 'Adicione uma carta ao seu deck' },
+    'Evoluir carta': { icon: '⬆️', desc: 'Evolua uma carta já existente' },
+    'Ganhar Totem': { icon: '🗿', desc: 'Escolha um totem' },
+    'Buff permanente': { icon: '✨', desc: 'Buff permanente em todas as cartas' }
   };
 
   rewardOptions.forEach(reward => {
@@ -2544,88 +2936,270 @@ function showRewardsModal(rewardOptions, onComplete){
       selectedReward = reward;
       msg.textContent = `Selecionado: ${reward}`;
       setTimeout(() => {
-        applyReward(reward);
-        modal.style.display = 'none';
-        modal.setAttribute('aria-hidden', 'true');
-        if(window.playSfx) window.playSfx('reward');
-        onComplete?.();
-      }, 800);
+        closeModal(modal);
+        handleRewardSelection(reward, () => {
+          if(window.playSfx) window.playSfx('reward');
+          onComplete?.();
+        });
+      }, 450);
     };
     grid.appendChild(option);
   });
 
-  modal.style.display = 'grid';
-  modal.setAttribute('aria-hidden', 'false');
-  if(window.playSfx) window.playSfx('start');
+  showModal(modal);
 }
 
-function applyReward(rewardType){
-  if(!G.story) return;
-  
+const REWARD_TOTEMS = [
+  { name: 'Totem do Rugido', emoji: '🗿', desc: 'Ative: +1 ATK em um aliado', cost: 2, buffs: { atk: 1 } },
+  { name: 'Totem do Escudo', emoji: '🛡️', desc: 'Ative: +1 HP em um aliado', cost: 2, buffs: { hp: 1 } },
+  { name: 'Totem Cristalino', emoji: '🔮', desc: 'Ative: +1 ATK e +1 HP', cost: 3, buffs: { atk: 1, hp: 1 } }
+];
+
+function handleRewardSelection(rewardType, onDone){
+  if(!G.story){
+    onDone?.();
+    return;
+  }
+  const fallback = msg => awardFallbackGold(onDone, msg);
   switch(rewardType){
-    case 'Nova carta':
-      // Add a random card from defeated enemy's deck faction
-      const enemyDeck = G.aiDeckChoice || G.playerDeckChoice;
-      const pool = TEMPLATES[enemyDeck] || [];
-      if(pool.length){
-        const randomCard = pool[Math.floor(Math.random() * pool.length)];
-        const entry = {
-          name: randomCard[0],
-          emoji: randomCard[1] || '',
-          tribe: randomCard[2] || '',
-          atk: randomCard[3] || 0,
-          hp: randomCard[4] || 0,
-          cost: randomCard[5] || 0,
-          desc: randomCard[6] || '',
-          text: randomCard[6] || '',
-          type: 'unit',
-          deck: enemyDeck
-        };
-        G.story.deck = G.story.deck || [];
-        G.story.deck.push(entry);
-        log(`🎴 Recompensa: ${entry.name} (${enemyDeck}) adicionado ao deck!`);
+    case 'Nova carta':{
+      const deckKey = G.aiDeckChoice || G.playerDeckChoice || 'vikings';
+      const options = getRandomCardRewardOptions(deckKey, 4);
+      if(!options.length){
+        fallback('Nenhuma carta disponível. Recebe 10 ouro.');
+        return;
       }
+      openCardSelectionModal(options, card => {
+        addRewardCardToStory(card);
+        log(`🎴 Recompensa: ${card.name} adicionado ao deck!`);
+        onDone?.();
+      }, () => fallback('Nenhuma seleção realizada. Recebe 10 ouro.'));
       break;
-      
-    case 'Evoluir carta':
-      // Upgrade a random card in the story deck
-      if(G.story.deck && G.story.deck.length){
-        const idx = Math.floor(Math.random() * G.story.deck.length);
-        G.story.deck[idx].atk += 1;
-        G.story.deck[idx].hp += 1;
-        log(`⬆️ Recompensa: ${G.story.deck[idx].name} evoluiu para ${G.story.deck[idx].atk}/${G.story.deck[idx].hp}!`);
-      } else {
-        log(`⬆️ Recompensa: Nenhuma carta para evoluir (ganhando ouro extra)`);
-        G.story.gold += 10;
+    }
+    case 'Evoluir carta':{
+      const candidates = (G.story.deck || []).filter(c => c && c.type==='unit');
+      if(!candidates.length){
+        fallback('Nenhuma carta para evoluir. Recebe 10 ouro.');
+        return;
       }
+      openEvolveCardModal(candidates, card => {
+        const prevAtk = card.atk;
+        const prevHp = card.hp;
+        card.atk += 1;
+        card.hp += 1;
+        card.baseAtk = card.atk;
+        card.baseHp = card.hp;
+        log(`?? Recompensa: ${card.name} evoluiu para ${card.atk}/${card.hp}!`);
+        showEventRewardOverlay(card, { title: 'Carta evoluida', subtitle: `${prevAtk}/${prevHp} -> ${card.atk}/${card.hp}` });
+        onDone?.();
+        addRewardCardToStory(totemCard);
+        log(`🗿 Recompensa: ${totemCard.name} adicionado ao deck!`);
+        onDone?.();
+      }, () => fallback('Totem não selecionado. Recebe 10 ouro.'));
       break;
-      
-    case 'Ganhar Totem':
-      // Add a totem card
-      const totemEntry = {
-        name: 'Totem Místico',
-        emoji: '🗿',
-        tribe: 'Totem',
-        atk: 0,
-        hp: 0,
-        cost: 3,
-        desc: 'Ative: +1/+1 em um aliado',
-        text: 'Ative: +1/+1 em um aliado',
-        type: 'totem',
-        deck: G.playerDeckChoice
-      };
-      G.story.deck = G.story.deck || [];
-      G.story.deck.push(totemEntry);
-      log(`🗿 Recompensa: Totem Místico adicionado ao deck!`);
-      break;
-      
-    case 'Buff permanente':
-      // Apply permanent buff to all cards
-      const buffType = Math.random() > 0.5 ? 'atk' : 'hp';
-      G.story.bonuses.allyBuff[buffType] += 1;
-      log(`✨ Recompensa: Todas as suas unidades ganham +1 ${buffType.toUpperCase()}!`);
+    }
+    default:
+      applyPermanentBuffReward();
+      onDone?.();
       break;
   }
+}
+
+function addRewardCardToStory(card){
+  if(!card) return;
+  const hydrated = hydrateCardArt(card) || card;
+  const entry = Object.assign({}, hydrated);
+  entry.id = entry.id || uid();
+  if(!entry.deck) entry.deck = hydrated.deck || lookupCardTemplate(card.name)?.deck || G.playerDeckChoice;
+  entry.type = entry.type || 'unit';
+  entry.text = entry.text || entry.desc || '';
+  if(!entry.icon && entry.deck && DECK_IMAGES[entry.deck] && DECK_IMAGES[entry.deck].length){
+    entry.icon = DECK_IMAGES[entry.deck][0];
+  }
+  G.story.deck = G.story.deck || [];
+  G.story.deck.push(entry);
+}
+
+function toStoryCard(entry,fallbackDeck){
+  if(!entry) return null;
+  const hydrated = hydrateCardArt(entry) || entry;
+  const card = Object.assign({}, hydrated);
+  card.id = card.id || uid();
+  card.deck = card.deck || entry.deck || fallbackDeck;
+  card.type = card.type || entry.type || 'unit';
+  if(!card.icon && card.deck && DECK_IMAGES[card.deck] && DECK_IMAGES[card.deck].length){
+    card.icon = DECK_IMAGES[card.deck][0];
+  }
+  applyClassDefaults(card, card.tribe || card.deck);
+  ensureCardBase(card);
+  return card;
+}
+
+function awardFallbackGold(onDone, message){
+  log(message || 'Ganhou 10 ouro como alternativa.');
+  G.story.gold += 10;
+  if(typeof updateGoldHUD==='function') updateGoldHUD();
+  onDone?.();
+}
+
+function applyPermanentBuffReward(){
+  if(!G.story) return;
+  const buffType = Math.random() > 0.5 ? 'atk' : 'hp';
+  G.story.bonuses.allyBuff[buffType] += 1;
+  log(`✨ Recompensa: Todas as suas unidades ganham +1 ${buffType.toUpperCase()}!`);
+}
+
+function getRandomCardRewardOptions(deckKey, count=4){
+  const pool = (TEMPLATES[deckKey] || []).map(template => {
+    const card = makeCard(template);
+    card.deck = deckKey;
+    return card;
+  });
+  const chosen = [];
+  const working = [...pool];
+  while(chosen.length < count && working.length){
+    const idx = Math.floor(Math.random() * working.length);
+    chosen.push(working.splice(idx, 1)[0]);
+  }
+  return chosen;
+}
+
+function openCardSelectionModal(cards, onSelect, onCancel){
+  const modal = document.getElementById('cardSelectModal');
+  const grid = document.getElementById('cardSelectGrid');
+  if(!modal || !grid){ onCancel?.(); return; }
+  const title = document.getElementById('cardSelectTitle');
+  const subtitle = document.getElementById('cardSelectSubtitle');
+  const cancelBtn = document.getElementById('cardSelectCancel');
+  if(title) title.textContent = 'Nova carta';
+  if(subtitle) subtitle.textContent = 'Escolha uma carta para adicionar ao deck:';
+  grid.innerHTML = '';
+  cards.forEach(card => {
+    const option = document.createElement('div');
+    option.className = 'selection-card';
+    const cardNodeEl = cardNode(card, 'player');
+    cardNodeEl.classList.add('selection-card-preview');
+    option.appendChild(cardNodeEl);
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'selection-card-btn btn';
+    btn.textContent = 'Selecionar';
+    option.appendChild(btn);
+    const selectCard = () => {
+      closeModal(modal);
+      onSelect?.(card);
+    };
+    option.addEventListener('click', selectCard);
+    btn.addEventListener('click', e => { e.stopPropagation(); selectCard(); });
+    grid.appendChild(option);
+  });
+  if(cancelBtn) cancelBtn.onclick = () => { closeModal(modal); onCancel?.(); };
+  showModal(modal);
+}
+
+function openTotemSelectionModal(options, onSelect, onCancel){
+  const modal = document.getElementById('totemSelectModal');
+  const grid = document.getElementById('totemSelectGrid');
+  if(!modal || !grid){ onCancel?.(); return; }
+  const title = document.getElementById('totemSelectTitle');
+  const subtitle = document.getElementById('totemSelectSubtitle');
+  const cancelBtn = document.getElementById('totemSelectCancel');
+  if(title) title.textContent = 'Escolha um Totem';
+  if(subtitle) subtitle.textContent = 'Selecione um totem e adicione ao seu deck:';
+  grid.innerHTML = '';
+  options.forEach(optionData => {
+    const totemCard = createTotemRewardCard(optionData);
+    const tile = document.createElement('div');
+    tile.className = 'selection-card';
+    const cardEl = cardNode(totemCard, 'player');
+    cardEl.classList.add('selection-card-preview');
+    tile.appendChild(cardEl);
+    const desc = document.createElement('p');
+    desc.className = 'sub';
+    desc.textContent = optionData.desc;
+    tile.appendChild(desc);
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'selection-card-btn btn';
+    btn.textContent = 'Selecionar';
+    tile.appendChild(btn);
+    const choose = () => {
+      closeModal(modal);
+      onSelect?.(optionData);
+    };
+    tile.addEventListener('click', choose);
+    btn.addEventListener('click', e => { e.stopPropagation(); choose(); });
+    grid.appendChild(tile);
+  });
+  if(cancelBtn) cancelBtn.onclick = () => { closeModal(modal); onCancel?.(); };
+  showModal(modal);
+}
+
+function openEvolveCardModal(options, onSelect, onCancel){
+  const modal = document.getElementById('evolveCardModal');
+  const grid = document.getElementById('evolveCardGrid');
+  if(!modal || !grid){ onCancel?.(); return; }
+  const title = document.getElementById('evolveCardTitle');
+  const subtitle = document.getElementById('evolveCardSubtitle');
+  const cancelBtn = document.getElementById('evolveCardCancel');
+  if(title) title.textContent = 'Evoluir carta';
+  if(subtitle) subtitle.textContent = 'Escolha sua carta e ganhe +1/+1:';
+  grid.innerHTML = '';
+  options.forEach(card => {
+    const tile = document.createElement('div');
+    tile.className = 'selection-card';
+    const cardEl = cardNode(card, 'player');
+    cardEl.classList.add('selection-card-preview');
+    tile.appendChild(cardEl);
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'selection-card-btn btn';
+    btn.textContent = 'Evoluir';
+    tile.appendChild(btn);
+    const pick = () => {
+      closeModal(modal);
+      onSelect?.(card);
+    };
+    tile.addEventListener('click', pick);
+    btn.addEventListener('click', e => { e.stopPropagation(); pick(); });
+    grid.appendChild(tile);
+  });
+  if(cancelBtn) cancelBtn.onclick = () => { closeModal(modal); onCancel?.(); };
+  showModal(modal);
+}
+
+function createTotemRewardCard(option){
+  return {
+    name: option.name,
+    emoji: option.emoji || '🗿',
+    tribe: 'Totem',
+    atk: 0,
+    hp: 0,
+    cost: option.cost || 2,
+    desc: option.desc,
+    text: option.desc,
+    type: 'totem',
+    deck: G.playerDeckChoice,
+    buffs: option.buffs,
+    icon: option.icon || option.emoji || '🗿',
+    id: uid()
+  };
+}
+
+function showModal(modal){
+  if(!modal) return;
+  modal.classList.add('show');
+  modal.style.display = 'grid';
+  if(window.setAriaHidden) setAriaHidden(modal, false);
+  else modal.setAttribute('aria-hidden', 'false');
+}
+
+function closeModal(modal){
+  if(!modal) return;
+  modal.classList.remove('show');
+  modal.style.display = 'none';
+  if(window.setAriaHidden) setAriaHidden(modal, true);
+  else modal.setAttribute('aria-hidden', 'true');
 }
 
 // ===== RELIC SYSTEM FUNCTIONS =====
@@ -2741,11 +3315,12 @@ function applyRelicEffects(trigger, context = {}){
 }
 
 // ===== EVENT SYSTEM FUNCTIONS =====
-function showRandomEvent(onComplete){
+function showRandomEvent(onComplete, opts={}){
   if(!G.story) return onComplete?.();
   
   const available = STORY_EVENTS.filter(e => !G.story.eventsSeen.includes(e.id));
   if(!available.length) return onComplete?.();
+  const { source='story' } = opts;
   
   const event = available[Math.floor(Math.random() * available.length)];
   G.story.eventsSeen.push(event.id);
@@ -2801,7 +3376,7 @@ function showRandomEvent(onComplete){
 function executeEventChoice(event, choice, resultEl, onDone){
   // Apply costs
   if(choice.cost){
-    if(choice.cost.gold) G.story.gold -= choice.cost.gold;
+    if(choice.cost.gold){ G.story.gold -= choice.cost.gold; if(typeof updateGoldHUD==='function')updateGoldHUD(); }
     if(choice.cost.hp) G.playerHP = Math.max(1, G.playerHP - choice.cost.hp);
   }
   
@@ -2809,7 +3384,16 @@ function executeEventChoice(event, choice, resultEl, onDone){
   if(choice.reward){
     if(choice.reward.gold) {
       G.story.gold += choice.reward.gold;
+      if(typeof updateGoldHUD==='function')updateGoldHUD();
       log(`💰 +${choice.reward.gold} ouro`);
+    }
+    if(choice.reward.card){
+      const card = createEventRewardCard({ rarity: choice.reward.card });
+      if(card){
+        addRewardCardToStory(card);
+        showEventRewardOverlay(card, { title: 'Carta adicionada!', subtitle: 'Evento aleatório' });
+        log(`🎴 Evento: ${card.name} adicionado ao deck!`);
+      }
     }
     if(choice.reward.healFull) {
       G.playerHP = 30;
@@ -2824,7 +3408,10 @@ function executeEventChoice(event, choice, resultEl, onDone){
       }
     }
     if(choice.reward.removeCard) {
-      showCardRemoval(() => onDone?.());
+      showCardRemoval({
+        onComplete: () => onDone?.(),
+        onCardRemoved: card => animateCardRemovalOverlay(card, 'Carta removida no evento')
+      });
       return; // Callback handled by removal modal
     }
     if(choice.reward.relic === 'random') {
@@ -2844,9 +3431,9 @@ function executeEventChoice(event, choice, resultEl, onDone){
         type: 'totem',
         deck: G.playerDeckChoice
       };
-      G.story.deck = G.story.deck || [];
-      G.story.deck.push(totemEntry);
+      addRewardCardToStory(totemEntry);
       log(`🗿 Totem Místico adicionado!`);
+      showEventRewardOverlay(totemEntry, { title: 'Totem conquistado', subtitle: 'Evento aleatório' });
     }
     if(choice.reward.buffAll) {
       if(choice.reward.buffAll.atk) {
@@ -2876,12 +3463,65 @@ function executeEventChoice(event, choice, resultEl, onDone){
   onDone?.();
 }
 
+let eventOverlayTimer;
+function showEventRewardOverlay(card, { title='', subtitle='' } = {}){
+  const overlay = document.getElementById('eventRewardOverlay');
+  if(!overlay) return;
+  overlay.innerHTML = '';
+  if(title){
+    const msg = document.createElement('div');
+    msg.className = 'event-reward-msg';
+    msg.textContent = title;
+    overlay.appendChild(msg);
+  }
+  const container = document.createElement('div');
+  container.className = 'event-reward-card';
+  try{
+    const preview = cardNode(card,'player');
+    preview.classList.add('selection-card-preview');
+    container.appendChild(preview);
+  }catch(_){ }
+  overlay.appendChild(container);
+  if(subtitle){
+    const caption = document.createElement('div');
+    caption.className = 'event-reward-caption';
+    caption.textContent = subtitle;
+    overlay.appendChild(caption);
+  }
+  overlay.classList.remove('show');
+  void overlay.offsetWidth;
+  overlay.classList.add('show');
+  clearTimeout(eventOverlayTimer);
+  eventOverlayTimer = setTimeout(()=>{overlay.classList.remove('show');}, 3200);
+}
+function animateCardRemovalOverlay(card, message='Carta removida'){ showEventRewardOverlay(card, { title: message, subtitle: 'Evento aleatório' }); }
+function createEventRewardCard({ rarity='common', deckKey } = {}){
+  const key = deckKey || G.aiDeckChoice || G.playerDeckChoice || 'vikings';
+  const pool = (TEMPLATES[key] || []).map(makeCard);
+  if(!pool.length) return null;
+  const candidate = pool[Math.floor(Math.random()*pool.length)];
+  candidate.rarity = rarity === 'rare' ? 'raro' : candidate.rarity || 'comum';
+  candidate.deck = key;
+  return hydrateCardArt(candidate);
+}
+function maybeRunEventBeforeShop(onDone){
+  if(!G.story) return onDone?.();
+  const available = STORY_EVENTS.filter(e => !G.story.eventsSeen.includes(e.id));
+  if(!available.length) return onDone?.();
+  if(G.story.lastShopEventRound === G.story.round) return onDone?.();
+  const chance = 0.42;
+  if(Math.random() > chance) return onDone?.();
+  G.story.lastShopEventRound = G.story.round;
+  showRandomEvent(() => onDone?.(), { source: 'shop' });
+}
+
 // ===== CARD REMOVAL SYSTEM =====
-function showCardRemoval(onComplete){
+
+function showCardRemoval(opts){
+  const { onComplete, onCardRemoved } = (typeof opts === 'function') ? { onComplete: opts } : (opts || {});
   const modal = document.getElementById('removalModal');
   const grid = document.getElementById('removalChoices');
   const cancelBtn = document.getElementById('cancelRemoval');
-  // Expose globally for shop integration if not already
   try{ window.showCardRemoval = showCardRemoval; }catch(_){ }
   
   if(!modal || !grid) {
@@ -2889,24 +3529,26 @@ function showCardRemoval(onComplete){
     return onComplete?.();
   }
   
-  // Collect all player cards from all zones
   const allCards = [
     ...(G.playerDeck || []),
     ...(G.playerHand || []),
     ...(G.playerBoard || []),
     ...(G.playerDiscard || [])
-  ];
+  ].filter(Boolean);
   
-  // Remove duplicates by ID
   const uniqueCards = [];
   const seenIds = new Set();
   allCards.forEach(c => {
-    if(!c) return;
-    const id = c.id || (c._rid ||= uid());
-    if(!seenIds.has(id)){
-      seenIds.add(id);
-      uniqueCards.push(c);
-    }
+    const hydrated = hydrateCardArt(c) || c;
+    const id = hydrated.id || c.id || uid();
+    hydrated.id = hydrated.id || id;
+    c.id = c.id || id;
+    if(seenIds.has(id)) return;
+    seenIds.add(id);
+    const entry = Object.assign({}, hydrated);
+    ensureCardBase(entry);
+    if(!entry.deck) entry.deck = hydrated.deck || G.playerDeckChoice;
+    uniqueCards.push(entry);
   });
   
   if(!uniqueCards.length) {
@@ -2945,11 +3587,13 @@ function showCardRemoval(onComplete){
           const idx = G.story.pool.findIndex(x=>x && x.id===card.id);
           if(idx>-1) G.story.pool.splice(idx,1);
         }
-        log(`🔥 ${card.name} (${rarityLabel}) foi removido do deck!`);
+        log(`⚡ ${card.name} (${rarityLabel}) foi removido do deck!`);
         modal.style.display = 'none';
+        modal.classList.remove('show');
         if(window.setAriaHidden) setAriaHidden(modal, true);
         else modal.setAttribute('aria-hidden', 'true');
         if(window.playSfx) window.playSfx('error');
+        onCardRemoved?.(card);
         onComplete?.();
       },350);
     };
@@ -2960,6 +3604,7 @@ function showCardRemoval(onComplete){
   if(cancelBtn){
     cancelBtn.onclick = () => {
       modal.style.display = 'none';
+      modal.classList.remove('show');
       if(window.setAriaHidden) setAriaHidden(modal, true);
       else modal.setAttribute('aria-hidden', 'true');
       onComplete?.();
@@ -2967,9 +3612,9 @@ function showCardRemoval(onComplete){
   }
   
   modal.style.display = 'grid';
+  modal.classList.add('show');
   if(window.setAriaHidden) setAriaHidden(modal, false);
   else modal.setAttribute('aria-hidden', 'false');
-  // Focus first card for accessibility
   try{ const first = grid.querySelector('.removal-card'); first && first.focus && first.focus(); }catch(_){ }
 }
 
@@ -2977,79 +3622,61 @@ function checkWin(){
   if(G.aiHP<=0){
     if(G.mode==='story'&&G.story){
       const {leveled,rewards,goldGain,isBoss}=G.story.handleVictory();
-      log(`Você ganhou ${goldGain} ouro.`);
-      if(leveled) log(`Você alcançou o nível ${G.story.level}!`);
-
-      // Show shop every 3 rounds
+      log(`Voce ganhou ${goldGain} ouro.`);
+      if(leveled) log(`Voce alcancou o nivel ${G.story.level}!`);
       const shouldShowShop = G.story.round % 3 === 0;
-
       const openStoryShop = () => {
-        showEncounterBanner('Loja do Clã','shop');
-        openShop({
-          faction:G.playerDeckChoice,
-          gold:G.story.gold,
-          story:true,
-          onClose: async state => {
-            if(state&&state.pending&&state.pending.length){
-              try{ await Promise.all(state.pending); }catch(_){ }
-            }
-            if(state){
-              G.story.gold = state.gold;
-              if(state.purchased&&state.purchased.length){
-                state.purchased.forEach(item=>{
-                  if(item&&item.bonus){
-                    try{
-                      const note = G.story.registerBonus(item.bonus,item);
-                      if(note){ log(`Campanha: ${item.name} concedeu ${note}.`); }
-                    }catch(err){ console.error('register bonus',err); }
-                  }else if(item && ['unit','spell','totem'].includes(item.type)){
-                    try{
-                      G.story.deck = G.story.deck || [];
-                      const entry = { 
-                        name:item.name, 
-                        atk:item.atk||0, 
-                        hp:item.hp||0, 
-                        cost:item.cost||0, 
-                        desc:item.desc||item.text||'', 
-                        text:item.text||item.desc||'',
-                        type:item.type,
-                        deck:item.deck||G.playerDeckChoice,
-                        emoji:item.emoji||'',
-                        tribe:item.tribe||''
-                      };
-                      G.story.deck.push(entry);
-                      log(`✅ Campanha: ${item.name} foi adicionado ao seu baralho!`);
-                    }catch(err){ console.error('add purchased card',err); }
-                  }
-                });
+        const launchShop = () => {
+          showEncounterBanner('Loja do Cl�','shop');
+          openShop({
+            faction:G.playerDeckChoice,
+            gold:G.story.gold,
+            story:true,
+            onClose: async state => {
+              if(state&&state.pending&&state.pending.length){
+                try{ await Promise.all(state.pending); }catch(_){ }
               }
+              if(state){
+                G.story.gold = state.gold;
+                if(typeof updateGoldHUD==='function')updateGoldHUD();
+                if(state.purchased&&state.purchased.length){
+                  state.purchased.forEach(item=>{
+                    if(item&&item.bonus){
+                      try{
+                        const note = G.story.registerBonus(item.bonus,item);
+                        if(note){ log(`Campanha: ${item.name} concedeu ${note}.`); }
+                      }catch(err){ console.error('register bonus',err); }
+                    }else if(item && ['unit','spell','totem'].includes(item.type)){
+                      try{
+                        addRewardCardToStory(item);
+                        log(`? Campanha: ${item.name} foi adicionado ao seu baralho!`);
+                      }catch(err){ console.error('add purchased card',err); }
+                    }
+                  });
+                }
+              }
+              encounterTransition(()=>startGame({continueStory:true}));
             }
-            const proceed=()=>encounterTransition(()=>startGame({continueStory:true}));
-            proceed();
-          }
-        });
+          });
+        };
+        maybeRunEventBeforeShop(launchShop);
       };
-
       const afterRewards = () => {
-        // Boss defeated: give relic choice
+        const proceedNext = () => encounterTransition(()=>startGame({continueStory:true}));
         if(isBoss){
           showRelicChoice(() => {
             if(shouldShowShop){
-              try{ openVictoryModal(G.currentEnemyName, openStoryShop); }catch(_){ openStoryShop(); }
+              showVictoryBanner(G.currentEnemyName, openStoryShop);
             } else {
-              const proceedNext = () => encounterTransition(()=>startGame({continueStory:true}));
-              try{ openVictoryModal(G.currentEnemyName, proceedNext); }catch(_){ proceedNext(); }
+              showVictoryBanner(G.currentEnemyName, proceedNext);
             }
           });
         } else if(shouldShowShop){
-          try{ openVictoryModal(G.currentEnemyName, openStoryShop); }catch(_){ openStoryShop(); }
+          showVictoryBanner(G.currentEnemyName, openStoryShop);
         } else {
-          const proceedNext = () => encounterTransition(()=>startGame({continueStory:true}));
-          try{ openVictoryModal(G.currentEnemyName, proceedNext); }catch(_){ proceedNext(); }
+          showVictoryBanner(G.currentEnemyName, proceedNext);
         }
       };
-
-      // Show rewards modal
       showRewardsModal(rewards, afterRewards);
       return;
     }
@@ -3057,26 +3684,16 @@ function checkWin(){
   }
   if(G.playerHP<=0){endGame(false);}
 }
+
 function allCards(){let out=[];for(const k of Object.keys(TEMPLATES)){for(const raw of TEMPLATES[k]){const c=makeCard(raw);c.deck=k;out.push(c)}}return out}
 function renderEncy(filter='all',locked=false){els.encyGrid.innerHTML='';const cards=(filter==='all'?allCards():TEMPLATES[filter].map(makeCard).map(c=>Object.assign(c,{deck:filter})));cards.forEach(c=>{const d=cardNode(c,'player');d.classList.add('ency-card');tiltify(d);els.encyGrid.appendChild(d)});els.ency.classList.add('show');setAriaHidden(els.ency,false);focusDialog(els.ency);els.encyFilters.style.display=locked?'none':'flex';$$('.filters .fbtn').forEach(b=>b.classList.toggle('active',b.dataset.deck===filter||filter==='all'&&b.dataset.deck==='all'))}
 const updateRestartVisibility=()=>{if(els.restartBtn)els.restartBtn.style.display=window.isMultiplayer?'none':'block'};
 const toggleGameMenu=open=>{if(!els.gameMenu)return;if(open){els.gameMenu.classList.add('show');setAriaHidden(els.gameMenu,false);focusDialog(els.gameMenu);updateRestartVisibility();}else{els.gameMenu.classList.remove('show');setAriaHidden(els.gameMenu,true)}};
-els.endBtn.addEventListener('click',endTurn);
-if(els.instantWinBtn){
-  els.instantWinBtn.addEventListener('click',()=>{
-    if(G.mode!=='story'||!window.storyTestMode)return;
-    G.aiHP=0;
-    particleOnFace('ai','explosion');
-    log('⚡ Teste: Vitória instantânea ativada!');
-    sfx('crit');
-    checkWin();
-  });
-}
-els.muteBtn.addEventListener('click',()=>{initAudio();ensureRunning();allMuted=!allMuted;musicMuted=allMuted;sfxMuted=allMuted;if(master) master.gain.value=allMuted?0:1;if(musicGain) musicGain.gain.value=allMuted?0:musicBase*musicVolume;if(ambientLoop&&ambientLoop.gain){const target=allMuted?0:ambientLoop.base*sfxVolume;try{ambientLoop.gain.gain.setValueAtTime(target,actx.currentTime);}catch(_){ambientLoop.gain.gain.value=target;}}els.muteBtn.textContent=allMuted?'🔇 Som':'🔊 Som';els.muteBtn.setAttribute('aria-pressed',allMuted?'true':'false')});window.addEventListener('keydown',e=>{if(e.key!=='Escape')return;if(G.chosen){cancelTargeting();return}if(!els.gameMenu)return;const t=els.gameMenu.classList.contains('show');t?toggleGameMenu(false):toggleGameMenu(true)});document.addEventListener('click',e=>{if(!G.chosen)return;if(e.target.closest('#aiBoard .card.selectable')||e.target.closest('#playerBoard .card.selectable')||e.target.closest('#aiBoard .face-attack-btn'))return;cancelTargeting()},{capture:true});
+window.addEventListener('keydown',e=>{if(e.key!=='Escape')return;if(G.chosen){cancelTargeting();return}if(!els.gameMenu)return;const t=els.gameMenu.classList.contains('show');t?toggleGameMenu(false):toggleGameMenu(true)});document.addEventListener('click',e=>{if(!G.chosen)return;if(e.target.closest('#aiBoard .card.selectable')||e.target.closest('#playerBoard .card.selectable')||e.target.closest('#aiBoard .face-attack-btn'))return;cancelTargeting()},{capture:true});
 function confirmExit(){return G.mode==='story'?confirm('Progresso da história será perdido. Continuar?'):confirm('Tem certeza?');}
 if(els.openMenuBtn)els.openMenuBtn.addEventListener('click',()=>{toggleGameMenu(true)});
 if(els.closeMenuBtn)els.closeMenuBtn.addEventListener('click',()=>{toggleGameMenu(false)});
-if(els.mainMenuBtn)els.mainMenuBtn.addEventListener('click',()=>{if(!confirmExit())return;toggleGameMenu(false);const title=document.getElementById('titleMenu');const deck=document.getElementById('start');if(title)title.style.display='flex';if(deck)deck.style.display='none';applyBattleTheme(null);els.wrap.style.display='none';startMenuMusic('menu');if(window.isMultiplayer&&window.NET){NET.disconnect();}window.isMultiplayer=false;window.mpState=null;const custom=document.querySelector('.deckbtn[data-deck="custom"]');custom&&(custom.style.display='');if(els.startGame){els.startGame.textContent='Jogar';els.startGame.disabled=true;}});
+if(els.mainMenuBtn)els.mainMenuBtn.addEventListener('click',()=>{if(!confirmExit())return;toggleGameMenu(false);const title=document.getElementById('titleMenu');const deck=document.getElementById('start');if(title)title.style.display='flex';if(deck)deck.style.display='none';applyBattleTheme(null);els.wrap.style.display='none';cleanupGameElements();startMenuMusic('menu');if(window.isMultiplayer&&window.NET){NET.disconnect();}window.isMultiplayer=false;window.mpState=null;G.storyVariant=null;const custom=document.querySelector('.deckbtn[data-deck="custom"]');custom&&(custom.style.display='');if(els.startGame){els.startGame.textContent='Jogar';els.startGame.disabled=true;}});
 if(els.restartBtn)els.restartBtn.addEventListener('click',()=>{if(window.isMultiplayer)return;if(!confirmExit())return;toggleGameMenu(false);startGame()});
 if(els.resignBtn)els.resignBtn.addEventListener('click',()=>{if(!confirmExit())return;toggleGameMenu(false);if(window.isMultiplayer&&window.NET){NET.resign();}endGame(false)});
 if(els.emojiBar){els.emojiBar.querySelectorAll('.emoji-btn').forEach(b=>b.addEventListener('click',()=>{const em=b.dataset.emoji;showEmoji('player',em);if(window.isMultiplayer&&window.NET){NET.sendEmoji(em)}}));}
@@ -3155,10 +3772,21 @@ if(document.readyState!=='loading'){
 } else {
   document.addEventListener('DOMContentLoaded',()=>{ initDeckButtons(); initCommonButtonHover(); });
 }
+if(els.endBtn){ els.endBtn.addEventListener('click', endTurn); }
+if(els.instantWinBtn){
+  els.instantWinBtn.addEventListener('click', ()=>{
+    if(G.mode!=='story'||!window.storyTestMode) return;
+    G.aiHP = 0;
+    try{ particleOnFace('ai','explosion'); }catch(_){ }
+    log('? Teste: Vitoria instantanea ativada!');
+    sfx('crit');
+    checkWin();
+  });
+}
 if(els.saveDeck)els.saveDeck.addEventListener('click',()=>{if(G.customDeck&&G.customDeck.length){els.deckBuilder.style.display='none';els.startGame.disabled=false;}});
-els.startGame.addEventListener('click',()=>{if(els.startGame.disabled)return;if(window.isMultiplayer){if(window.mpState==='readyStart'){NET.startReady();window.mpState='waitingStart';els.startGame.textContent='Aguardando oponente iniciar...';els.startGame.disabled=true}else if(!window.mpState){NET.deckChoice(G.playerDeckChoice);if(window.opponentConfirmed){window.mpState='readyStart';els.startGame.textContent='Iniciar';els.startGame.disabled=false}else{window.mpState='waitingDeck';els.startGame.textContent='Aguardando oponente confirmar deck...';els.startGame.disabled=true}}}else{els.start.style.display='none';els.wrap.style.display='block';initAudio();ensureRunning();stopMenuMusic();startGame()}});
+els.startGame.addEventListener('click',()=>{if(els.startGame.disabled)return;if(window.isMultiplayer){if(window.mpState==='readyStart'){NET.startReady();window.mpState='waitingStart';els.startGame.textContent='Aguardando oponente iniciar...';els.startGame.disabled=true}else if(!window.mpState){NET.deckChoice(G.playerDeckChoice);if(window.opponentConfirmed){window.mpState='readyStart';els.startGame.textContent='Iniciar';els.startGame.disabled=false}else{window.mpState='waitingDeck';els.startGame.textContent='Aguardando oponente confirmar deck...';els.startGame.disabled=true}}}else{if(window.currentGameMode==='story2'){startStory2();return;}els.start.style.display='none';els.wrap.style.display='block';initAudio();ensureRunning();stopMenuMusic();startGame()}});
 els.openEncy.addEventListener('click',()=>renderEncy('all',false));els.closeEncy.addEventListener('click',()=>{els.ency.classList.remove('show');setAriaHidden(els.ency,true)});$$('.filters .fbtn').forEach(b=>b.addEventListener('click',()=>{renderEncy(b.dataset.deck,false)}));
-els.playAgainBtn.addEventListener('click',()=>{if(!confirmExit())return;if(window.isMultiplayer){showMultiplayerDeckSelect();hideEndOverlay();}else{hideEndOverlay();startGame()}});els.rematchBtn.addEventListener('click',()=>{if(!confirmExit())return;if(window.isMultiplayer&&window.NET){NET.requestRematch();els.rematchBtn.disabled=true;els.endSub.textContent='Aguardando oponente';}else{hideEndOverlay();startGame()}});els.menuBtn.addEventListener('click',()=>{if(!confirmExit())return;hideEndOverlay();applyBattleTheme(null);els.start.style.display='flex';els.wrap.style.display='none';startMenuMusic('menu');if(window.isMultiplayer&&window.NET){NET.disconnect();}window.isMultiplayer=false;window.mpState=null;const custom=document.querySelector('.deckbtn[data-deck="custom"]');custom&&(custom.style.display='');if(els.startGame){els.startGame.textContent='Jogar';els.startGame.disabled=true;}});
+els.playAgainBtn.addEventListener('click',()=>{if(!confirmExit())return;if(window.isMultiplayer){showMultiplayerDeckSelect();hideEndOverlay();}else{hideEndOverlay();startGame()}});els.rematchBtn.addEventListener('click',()=>{if(!confirmExit())return;if(window.isMultiplayer&&window.NET){NET.requestRematch();els.rematchBtn.disabled=true;els.endSub.textContent='Aguardando oponente';}else{hideEndOverlay();startGame()}});els.menuBtn.addEventListener('click',()=>{if(!confirmExit())return;hideEndOverlay();applyBattleTheme(null);els.start.style.display='flex';els.wrap.style.display='none';cleanupGameElements();startMenuMusic('menu');if(window.isMultiplayer&&window.NET){NET.disconnect();}window.isMultiplayer=false;window.mpState=null;G.storyVariant=null;const custom=document.querySelector('.deckbtn[data-deck="custom"]');custom&&(custom.style.display='');if(els.startGame){els.startGame.textContent='Jogar';els.startGame.disabled=true;}});
 window.startTotemTest=()=>{
   window.currentGameMode='solo';
   const deck=[
@@ -3255,24 +3883,9 @@ function triggerTotemSlotFx(slot,theme){
 }
 function applyTotemBuffsWithFx(t){
   if(!G.playerBoard.length||!t)return;
-  G.playerBoard.forEach(u=>{u.atk=(u.baseAtk!==undefined?u.baseAtk:u.atk);u.hp=(u.baseHp!==undefined?u.baseHp:u.hp);u.baseAtk=u.atk;u.baseHp=u.hp});
-  const cnt=Math.min(3,G.playerBoard.length);
-  const picks=shuffle(G.playerBoard.slice()).slice(0,cnt);
-  const fx = (t.buffs&&t.buffs.atk)&&(t.buffs&&t.buffs.hp) ? 'magic' : (t.buffs&&t.buffs.atk) ? 'attack' : 'healing';
-  const storyBonus = (G.mode==='story'&&G.story&&G.story.bonuses&&G.story.bonuses.totemBonus)?G.story.bonuses.totemBonus:null;
-  picks.forEach(u=>{
-    let totalAtk = (t.buffs&&t.buffs.atk)||0;
-    let totalHp = (t.buffs&&t.buffs.hp)||0;
-    if(storyBonus){
-      if(storyBonus.atk) totalAtk += storyBonus.atk;
-      if(storyBonus.hp) totalHp += storyBonus.hp;
-    }
-    if(totalAtk) u.atk += totalAtk;
-    if(totalHp) u.hp += totalHp;
-    try{ particleOnCard(u.id, fx); }catch(_){ }
-    if(totalAtk){ try{ fxTextOnCard(u.id, `+${totalAtk} ATK`,'buff'); }catch(_){ } }
-    if(totalHp){ try{ fxTextOnCard(u.id, `+${totalHp} HP`,'buff'); }catch(_){ } }
-  });
+  ensureTotemTargets(t);
+  const storyBonus = storyTotemBonus();
+  applyTotemBuffs({focusTotem:t,animate:true});
   if(storyBonus && (storyBonus.atk||storyBonus.hp)){
     log(`🗿 Talismã Totêmico: Totem fortalecido com bônus da relíquia!`);
   }
@@ -3343,7 +3956,15 @@ window._activateTotemByIdImpl = function(cardId, anchor){
   const c = G.playerHand[i];
   if(G.totems.length>=3){ log('Número máximo de Totens atingido.'); return; }
   G.playerHand.splice(i,1); G.playerMana-=c.cost;
-  const t={name:c.name,buffs:c.buffs||{atk:1,hp:1},icon:c.icon}; t.icon = totemIcon(t); t.desc = describeTotem(c); const theme=getTotemTheme(t); t.theme=theme;
+  const t={
+    id:c.id,
+    name:c.name,
+    buffs:c.buffs||{atk:1,hp:1},
+    icon:c.icon||totemIcon(c),
+    theme:getTotemTheme(c),
+    maxTargets:Math.min(3,Math.max(1,G.playerBoard.length||1)),
+    desc:describeTotem(c)
+  };
   try{ if(!window.animationsDisabled && anchor){
     const r=anchor.getBoundingClientRect();
     Object.assign(anchor.style,{position:'fixed',left:r.left+'px',top:r.top+'px',width:r.width+'px',height:r.height+'px',zIndex:1500,margin:'0'});
@@ -3369,7 +3990,15 @@ function activateTotemById(cardId, anchor){
   const c = G.playerHand[i];
   if(G.totems.length>=3){ log('Número máximo de Totens atingido.'); return; }
   G.playerHand.splice(i,1); G.playerMana-=c.cost;
-  const t={name:c.name,buffs:c.buffs||{atk:1,hp:1},icon:c.icon}; t.icon = totemIcon(t); t.desc = describeTotem(c); const theme=getTotemTheme(t); t.theme=theme;
+  const t={
+    id:c.id,
+    name:c.name,
+    buffs:c.buffs||{atk:1,hp:1},
+    icon:c.icon||totemIcon(c),
+    theme:getTotemTheme(c),
+    maxTargets:Math.min(3,Math.max(1,G.playerBoard.length||1)),
+    desc:describeTotem(c)
+  };
   try{ if(!window.animationsDisabled && anchor){
     const r=anchor.getBoundingClientRect();
     Object.assign(anchor.style,{position:'fixed',left:r.left+'px',top:r.top+'px',width:r.width+'px',height:r.height+'px',zIndex:1500,margin:'0'});

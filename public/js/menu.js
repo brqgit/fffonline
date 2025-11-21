@@ -3,6 +3,8 @@
     return;
   }
   window.__fffMenuInitialized = true;
+  // Story Mode 2 temporarily disabled until further notice.
+  var STORY2_ENABLED = false;
 
   function initMenuScreens() {
     var titleMenu = document.getElementById('titleMenu');
@@ -12,6 +14,7 @@
     var playBtn = document.getElementById('menuPlay');
     var playPopup = document.getElementById('playPopup');
     var playStoryBtn = document.getElementById('menuPlayStory');
+    var playStory2Btn = document.getElementById('menuPlayStory2');
     var playQuickBtn = document.getElementById('menuPlayQuick');
     var playMultiBtn = document.getElementById('menuPlayMulti');
     var optBtn = document.getElementById('menuOptions');
@@ -60,11 +63,20 @@
       if (mode === 'story') {
         startBtn.textContent = 'Iniciar História';
         startBtn.disabled = true;
+      } else if (mode === 'story2') {
+        if (!STORY2_ENABLED) {
+          startBtn.textContent = 'Modo indisponível';
+          startBtn.disabled = true;
+          return;
+        }
+        startBtn.textContent = 'Iniciar História 2 (beta)';
+        startBtn.disabled = true;
       } else {
         startBtn.textContent = 'Jogar';
         startBtn.disabled = true;
       }
     }
+
 
     var playPopupOpen = false;
 
@@ -132,6 +144,9 @@
     function handlePlayChoice(mode) {
       if (!mode) return;
       closePlayPopup();
+      if (mode === 'story2' && !STORY2_ENABLED) {
+        return;
+      }
       if (mode === 'multiplayer') {
         if (titleMenu) titleMenu.style.display = 'none';
         if (deckScreen) deckScreen.style.display = 'none';
@@ -152,12 +167,17 @@
         setDeckScreenDifficultyVisible(false);
         updateStartButtonForMode('story');
         window.currentGameMode = 'story';
+      } else if (mode === 'story2') {
+        setDeckScreenDifficultyVisible(false);
+        updateStartButtonForMode('story2');
+        window.currentGameMode = 'story2';
       } else {
         setDeckScreenDifficultyVisible(true);
         updateStartButtonForMode('solo');
         window.currentGameMode = 'solo';
       }
     }
+
 
     if (playBtn) {
       playBtn.addEventListener('click', function () {
@@ -176,6 +196,17 @@
         handlePlayChoice('story');
       });
     }
+    if (playStory2Btn && !STORY2_ENABLED) {
+      playStory2Btn.style.display = 'none';
+      playStory2Btn.setAttribute('aria-hidden', 'true');
+      playStory2Btn.setAttribute('tabindex', '-1');
+    }
+    if (STORY2_ENABLED && playStory2Btn) {
+      playStory2Btn.addEventListener('click', function () {
+        handlePlayChoice('story2');
+      });
+    }
+
     if (playQuickBtn) {
       playQuickBtn.addEventListener('click', function () {
         handlePlayChoice('solo');

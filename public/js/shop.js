@@ -2,26 +2,26 @@ const $ = sel => document.querySelector(sel);
 
 const FACTIONS = {
   Furioso: { pool: [
-    { name: 'Ceifeira Ágil', type: 'unit', atk: 3, hp: 2, cost: 9, rarity: 'common' },
-    { name: 'Grito de Guerra', type: 'spell', desc: '+1 ATK a uma unidade', cost: 6, rarity: 'common' },
-    { name: 'Totem da Fúria', type: 'totem', desc: '+1 ATK a 1–3 unidades', cost: 12, rarity: 'rare' }
+    { name: 'Ceifeira Ágil', type: 'unit', atk: 3, hp: 2, cost: 3, rarity: 'common' },
+    { name: 'Grito de Guerra', type: 'spell', desc: '+1 ATK a uma unidade', cost: 2, rarity: 'common' },
+    { name: 'Totem da Fúria', type: 'totem', desc: '+1 ATK a 1-3 unidades', cost: 2, rarity: 'rare' }
   ]},
   Sombras: { pool: [
-    { name: 'Sombras Encapuçado', type: 'unit', atk: 3, hp: 5, cost: 10, rarity: 'common' },
-    { name: 'Dreno Sombrio', type: 'spell', desc: 'Drena 2 de HP', cost: 7, rarity: 'common' },
-    { name: 'Totem da Lua Nova', type: 'totem', desc: '+1 HP a 1–3 unidades', cost: 11, rarity: 'rare' }
+    { name: 'Sombras Encapuçado', type: 'unit', atk: 3, hp: 5, cost: 4, rarity: 'common' },
+    { name: 'Dreno Sombrio', type: 'spell', desc: 'Drena 2 de HP', cost: 3, rarity: 'common' },
+    { name: 'Totem da Lua Nova', type: 'totem', desc: '+1 HP a 1-3 unidades', cost: 2, rarity: 'rare' }
   ]},
   Percepcao: { pool: [
-    { name: 'Guardião do Bosque', type: 'unit', atk: 2, hp: 4, cost: 8, rarity: 'common' },
-    { name: 'Insight', type: 'spell', desc: 'Compre 2 cartas', cost: 7, rarity: 'common' },
-    { name: 'Totem do Olho Antigo', type: 'totem', desc: '+1/+1 a 1–3 unidades', cost: 13, rarity: 'rare' }
+    { name: 'Guardiao do Bosque', type: 'unit', atk: 2, hp: 4, cost: 3, rarity: 'common' },
+    { name: 'Insight', type: 'spell', desc: 'Compre 2 cartas', cost: 3, rarity: 'common' },
+    { name: 'Totem do Olho Antigo', type: 'totem', desc: '+1/+1 a 1-3 unidades', cost: 3, rarity: 'rare' }
   ]}
 };
 
 const NEUTRAL = [
-  { name: 'Aldeão Valente', type: 'unit', atk: 1, hp: 2, cost: 5, rarity: 'common' },
-  { name: 'Afiar Lâminas', type: 'spell', desc: '+1 ATK', cost: 5, rarity: 'common' },
-  { name: 'Totem do Carvalho', type: 'totem', desc: '+1 HP', cost: 9, rarity: 'rare' }
+  { name: 'Aldeão Valente', type: 'unit', atk: 1, hp: 2, cost: 2, rarity: 'common' },
+  { name: 'Afiar Lâminas', type: 'spell', desc: '+1 ATK', cost: 1, rarity: 'common' },
+  { name: 'Totem do Carvalho', type: 'totem', desc: '+1 HP', cost: 2, rarity: 'rare' }
 ];
 
 const STORY_ITEMS = [
@@ -158,9 +158,9 @@ function genShopOffers(){
     }
   }
   const offers = pool.slice(0, maxOffers).map(it => {
-    const base = Object.assign({}, it);
-    // if player deck choice exists, hint renderer to prefer that deck for art
-    if(window && window.G && window.G.playerDeckChoice && !base.deck){ base.deck = window.G.playerDeckChoice; }
+    let base = Object.assign({}, it);
+    if(window.hydrateCardArt){ base = window.hydrateCardArt(base); }
+    else if(window && window.G && window.G.playerDeckChoice && !base.deck){ base.deck = window.G.playerDeckChoice; }
     return withImg(base);
   });
   // add a consumable if there's room
@@ -179,11 +179,11 @@ function renderShop(){
     const flair = (it && (it.flair || (it.type === 'buff' && it.bonus && it.bonus.startMana ? 'mana' : it.type))) || 'item';
     card.dataset.flair = flair;
     if(it && it.type) card.dataset.type = it.type;
+    const hoverData = window.hydrateCardArt ? window.hydrateCardArt(Object.assign({}, it)) : it;
 
     if(['unit','spell','totem'].includes(it.type) && window.cardNode){
-      const nodeData = Object.assign({}, it);
-      if(nodeData.img) delete nodeData.img;
-      if(!nodeData.deck && window && window.G && window.G.playerDeckChoice) nodeData.deck = window.G.playerDeckChoice;
+      let nodeData = Object.assign({}, it);
+      if(window.hydrateCardArt){ nodeData = window.hydrateCardArt(nodeData); }
       const node = window.cardNode(nodeData,'player');
       node.classList.add('shop-preview');
       card.appendChild(node);
@@ -236,9 +236,11 @@ function renderShop(){
       const applyLocal = () => {
         shopState.gold = Math.max(0, shopState.gold - it.cost);
         $('#shopGold').textContent = shopState.gold;
+        if(window.updateGoldHUD) window.updateGoldHUD();
         btn.textContent = '✔';
         btn.disabled = true;
-        shopState.purchased.push(it);
+        const purchaseItem = window.hydrateCardArt ? window.hydrateCardArt(Object.assign({}, it)) : Object.assign({}, it);
+        shopState.purchased.push(purchaseItem);
         // refresh other buttons affordability
         try{
           document.querySelectorAll('.price-btn').forEach(b => {
@@ -251,7 +253,7 @@ function renderShop(){
           });
         }catch(_){ }
         if(window.playSfx) window.playSfx('reward');
-        showShopMsg('Compra registrada');
+        showShopMsg('✓ Compra registrada');
       };
       const useServer = !!(window.isMultiplayer || window.usePurchaseAPI);
       if(!useServer){
@@ -280,7 +282,8 @@ function renderShop(){
         shopState.gold = Math.max(0, data.gold);
         $('#shopGold').textContent = shopState.gold;
         btn.textContent = '✔';
-        shopState.purchased.push(it);
+        const purchaseItem = window.hydrateCardArt ? window.hydrateCardArt(Object.assign({}, it)) : Object.assign({}, it);
+        shopState.purchased.push(purchaseItem);
         try{
           document.querySelectorAll('.price-btn').forEach(b => {
             const amt = b.querySelector('.price-amt');
@@ -290,8 +293,9 @@ function renderShop(){
             else { b.classList.remove('unaffordable'); b.disabled = false; amt.classList.remove('unaffordable'); }
           });
         }catch(_){ }
+        if(window.updateGoldHUD) window.updateGoldHUD();
         if(window.playSfx) window.playSfx('reward');
-        showShopMsg('Compra registrada');
+        showShopMsg('✓ Compra registrada');
       })
       .catch(err => {
         console.warn('Falha na API de compra, usando fallback local:', err.message);
@@ -302,9 +306,9 @@ function renderShop(){
     };
     card.appendChild(btn);
 
-    card.addEventListener('mouseenter', () => tooltip.show(it, card));
+    card.addEventListener('mouseenter', () => tooltip.show(hoverData, card));
     card.addEventListener('mouseleave', () => tooltip.hide());
-    card.addEventListener('click', ev => { ev.stopPropagation(); tooltip.show(it, card); });
+    card.addEventListener('click', ev => { ev.stopPropagation(); tooltip.show(hoverData, card); });
 
     wrap.appendChild(card);
   });
@@ -338,7 +342,7 @@ function getRemovalCost(card){
 
 function openShop({ faction, gold, onClose, unlimited=false, story=false }){
 
-  const map = { vikings:'Furioso', animais:'Furioso', pescadores:'Sombras', floresta:'Percepcao', convergentes:'Percepcao' };
+  const map = { vikings:'Furioso', animais:'Furioso', pescadores:'Sombras', floresta:'Percepcao' };
   shopState.faction = map[faction] || faction || 'Furioso';
   shopState.gold = gold;
   shopState.onClose = onClose;
@@ -355,9 +359,14 @@ function openShop({ faction, gold, onClose, unlimited=false, story=false }){
   const removeBtn = document.getElementById('btnRemoveCard');
   if(removeBtn){
     const baseCost = getRemovalCost();
-    const removalText = shopState.removals > 0 ? ` (${shopState.removals} removidas)` : '';
-    removeBtn.textContent = `🔥 Remover Carta (${baseCost}+ ouro)${removalText}`;
-    removeBtn.disabled = shopState.gold < baseCost;
+    removeBtn.textContent = `🔥 Remover Carta (${baseCost} ouro)`;
+    if(shopState.gold < baseCost){
+      removeBtn.disabled = true;
+      removeBtn.classList.add('insufficient-funds');
+    } else {
+      removeBtn.disabled = false;
+      removeBtn.classList.remove('insufficient-funds');
+    }
   }
   // ensure the close button is enabled and clickable
   const closeBtn = document.getElementById('closeShop');
@@ -399,8 +408,15 @@ shopModal?.addEventListener('click', ev => {
 
 document.getElementById('btnReroll')?.addEventListener('click', () => {
   const cost = 5 * (rerollCount + 1);
+  const rerollBtn = document.getElementById('btnReroll');
   if(!shopState.unlimited && rerollCount >= 1){ showShopMsg('Sem re-rolagens.'); if(window.playSfx) window.playSfx('error'); return; }
-  if(shopState.gold < cost){ showShopMsg('Sem ouro.'); if(window.playSfx) window.playSfx('error'); return; }
+  if(shopState.gold < cost){ 
+    showShopMsg('Sem ouro.'); 
+    if(window.playSfx) window.playSfx('error');
+    if(rerollBtn) rerollBtn.classList.add('insufficient-funds');
+    return; 
+  }
+  if(rerollBtn) rerollBtn.classList.remove('insufficient-funds');
   shopState.gold -= cost;
   $('#shopGold').textContent = shopState.gold;
   rerollCount++;
@@ -411,6 +427,11 @@ document.getElementById('btnReroll')?.addEventListener('click', () => {
 
 document.getElementById('btnRemoveCard')?.addEventListener('click', () => {
   const cost = getRemovalCost();
+  if(shopState.removals>=1){
+    showShopMsg('Apenas 1 remoção por visita.');
+    if(window.playSfx) window.playSfx('error');
+    return;
+  }
   if(shopState.gold < cost){ 
     showShopMsg('Sem ouro suficiente!'); 
     if(window.playSfx) window.playSfx('error'); 
@@ -430,7 +451,7 @@ document.getElementById('btnRemoveCard')?.addEventListener('click', () => {
   // Deduct gold and show removal modal
   shopState.gold -= cost;
   $('#shopGold').textContent = shopState.gold;
-  if(window.log) window.log(`💰 Custo de remoção: ${cost} ouro (base + ${shopState.removals * 5} incremental)`);
+  if(typeof window.log==='function'){ window.log(`💰 Custo de remoção: ${cost} ouro (base + ${shopState.removals * 5} incremental)`); }
   closeShop();
   
   window.showCardRemoval(() => {

@@ -1,3 +1,16 @@
+.selection-card-btn{background:linear-gradient(135deg,var(--accent),var(--accent2));border:1px solid rgba(255,255,255,.14);color:#0b1020;letter-spacing:.6px;font-weight:800;padding:10px 18px;border-radius:18px;box-shadow:0 8px 16px rgba(0,0,0,.45),0 0 18px rgba(124,196,255,.35);transition:transform .18s ease,filter .18s ease,box-shadow .18s ease;position:relative;overflow:hidden}
+.selection-card-btn:before{content:"";position:absolute;inset:-30%;background:radial-gradient(circle at 30% 30%,rgba(255,255,255,.28),transparent 60%);opacity:.55;mix-blend-mode:screen;pointer-events:none;transform:rotate(-6deg)}
+.selection-card-btn:hover{transform:translateY(-2px) scale(1.01);filter:brightness(1.05);box-shadow:0 10px 20px rgba(0,0,0,.5),0 0 26px rgba(124,196,255,.5)}
+.selection-card-btn:active{transform:translateY(0) scale(.99);box-shadow:0 6px 12px rgba(0,0,0,.45),0 0 18px rgba(124,196,255,.35)}
+.selection-card-btn.disabled,.selection-card-btn:disabled{filter:grayscale(.6) brightness(.7);cursor:not-allowed}
+/* inline buff icon removed per hover-only design */
+@keyframes buffPulse{from{transform:scale(.9);filter:brightness(1)}to{transform:scale(1.05);filter:brightness(1.25)}}
+/* Tooltip orientation tweaks for totem slots & effects list */
+.totem-slot[data-tip]{--tip-align:top-right;}
+.effects-list [data-tip]{--tip-align:left;}
+/* Wrapper so the totem bar can sit outside the clipped pile */
+.pile-wrap{position:relative;flex:0 0 var(--card-w);display:flex;flex-direction:column;align-items:center}
+.pile-wrap > .pile{flex:0 0 auto}
 :root{--bg:#0b1020;
  --panel:#101833;
  --panel2:#0f1430;
@@ -10,8 +23,8 @@
  --card2:#1a2454;
  --text:#e6e9ff;
  --muted:#a7b0d9;
- --card-w:220px;
- --card-h:300px;
+ --card-w:175px;
+ --card-h:230px;
  --cb-vikings:url('../img/decks/farm-vikings/card-backs/fv-cb-default.webp');
  --cb-pescadores:url('../img/decks/fJord-fishers/card-backs/jf-cb-default.webp');
  --cb-floresta:url('../img/decks/forest-beasts/card-backs/fb-cb-default.webp');
@@ -104,7 +117,7 @@ body[data-battle-theme] #gameWrap .pile{
   border:1px solid var(--board-border);
   box-shadow:0 16px 36px var(--battle-shadow);
 }
-body[data-battle-theme] #gameWrap .pile img{opacity:.92;filter:drop-shadow(0 6px 12px rgba(0,0,0,.4))}
+body[data-battle-theme] #gameWrap .pile img{opacity:.92}
 body[data-battle-theme] #gameWrap .pile .count{background:var(--pile-count-bg);border-color:var(--board-border)}
 body[data-battle-theme] #gameWrap .pile-label{color:rgba(230,233,255,.75)}
 body[data-battle-theme="vikings"]{
@@ -203,6 +216,11 @@ flex-direction:column;
 box-sizing:border-box;
 max-height:calc(100vh - var(--safe-top) - var(--safe-bottom));
 overflow:visible}
+.hud{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:8px;width:min(100%,calc(7*var(--card-w) + 6*14px + 72px));margin:6px auto 0;padding:0 12px;box-sizing:border-box}
+.hud > :first-child{display:flex;gap:8px;align-items:center;justify-self:start}
+.hud > :nth-child(2){justify-self:center}
+.hud > :nth-child(3){justify-self:end}
+.gold-display{display:flex;align-items:center;gap:6px;padding:6px 12px;background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid #243069;border-radius:10px;font-weight:800;font-size:16px;color:var(--accent2)}
 .sub{color:var(--muted);
 margin-bottom:18px}
 /* ensure buttons are block-level interactive elements so their full area is clickable */
@@ -221,22 +239,26 @@ background:#0c1230;
 color:#cfe3ff;
 border-radius:10px;
 padding:8px 10px}
-.hud{display:grid;
-grid-template-columns:auto 1fr auto;
-gap:12px;
-align-items:center;
-margin-bottom:12px}
-.hud, .meter{overflow:visible}
-.meter, .meter *{scrollbar-width:none}
-.meter::-webkit-scrollbar{display:none}
-.meter{display:flex;
-gap:8px;
-align-items:center;
-background:linear-gradient(180deg,var(--panel),var(--panel2));
-border:1px solid #243069;
-border-radius:14px;
-padding:8px 12px;
-box-shadow:inset 0 0 0 1px rgba(255,255,255,.03)}
+.board{display:grid;
+ grid-template-columns:repeat(5,var(--card-w));
+ gap:14px;
+ background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,0));
+ border-radius:16px;
+ padding:6px 12px; /* levemente mais alto que a carta */
+ height:calc(var(--card-h) + 16px);
+ border:1px dashed #31408b;
+ position:relative;
+ overflow:visible;
+ margin:12px 0;
+ align-items:center;
+ align-content:center;
+ justify-items:center;
+ box-sizing:border-box;
+ grid-auto-rows:var(--card-h);
+width:calc(5*var(--card-w) + 4*14px + 24px)}
+
+/* Base HUD meter styling (player/enemy) */
+.meter{display:flex;align-items:center;gap:8px;background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid #243069;border-radius:14px;padding:8px 12px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.03)}
 
 .meter::before{content:"";
 display:inline-block;
@@ -287,42 +309,33 @@ color:var(--muted);
 text-transform:uppercase;
 letter-spacing:.8px;
 margin:6px 0 2px}
-.board{display:grid;
- grid-template-columns:repeat(5,var(--card-w));
- gap:14px;
- background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,0));
- border-radius:16px;
- padding:12px 12px;
- height:var(--card-h);
- border:1px dashed #31408b;
- position:relative;
- overflow:visible;
- margin:12px 0;
-width:calc(5*var(--card-w) + 4*14px + 24px)}
+/* duplicate .board block removed to avoid overriding padding/height */
 #aiBoard,#playerBoard{margin:0}
 .row{display:flex;gap:14px;align-items:center;flex:1;justify-content:center}
 .row .board{flex:0 0 auto}
 
 /* Effects HUD - mostra totens e buffs ativos */
-.effects-hud{position:fixed;right:12px;bottom:12px;top:auto;transform:none;display:flex;flex-direction:column;gap:6px;z-index:1500;max-width:60px}
+.effects-hud{position:fixed;right:12px;bottom:80px;top:auto;transform:none;display:flex;flex-direction:column;gap:6px;z-index:1500;max-width:60px}
 .effect-item{width:48px;height:48px;display:flex;align-items:center;justify-content:center;font-size:28px;background:linear-gradient(135deg,rgba(14,20,53,.85),rgba(33,47,92,.85));border:1px solid #2e4885;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,.3);position:relative;cursor:help;transition:transform .2s ease,box-shadow .2s ease}
 .effect-item:hover{transform:scale(1.1);box-shadow:0 4px 12px rgba(0,0,0,.5)}
-.effect-item::after{content:attr(data-tip);position:absolute;right:calc(100% + 8px);top:50%;transform:translateY(-50%);background:#0e1435;border:1px solid #2b3a86;border-radius:8px;padding:8px 12px;box-shadow:0 8px 20px rgba(0,0,0,.4);font-size:12px;line-height:1.4;color:#cfe3ff;max-width:240px;min-width:160px;white-space:normal;text-align:left;opacity:0;pointer-events:none;z-index:2000;transition:opacity .2s ease,transform .2s ease}
+.effect-item::after{content:attr(data-tip);position:fixed;left:auto;right:auto;top:auto;bottom:auto;transform:none;background:#0e1435;border:1px solid #2b3a86;border-radius:8px;padding:10px 14px;box-shadow:0 12px 32px rgba(0,0,0,.6);font-size:13px;line-height:1.6;color:#cfe3ff;min-width:220px;max-width:340px;width:max-content;white-space:normal;word-wrap:break-word;text-align:left;opacity:0;pointer-events:none;z-index:9999;transition:opacity .2s ease;display:block;-webkit-line-clamp:unset;-webkit-box-orient:unset;overflow:visible}
 .effect-item:hover::after{opacity:1;transform:translateY(-50%) translateX(-4px)}
 .effect-item[data-type="totem"]{border-color:#4c63d9}
 .effect-item[data-type="relic"]{border-color:#c9482b}
 .effect-item[data-type="buff"]{border-color:#3f8c4b}
 
-.totem-bar{display:flex;justify-content:center;gap:8px;margin-top:8px}
+.totem-bar{position:absolute;left:0;top:calc(100% + 32px);display:flex;flex-direction:row;gap:8px;z-index:1400;align-items:center;justify-content:center;width:100%;pointer-events:none}.totem-bar > *{pointer-events:auto}
 
-/* Direct attack hint (when enemy board is empty) */
-.direct-attack-hint{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;opacity:0;transition:opacity .2s ease}
-.direct-attack-hint .label{display:flex;gap:10px;align-items:center;justify-content:center;font-weight:900;letter-spacing:1px;text-transform:uppercase;font-size:clamp(28px,4vw,56px);color:#ffd1a1;text-shadow:0 0 12px rgba(255,106,0,.9),0 0 24px rgba(255,59,0,.7)}
-.direct-attack-hint .sword{filter:drop-shadow(0 0 10px rgba(255,120,0,.8))}
-.direct-attack-hint.show{opacity:.95}
+/* Direct attack hint (when enemy board is empty) - now clickable */
+.direct-attack-hint{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;opacity:0;transition:opacity .2s ease,transform .2s ease;background:none;border:none;cursor:pointer;z-index:100}
+.direct-attack-hint .label{display:flex;gap:10px;align-items:center;justify-content:center;font-weight:900;letter-spacing:1px;text-transform:uppercase;font-size:clamp(28px,4vw,56px);color:#ffd1a1;text-shadow:0 0 12px rgba(255,106,0,.9),0 0 24px rgba(255,59,0,.7);pointer-events:none}
+.direct-attack-hint .sword{filter:drop-shadow(0 0 10px rgba(255,120,0,.8));pointer-events:none}
+.direct-attack-hint.show{opacity:.95;pointer-events:auto}
+.direct-attack-hint.show:hover{opacity:1;transform:scale(1.05)}
+.direct-attack-hint.show:active{transform:scale(0.98)}
 .direct-attack-hint.show .sword{animation:swordPulse .9s ease-in-out infinite}
 @keyframes swordPulse{0%{transform:scale(1) rotate(0)}50%{transform:scale(1.12) rotate(6deg)}100%{transform:scale(1) rotate(0)}}
-.totem-slot{width:40px;height:40px;border:1px solid #31408b;background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,0));border-radius:8px;display:none;align-items:center;justify-content:center;font-size:24px;position:relative;overflow:visible;transition:border-color .3s ease,box-shadow .3s ease}
+.totem-slot{width:48px;height:48px;border:1px solid #31408b;background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,0));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:28px;position:relative;overflow:visible;transition:border-color .3s ease,box-shadow .3s ease;cursor:help}
 .totem-slot::before{content:"";position:absolute;inset:3px;border-radius:inherit;background:radial-gradient(circle,#ffffff33 0%,rgba(255,255,255,0) 70%);opacity:0;transform:scale(.6);transition:opacity .3s ease,transform .3s ease;pointer-events:none;filter:blur(0)}
 .totem-slot::after{content:"";position:absolute;inset:1px;border-radius:inherit;border:1px solid transparent;opacity:0;pointer-events:none;box-shadow:0 0 0 rgba(255,255,255,0)}
 .totem-slot[data-theme="fury"]{border-color:#c9482b;box-shadow:0 0 12px rgba(201,72,43,.45)}
@@ -344,7 +357,7 @@ width:calc(5*var(--card-w) + 4*14px + 24px)}
 .totem-slot.totem-anim-ancient::after{border-color:rgba(234,179,8,.6);box-shadow:0 0 18px rgba(234,179,8,.4)}
 @keyframes totemGlow{0%{opacity:0;transform:scale(.45)}45%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(1.4)}}
 @keyframes totemRing{0%{opacity:0;transform:scale(.85)}55%{opacity:1;transform:scale(1.02)}100%{opacity:0;transform:scale(1.25)}}
-.hand{position:relative;height:calc(var(--card-h) - 20px);margin:20px 0 var(--safe-bottom,20px);flex:0 0 auto;overflow:visible;--hover-shift:70px}
+.hand{position:relative;height:var(--card-h);margin:20px 0 var(--safe-bottom,20px);flex:0 0 auto;overflow:visible;--hover-shift:70px}
 .hand .card{position:absolute;top:0;width:var(--card-w);transition:transform .2s,box-shadow .2s;--x:0px;--push:0px;--raise:0px;left:calc(50% + var(--x) - var(--card-w)/2);transform:translate(var(--push),var(--raise))}
 .hand .card:hover~.card{--push:var(--hover-shift)}
 .hand .card.chosen{--raise:calc(var(--card-h) * -0.2);box-shadow:0 0 12px var(--accent),0 16px 30px rgba(0,0,0,.45)}
@@ -354,7 +367,7 @@ width:calc(5*var(--card-w) + 4*14px + 24px)}
 .hand .card.chosen .stance-chooser *{pointer-events:auto}
 @keyframes stanceHolo{from{filter:hue-rotate(0deg) drop-shadow(0 0 6px rgba(0,255,255,.6));}to{filter:hue-rotate(360deg) drop-shadow(0 0 6px rgba(0,255,255,.6));}}
 @keyframes sparkle{0%{filter:hue-rotate(0deg) brightness(1);}50%{filter:hue-rotate(180deg) brightness(1.05);}100%{filter:hue-rotate(360deg) brightness(1);}}
-.card{width:100%;max-width:var(--card-w);aspect-ratio:220/300;
+.card{width:100%;max-width:var(--card-w);aspect-ratio:175/230;
  min-height:auto;
  background:linear-gradient(180deg,var(--card2),var(--card));
  border-radius:18px;
@@ -362,8 +375,8 @@ width:calc(5*var(--card-w) + 4*14px + 24px)}
  box-shadow:0 10px 20px rgba(0,0,0,.35),inset 0 0 0 1px rgba(255,255,255,.06);
  padding:8px;
  display:grid;
- grid-template-rows:auto minmax(78px,1fr) auto auto;
- row-gap:6px;
+ grid-template-rows:auto auto auto auto; /* cada seção se ajusta ao conteúdo */
+ row-gap:4px;
  position:relative;
  user-select:none;
  transition:transform .18s ease,box-shadow .18s ease;
@@ -387,7 +400,7 @@ width:calc(5*var(--card-w) + 4*14px + 24px)}
 .card .head-bar{background:linear-gradient(180deg,rgba(0,0,0,.6),rgba(0,0,0,.2));padding:2px 4px;border-radius:6px;display:flex;flex-direction:column;gap:2px}
 .card .head-bar .name{font-weight:800;font-size:clamp(12px,1.6vw,14px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:linear-gradient(180deg,rgba(0,0,0,.7),rgba(0,0,0,.3));padding:0 4px;border-radius:4px}
 .card .head-bar .cost-bar{display:flex;flex-direction:column;justify-content:flex-start;align-items:flex-start;gap:2px;position:relative}
-.card .mana-row{display:flex;align-items:center;gap:4px;flex-wrap:nowrap}
+.card .mana-row{display:flex;align-items:center;gap:4px;flex-wrap:wrap;max-width:100%}
 /* Mana icons use a local sprite sheet with five gems in a row */
 .mana-dot{width:16px;height:16px;border-radius:50%;display:inline-block;border:1px solid rgba(255,255,255,.2);box-shadow:inset 0 0 6px rgba(0,0,0,.5),0 0 4px rgba(255,255,255,.15);background:radial-gradient(circle at 35% 35%, rgba(255,255,255,.8), rgba(255,255,255,0) 40%), radial-gradient(circle at 50% 50%, rgba(255,255,255,.2), rgba(0,0,0,.15) 60%)}
 .mana-dot.animais{background-color:#4db978}
@@ -402,7 +415,12 @@ border-radius:999px;
 border:1px solid rgba(255,255,255,.14);
 display:flex;
 align-items:center;
-justify-content:center}
+justify-content:center;position:relative;cursor:default}
+.badge.buffed, .gem.buffed{box-shadow:0 0 8px rgba(250,204,21,.6), inset 0 0 6px rgba(250,204,21,.3);border-color:rgba(250,204,21,.6);animation:buffPulse 2s ease-in-out infinite}
+/* Hover popup shows only the exact icon of the buff */
+.badge.buffed[data-buff-icon]::after, .gem.buffed[data-buff-icon]::after{content:attr(data-buff-icon);position:absolute;left:50%;bottom:100%;transform:translate(-50%,-8px);background:#0e1435;border:1px solid #facc15;border-radius:8px;padding:6px 8px;font-size:18px;line-height:1;color:#facc15;white-space:nowrap;opacity:0;pointer-events:none;z-index:2100;box-shadow:0 12px 30px rgba(0,0,0,.45);transition:opacity .2s ease,transform .2s ease}
+.badge.buffed[data-buff-icon]:hover::after, .gem.buffed[data-buff-icon]:hover::after{opacity:1;transform:translate(-50%,-12px)}
+@keyframes buffPulse{0%,100%{box-shadow:0 0 8px rgba(250,204,21,.6), inset 0 0 6px rgba(250,204,21,.3)}50%{box-shadow:0 0 12px rgba(250,204,21,.8), inset 0 0 8px rgba(250,204,21,.5)}}
 .badge.atk{background:linear-gradient(180deg,#1f2a64,#15204a)}
 .badge.def{background:linear-gradient(180deg,#2a5f3a,#1e462b)}
 .stance-label.attack,.stance-label.defense{animation:stanceHolo 2s linear infinite;filter:drop-shadow(0 0 6px rgba(0,255,255,.6))}
@@ -411,13 +429,13 @@ justify-content:center}
 .stance-label.defense{background:linear-gradient(180deg,#2a5f3a,#1e462b)}
 /* tribe text removed */
 .art{display:flex;
-align-items:flex-end;
+align-items:center;
 justify-content:center;
 min-height:110px;
 height:auto;
 font-size:60px;
 position:relative;
-padding-bottom:4px}
+padding-bottom:0}
 .art::after{content:"";position:absolute;inset:0;background:linear-gradient(115deg,rgba(255,255,255,.25),rgba(255,255,255,0) 60%);mix-blend-mode:screen;pointer-events:none;opacity:.2}
 .art canvas,
 .art .img-missing{align-self:center;margin:auto}
@@ -617,21 +635,12 @@ background-position:center,0 0}
 .play-popup.show{display:flex;pointer-events:auto;animation:playPopupDraw .45s cubic-bezier(.32,.72,.28,1.16) forwards}
 .play-popup .btn{width:100%}
 
-.play-popup-trail{position:absolute;top:50%;right:100%;display:flex;gap:10px;transform:translate(32px,-50%);pointer-events:none;opacity:0}
-.play-popup-trail .trail-card{width:42px;height:58px;border-radius:10px;border:1px solid rgba(255,255,255,.12);background:linear-gradient(180deg,rgba(124,196,255,.35),rgba(15,23,42,.75));box-shadow:0 12px 24px rgba(0,0,0,.4);transform-origin:right center;opacity:0}
-.play-popup.show .play-popup-trail{opacity:1;animation:trailRise .45s ease-out forwards}
-.play-popup.show .play-popup-trail .trail-card:nth-child(1){animation:trailFan .45s cubic-bezier(.25,.74,.22,1.4) .05s forwards}
-.play-popup.show .play-popup-trail .trail-card:nth-child(2){animation:trailFan .45s cubic-bezier(.25,.74,.22,1.4) .1s forwards}
-.play-popup.show .play-popup-trail .trail-card:nth-child(3){animation:trailFan .45s cubic-bezier(.25,.74,.22,1.4) .15s forwards}
-
 .play-popup::before{content:"";position:absolute;left:-16px;top:50%;transform:translateY(-50%);width:0;height:0;border-top:10px solid transparent;border-bottom:10px solid transparent;border-right:16px solid rgba(26,36,86,.9)}
 .play-popup.show::before{animation:playPopupDrawTail .45s cubic-bezier(.32,.72,.28,1.16) forwards}
 .play-popup::after{content:"";position:absolute;inset:0;border-radius:inherit;border:1px solid rgba(255,255,255,.05);pointer-events:none;opacity:.6}
 .play-popup.show::after{animation:playPopupGlow .45s cubic-bezier(.32,.72,.28,1.16) forwards}
 
 @keyframes playPopupDraw{0%{opacity:0;transform:translate(104px,-50%) rotate(12deg) scale(.9)}55%{opacity:1;transform:translate(18px,-50%) rotate(-5deg) scale(1.03)}100%{opacity:1;transform:translate(32px,-50%) rotate(0deg) scale(1)}}
-@keyframes trailFan{0%{opacity:0;transform:translateX(40px) rotate(18deg) scale(.8)}60%{opacity:1}100%{opacity:1;transform:translateX(0) rotate(-6deg) scale(1)}}
-@keyframes trailRise{0%{transform:translate(48px,-50%) scale(.92)}100%{transform:translate(32px,-50%) scale(1)}}
 @keyframes playPopupDrawTail{0%{transform:translateY(-50%) rotate(-12deg);opacity:0}60%{opacity:1}100%{transform:translateY(-50%) rotate(0deg);opacity:1}}
 @keyframes playPopupGlow{0%{opacity:0}100%{opacity:.9}}
 .multiplayer{position:fixed;inset:0;display:grid;place-items:center;z-index:5;background:radial-gradient(1200px 700px at 80% 20%,#10236a 0%,#0b1020 60%)}
@@ -647,7 +656,7 @@ background-position:center,0 0}
 #roomList{margin-top:12px}
 #roomList .room{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
 #roomList .room button{margin-left:8px}
-.turn-bar{display:flex;align-items:center;margin:8px 0;justify-content:center;gap:8px}
+.turn-bar{display:flex;align-items:center;margin:0;justify-content:center;gap:8px}
 .turn-indicator{flex:0;text-align:center;font-size:20px;font-weight:700;margin-right:8px;white-space:nowrap}
 #endTurnBtn{margin-left:0; margin-top:0; margin-bottom:0; display:inline-flex;align-items:center;justify-content:center;height:24px;font-size:16px;padding:0 10px;line-height:1;vertical-align:middle;border-radius:10px;box-shadow:0 4px 8px rgba(0,0,0,.18)}
 #instantWinBtn{display:none;margin-left:8px;margin-top:0;margin-bottom:0;height:24px;font-size:16px;padding:0 10px;line-height:1;vertical-align:middle;border-radius:10px;box-shadow:0 4px 8px rgba(0,0,0,.18);background:linear-gradient(180deg,#7a2e36,#5a1f25);border:1px solid #fb7185}
@@ -815,8 +824,8 @@ white-space:nowrap}
 .log-wrap .zone-title{text-align:center;margin-bottom:4px}
 .log{flex:1;overflow:auto;background:linear-gradient(180deg,#0e1331,#0a0f27);border:1px solid #243069;border-radius:12px;padding:8px;font-size:13px;color:#c9d2ff}
 @media (max-width:720px){.log-wrap{width:150px;height:12vh}}
-.pile{display:grid;place-items:center;width:var(--card-w);height:var(--card-h);border-radius:18px;position:relative;flex:0 0 var(--card-w);overflow:hidden}
-.pile img{display:block;width:100%;height:100%;object-fit:cover;border-radius:18px;box-shadow:0 10px 20px rgba(0,0,0,.35),inset 0 0 0 1px rgba(255,255,255,.06)}
+.pile{display:grid;place-items:center;width:var(--card-w);height:var(--card-h);border-radius:14px;position:relative;flex:0 0 var(--card-w);overflow:hidden}
+.pile img{display:block;width:100%;height:100%;object-fit:cover;border-radius:14px}
 .pile .count{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
 font-weight:800;
 background:#0e1435;
@@ -824,7 +833,7 @@ border:1px solid #25306a;
 border-radius:12px;
 padding:2px 6px;
 font-size:24px}
-.pile-label{position:absolute;bottom:-18px;left:50%;transform:translateX(-50%);font-size:12px;color:var(--muted)}
+.pile-label{position:absolute;bottom:6px;left:50%;transform:translateX(-50%);font-size:12px;color:var(--muted);padding:2px 8px;background:rgba(0,0,0,.55);border-radius:8px;border:1px solid rgba(255,255,255,.08)}
 @keyframes shuffle{0%{transform:rotate(0)}25%{transform:rotate(-10deg)}50%{transform:rotate(10deg)}75%{transform:rotate(-10deg)}100%{transform:rotate(0)}}
 .pile.shuffling{animation:shuffle .6s ease}
 .tray{display:flex;
@@ -1023,9 +1032,6 @@ gap:8px}
 
 /* Hide the bottom HP footer inside the game view */
 #gameWrap > .footer{display:none}
-/* Player HP fixed bottom-left above hand/deck */
-.hud .meter.player{position:fixed;left:12px;bottom:12px;z-index:1500;max-width:min(280px,35vw)}
-.hud .meter.enemy{position:fixed;right:12px;top:12px;z-index:1500;max-width:min(280px,35vw)}
 
 /* Enemy name banner centered inside the enemy board */
 #aiBoard{position:relative}
@@ -1042,13 +1048,13 @@ gap:8px}
    whether in hand or on the board. Keep overrides late in the file
    to win the cascade without raising specificity. */
 .card .head-bar .name{font-size:clamp(12px,calc(var(--card-w)*0.064),14px)}
-.card .text{font-size:clamp(11px,calc(var(--card-w)*0.055),12px);display:flex;flex-wrap:wrap;gap:6px;justify-content:center;align-items:flex-start;min-height:calc(var(--card-w)*0.18);text-align:left}
+.card .text{font-size:clamp(11px,calc(var(--card-w)*0.055),12px);display:flex;flex-wrap:wrap;gap:6px;justify-content:center;align-items:flex-start;min-height:auto;text-align:left}
 .card .text[data-tip]{cursor:help}
 .card .text .keyword,.card .text .chip{display:inline-flex;align-items:center;gap:4px;line-height:1}
 .card .gem{font-size:clamp(11px,calc(var(--card-w)*0.054),12px)}
 .card .stance-label{font-size:clamp(12px,calc(var(--card-w)*0.073),16px)}
 .card .mana-dot{width:clamp(12px,calc(var(--card-w)*0.073),18px);height:clamp(12px,calc(var(--card-w)*0.073),18px)}
-.card .art{min-height:calc(var(--card-h)*0.36)}
+.card .art{min-height:110px}
 .card .projection{width:calc(var(--card-w)*0.44);height:calc(var(--card-w)*0.44)}
 .card .img-missing{width:calc(var(--card-w)*0.44);height:calc(var(--card-w)*0.44);font-size:calc(var(--card-w)*0.22)}
 
@@ -1059,7 +1065,7 @@ gap:8px}
 
 /* Ensure board height matches the CSS card size and make all card containers follow the same dimensions */
 /* Board should be exactly one card-high; board cells/cards and piles follow --card-w / --card-h */
-.board{height:var(--card-h);}
+.board{height:calc(var(--card-h) + 16px);} 
 .board .card, #playerBoard .card, #aiBoard .card, .hand .card{
   width:var(--card-w);
   height:var(--card-h);
@@ -1078,7 +1084,7 @@ gap:8px}
 
 /* Ensure the pile (draw/discard) containers and their images match the same card size */
 .pile{width:var(--card-w);height:var(--card-h);}
-.pile img{width:100%;height:100%;object-fit:cover;border-radius:18px}
+.pile img{width:100%;height:100%;object-fit:cover;border-radius:14px}
 
 /* Keep board grid layout consistent: use card width for columns */
 .board{grid-template-columns:repeat(5,var(--card-w));}
@@ -1118,7 +1124,7 @@ gap:8px}
 .meter.mana::before{width:24px;height:24px}
 @keyframes heartbeat{0%{transform:scale(1)}30%{transform:scale(1.18)}45%{transform:scale(0.96)}60%{transform:scale(1.06)}100%{transform:scale(1)}}
 
-/* mark unaffordable shop items */
+.btn.insufficient-funds{background:linear-gradient(180deg,#7a2e36,#5a1f25);border:1px solid #ff6b6b;opacity:0.8;cursor:not-allowed}
 .price-btn.unaffordable{pointer-events:none;opacity:0.7}
 .price-btn .price-amt.unaffordable{color:#ff6b6b;font-weight:800}
 
@@ -1136,9 +1142,9 @@ gap:8px}
 /* Use the same art minimum on board cards to prevent cropping */
 #playerBoard .card .art,#aiBoard .card .art{min-height:calc(var(--card-h)*0.36)}
 @media (max-width:720px){.board{grid-template-columns:repeat(5,minmax(0,1fr));
-padding:16px 10px;
-min-height:calc(var(--card-h)*0.75)}
-.card{width:calc(var(--card-w)*0.85)}
+padding:6px 10px;
+min-height:calc(var(--card-h) + 16px)}
+.card{width:var(--card-w)}
 .cost{width:25px;
 height:25px}
 .name{font-size:16px}
@@ -1149,7 +1155,7 @@ gap:8px}
 .center-hud{flex-wrap:wrap;
 justify-content:space-between}
 }
-#playerBoard .card,#aiBoard .card{min-height:calc(var(--card-h) - 20px)}
+#playerBoard .card,#aiBoard .card{min-height:var(--card-h)}
 #playerBoard .card .art,#aiBoard .card .art{min-height:110px;font-size:60px}
 .card.blocked .cost{background:radial-gradient(circle at 30% 30%,#ffc2c2,#ff4d6d);
 color:#24040a}
@@ -1228,7 +1234,7 @@ display:block}
 .price-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;font-weight:700;margin-top:6px;padding:6px 10px;border-radius:10px}
 .coin-icon{width:16px;height:16px;display:inline-block;background:url('../img/ui/coin.png') no-repeat center/contain;image-rendering:pixelated}
 .shop-placeholder{width:100%;height:auto;aspect-ratio:calc(var(--card-w) / (var(--card-w) * 1.42));min-height:calc(var(--card-w)*1.42);border:1px dashed #334;border-radius:4px;display:flex;align-items:center;justify-content:center;padding:6px;text-align:center}
-.shop-msg{min-height:1.5em;color:#f87171;text-align:center;font-weight:700}
+.shop-msg{min-height:1.5em;color:#7cc4ff;text-align:center;font-weight:700}
 #shopTooltip{position:fixed;max-width:min(260px,48vw);background:rgba(10,14,28,.92);color:#f8fafc;border:1px solid rgba(255,255,255,.18);border-radius:8px;padding:8px 10px;font-size:.9rem;line-height:1.35;box-shadow:0 18px 38px rgba(0,0,0,.55);backdrop-filter:blur(8px);pointer-events:none;z-index:5000}
 .shop-keeper{width:80px;height:80px;border-radius:8px;object-fit:cover}
 /* encounter banner should not block clicks when hidden */
@@ -1236,6 +1242,7 @@ display:block}
 #encounterBanner.show{transform:translate(-50%,-50%) scale(1);opacity:1;pointer-events:auto}
 #encounterBanner.boss{border-color:#f43f5e;color:#fcd34d;text-shadow:0 0 12px #f43f5e}
 #encounterBanner.shop{border-color:#fcd34d;color:#fcd34d}
+#encounterBanner.victory{border-color:#34d399;color:#34d399;text-shadow:0 0 12px #34d399}
 #encounterBanner.show::after{content:"";position:absolute;top:-60px;left:50%;width:4px;height:60px;background:linear-gradient(#fff,transparent);transform:translateX(-50%) scaleY(0);animation:bolt .5s forwards}
 @keyframes bolt{0%{transform:translateX(-50%) scaleY(0)}60%{transform:translateX(-50%) scaleY(1)}100%{opacity:0;transform:translateX(-50%) scaleY(1)}}
 #encounterTransition{position:fixed;inset:0;background:#000;opacity:0;pointer-events:none;transition:opacity .4s ease;z-index:2500}
@@ -1306,10 +1313,10 @@ body[data-battle-theme="convergentes"]{
 .fx.fx-explosion{width:calc(var(--card-w)*0.45);height:calc(var(--card-w)*0.45);background:url('../img/particles/explosion.png') no-repeat center/contain;filter:invert(1) sepia(1) saturate(5) hue-rotate(20deg);opacity:0;animation:healPop .6s ease-out forwards}
 .fx.fx-summon{width:calc(var(--card-w)*0.4);height:calc(var(--card-w)*0.4);background:url('../img/particles/Sakuras.png') no-repeat center/contain;filter:invert(1) sepia(1) saturate(5) hue-rotate(120deg);opacity:0;animation:healPop .6s ease-out forwards}
 #encounterTransition.show{opacity:1}
-/* Totem slot tooltip */
+/* Totem slot tooltip - positioned above with proper text wrapping */
 .totem-slot[data-tip]{position:relative}
-.totem-slot[data-tip]::after{content:attr(data-tip);position:absolute;left:50%;bottom:100%;transform:translate(-50%,-8px);background:#0e1435;border:1px solid #2b3a86;border-radius:10px;padding:8px 10px;box-shadow:0 12px 30px rgba(0,0,0,.45);font-size:12px;line-height:1.4;color:#cfe3ff;max-width:260px;min-width:180px;white-space:normal;text-align:center;opacity:0;pointer-events:none;z-index:50;transition:opacity .15s ease,transform .15s ease}
-.totem-slot[data-tip]:hover::after{opacity:1;transform:translate(-50%,-10px)}
+.totem-slot[data-tip]::after{content:attr(data-tip);position:absolute;left:50%;bottom:calc(100% + 8px);transform:translateX(-50%);background:#0e1435;border:1px solid #2b3a86;border-radius:10px;padding:8px 12px;box-shadow:0 12px 30px rgba(0,0,0,.45);font-size:12px;line-height:1.5;color:#cfe3ff;width:max-content;max-width:280px;white-space:normal;word-wrap:break-word;text-align:center;opacity:0;pointer-events:none;z-index:2100;transition:opacity .15s ease,transform .15s ease}
+.totem-slot[data-tip]:hover::after{opacity:1;transform:translateX(-50%) translateY(-4px)}
 /* Floating icon + disintegrate */
 .floating-totem{position:fixed;left:0;top:0;transform:translate(-50%,-50%);font-size:28px;filter:drop-shadow(0 4px 12px rgba(0,0,0,.45));transition:transform .42s ease, opacity .42s ease;z-index:10000;pointer-events:none}
 .card.totem-disintegrate{animation:totemFade .38s ease forwards}
@@ -1323,6 +1330,23 @@ body[data-battle-theme="convergentes"]{
 
 /* Rewards Modal */
 .rewards-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:16px}
+.selection-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:16px}
+.selection-card{position:relative;border-radius:18px;background:var(--panel);padding:12px;box-shadow:0 12px 24px rgba(0,0,0,.25);display:flex;flex-direction:column;gap:8px;overflow:visible}
+.selection-card-preview{width:100%;margin:0 auto}
+.selection-card .sub{margin:0;font-size:13px;text-align:center;color:var(--muted);line-height:1.4}
+.selection-card-btn{position:relative;margin:0 auto;padding:10px 18px;min-width:140px;border-radius:999px;border:1px solid rgba(255,255,255,.14);background:linear-gradient(135deg,var(--accent),var(--accent2));color:#0b1020;font-weight:800;cursor:pointer;box-shadow:0 8px 16px rgba(0,0,0,.45),0 0 18px rgba(124,196,255,.35)}
+.selection-card-btn.btn{margin-top:auto}
+.selection-card:hover{transform:none;transition:transform .2s ease}
+.selection-card button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.selection-card .card{overflow:visible;transform:none!important}
+.selection-card .card:hover{transform:none;overflow:visible}
+.selection-card .projection{animation:none}
+.event-reward-overlay{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(.8);width:min(400px,90vw);padding:16px;border-radius:16px;background:linear-gradient(145deg,#0f172a,#1d2330);box-shadow:0 20px 60px rgba(0,0,0,.45);display:flex;flex-direction:column;align-items:center;gap:12px;opacity:0;pointer-events:none;transition:opacity .3s ease,transform .4s ease;z-index:3500}
+.event-reward-overlay.show{opacity:1;pointer-events:auto;transform:translate(-50%,-50%) scale(1)}
+.event-reward-card{display:flex;align-items:center;justify-content:center;overflow:hidden;border-radius:12px;width:100%;}
+.event-reward-card .card{width:220px;margin:0}
+.event-reward-msg{font-size:1rem;color:#f8fafc;text-align:center;font-weight:700;text-shadow:0 0 12px rgba(58,238,255,.6)}
+.event-reward-caption{font-size:12px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px}
 .reward-option{background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(0,0,0,.3));border:2px solid rgba(255,255,255,.15);border-radius:12px;padding:20px;text-align:center;cursor:pointer;transition:all .25s ease;position:relative;overflow:hidden}
 .reward-option:hover{transform:translateY(-4px);border-color:rgba(124,196,255,.6);box-shadow:0 8px 24px rgba(124,196,255,.25)}
 .reward-option.selected{border-color:#4ade80;box-shadow:0 0 20px rgba(74,222,128,.4)}

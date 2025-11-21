@@ -86,27 +86,5 @@ window.ENEMY_NAMES = {
     { name: 'Javali de Runas' },
     { name: 'Avatar do Carvalho Ancestral', boss: true },
     { name: 'Espírito do Cervo Estelar', boss: true }
-  ],
-  convergentes: [
-    { name: 'Neófito Prismático' },
-    { name: 'Assimilador Rúnico' },
-    { name: 'Guardião Quimérico' },
-    { name: 'Raider Metamorfo' },
-    { name: 'Lince Metamórfico' },
-    { name: 'Totem Absorvente' },
-    { name: 'Arauto da Aurora' },
-    { name: 'Sombra Rúnica' },
-    { name: 'Guerreiro Sincrético' },
-    { name: 'Discípulo Maleável' },
-    { name: 'Sentinela Vórtice' },
-    { name: 'Tecelão Cambiante' },
-    { name: 'Eco Mutante' },
-    { name: 'Bruto Assimilador' },
-    { name: 'Sábio Prismal' },
-    { name: 'Avatar Mutagênico' },
-    { name: 'Capataz de Runas' },
-    { name: 'Essência Convergente' },
-    { name: 'Catalisador da Aurora', boss: true },
-    { name: 'Entidade Transmutante', boss: true }
   ]
 };

@@ -39,12 +39,8 @@
         </div>
       </div>
       <div class="play-popup" id="playPopup" role="menu" hidden>
-        <div class="play-popup-trail" aria-hidden="true">
-          <span class="trail-card"></span>
-          <span class="trail-card"></span>
-          <span class="trail-card"></span>
-        </div>
         <button class="btn" id="menuPlayStory" type="button" role="menuitem">História</button>
+        <button class="btn" id="menuPlayStory2" type="button" role="menuitem" hidden>História 2 (beta)</button>
         <button class="btn" id="menuPlayQuick" type="button" role="menuitem">Partida rápida</button>
         <button class="btn" id="menuPlayMulti" type="button" role="menuitem">Multiplayer</button>
         <button class="btn" id="openEncy" type="button" role="menuitem">Enciclopédia</button>
@@ -97,13 +93,6 @@
               <span class="ribbon">Pressão constante</span>
             </button>
             <button class="view-cards" data-deck="floresta" data-tip="Ver cartas" aria-label="Ver cartas do deck Feras da Floresta" type="button">📖</button>
-          </div>
-          <div class="deck-option">
-            <button class="btn deckbtn" data-deck="convergentes" type="button">
-              <span class="deck-label">🌀 Convergentes da Aurora</span>
-              <span class="ribbon">Absorção e metamorfose</span>
-            </button>
-            <button class="view-cards" data-deck="convergentes" data-tip="Ver cartas" aria-label="Ver cartas do deck Convergentes da Aurora" type="button">📖</button>
           </div>
           <div class="deck-option">
             <button class="btn deckbtn" data-deck="custom" type="button">
@@ -189,7 +178,6 @@
           <button class="fbtn" data-deck="animais">Animais</button>
           <button class="fbtn" data-deck="pescadores">Pescadores</button>
           <button class="fbtn" data-deck="floresta">Floresta</button>
-          <button class="fbtn" data-deck="convergentes">Convergentes</button>
         </div>
       </div>
       <div class="ency-grid" id="encyGrid"></div>
@@ -203,8 +191,12 @@
   <!-- Game area -->
   <div class="" id="gameWrap" style="display:none">
     <div class="hud">
-      <div class="meter player"><b>Seu HP</b><span class="value" id="playerHP">30</span><div class="player-img" id="playerAvatar">👤</div><div class="bar"><div class="fill" id="barPlayerHP"></div></div></div>
-      <div class="center-hud"><div class="meter mana"><b>Mana</b><span class="value" id="mana">0/0</span><div class="bar"><div class="fill" id="barMana"></div></div></div><button class="btn-ghost" id="muteBtn" title="Som" aria-pressed="false">🔊 Som</button><button class="btn-ghost" id="openMenuBtn" title="Menu">☰ Menu</button></div>
+      <div>
+        <div class="meter player"><b>Seu HP</b><span class="value" id="playerHP">30</span><div class="player-img" id="playerAvatar">👤</div><div class="bar"><div class="fill" id="barPlayerHP"></div></div></div>
+        <div class="meter mana"><b>Mana</b><span class="value" id="mana">0/0</span><div class="bar"><div class="fill" id="barMana"></div></div></div>
+        <div class="gold-display"><span class="coin-icon"></span><span id="playerGoldHUD">0</span></div>
+      </div>
+      <div class="center-hud"><button class="btn-ghost" id="muteBtn" title="Som" aria-pressed="false">🔊 Som</button><button class="btn-ghost" id="openMenuBtn" title="Menu">☰ Menu</button></div>
       <div class="enemy-hud" style="justify-self:end;display:flex;gap:8px;align-items:center">
         <div class="meter enemy">
           <b>HP Inimigo</b>
@@ -237,13 +229,15 @@
     </div>
     <div class="turn-bar"><div class="turn-indicator" id="turnIndicator"></div><button class="btn" id="endTurnBtn">Encerrar turno</button><button class="btn" id="instantWinBtn" type="button" aria-label="Vitória instantânea (teste)">⚡ Vitória Instantânea</button></div>
     <div class="row">
-  <div class="pile" id="drawPile"><img src="img/decks/fJord-fishers/deck-backs/jf-db-default.webp" alt="deck" loading="lazy" decoding="async"><div class="count" id="drawCount">0</div><div class="pile-label">SEU DECK</div></div>
+      <div class="pile-wrap" id="drawWrap">
+        <div class="pile" id="drawPile"><img src="img/decks/fJord-fishers/deck-backs/jf-db-default.webp" alt="deck" loading="lazy" decoding="async"><div class="count" id="drawCount">0</div><div class="pile-label">SEU DECK</div></div>
+        <div class="totem-bar" id="totemBar"></div>
+      </div>
       <div class="board" id="playerBoard"></div>
   <div class="pile" id="discardPile"><img src="img/decks/fJord-fishers/deck-backs/jf-db-default.webp" alt="discard" loading="lazy" decoding="async"><div class="count" id="discardCount">0</div><div class="pile-label">DESCARTE</div></div>
       <div class="log-wrap"><div class="zone-title">Registro</div><div class="log" id="log"></div></div>
     </div>
     <div class="effects-hud" id="effectsHud"></div>
-    <div class="totem-bar" id="totemBar"></div>
     <div class="hand" id="playerHand"></div>
     <div class="emoji-bar" id="emojiBar">
       <button class="emoji-btn" data-emoji="😡">😡</button>
@@ -254,6 +248,8 @@
     <div class="emoji-popup player" id="playerEmoji"></div>
     <div class="emoji-popup opponent" id="opponentEmoji"></div>
   </div>
+
+    <div id="eventRewardOverlay" class="event-reward-overlay" aria-live="polite"></div>
 
   <!-- In-game menu -->
   <div class="game-menu" id="gameMenu" role="dialog" aria-modal="true" aria-labelledby="gameMenuTitle" aria-hidden="true">
@@ -323,6 +319,42 @@
       <p class="sub" style="margin-bottom:20px">Selecione uma recompensa para fortalecer seu deck:</p>
       <div id="rewardsChoices" class="rewards-grid"></div>
       <div id="rewardsMsg" style="color:#ffa500;margin-top:12px;min-height:20px"></div>
+    </div>
+  </div>
+
+  <!-- Card Selection Modal -->
+  <div id="cardSelectModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="cardSelectTitle" aria-hidden="true">
+    <div class="box" style="max-width: 900px">
+      <h2 id="cardSelectTitle" style="margin-top:0"></h2>
+      <p id="cardSelectSubtitle" class="sub" style="margin-bottom:18px"></p>
+      <div id="cardSelectGrid" class="selection-grid"></div>
+      <div style="text-align:right">
+        <button class="btn-ghost" id="cardSelectCancel">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Totem Selection Modal -->
+  <div id="totemSelectModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="totemSelectTitle" aria-hidden="true">
+    <div class="box" style="max-width: 900px">
+      <h2 id="totemSelectTitle" style="margin-top:0"></h2>
+      <p id="totemSelectSubtitle" class="sub" style="margin-bottom:18px"></p>
+      <div id="totemSelectGrid" class="selection-grid"></div>
+      <div style="text-align:right">
+        <button class="btn-ghost" id="totemSelectCancel">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Evolution Selection Modal -->
+  <div id="evolveCardModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="evolveCardTitle" aria-hidden="true">
+    <div class="box" style="max-width: 900px">
+      <h2 id="evolveCardTitle" style="margin-top:0"></h2>
+      <p id="evolveCardSubtitle" class="sub" style="margin-bottom:18px"></p>
+      <div id="evolveCardGrid" class="selection-grid"></div>
+      <div style="text-align:right">
+        <button class="btn-ghost" id="evolveCardCancel">Cancelar</button>
+      </div>
     </div>
   </div>
 
