@@ -1682,7 +1682,8 @@ document.addEventListener(
     if (
       e.target.closest("#aiBoard .card.selectable") ||
       e.target.closest("#playerBoard .card.selectable") ||
-      e.target.closest("#aiBoard .face-attack-btn")
+      e.target.closest("#aiBoard .face-attack-btn") ||
+      e.target.closest("#directAttackHint")
     )
       return;
     cancelTargeting();
