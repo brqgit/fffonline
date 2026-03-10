@@ -1,6 +1,7 @@
 const express = require('express');
 const http = require('http');
 const path = require('path');
+const fs = require('fs');
 const { Server } = require('socket.io');
 const { randomUUID } = require('crypto');
 
@@ -18,21 +19,60 @@ const rooms = new Map();
 
 // Informações de jogadores (ex.: saldo de ouro) em memória
 const players = new Map();
+const liveReloadClients = new Set();
+let liveReloadTimer = null;
+
+function broadcastLiveReload() {
+  for (const res of liveReloadClients) {
+    try {
+      res.write(`data: reload\n\n`);
+    } catch (_) {}
+  }
+}
+
+function queueLiveReload() {
+  clearTimeout(liveReloadTimer);
+  liveReloadTimer = setTimeout(broadcastLiveReload, 90);
+}
 
 app.use(express.json());
 
+app.get('/__live_reload', (req, res) => {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache, no-transform');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders();
+  res.write('retry: 400\n\n');
+  liveReloadClients.add(res);
+  req.on('close', () => {
+    liveReloadClients.delete(res);
+  });
+});
+
+app.get('/favicon.ico', (req, res) => {
+  res.sendFile(path.join(__dirname, 'favicon.ico'));
+});
+
 app.use(express.static(path.join(__dirname, 'public')));
+
+try {
+  fs.watch(path.join(__dirname, 'public'), { recursive: true }, () => queueLiveReload());
+  fs.watch(path.join(__dirname, 'server.js'), () => queueLiveReload());
+} catch (_) {}
 
 // Endpoint simples para registrar compras da loja
 app.post('/api/purchase', (req, res) => {
   const { playerId, itemId, cost, gold } = req.body || {};
-  if (!playerId || !itemId || typeof cost !== 'number') {
+  if (!playerId || !itemId || typeof cost !== 'number' || !Number.isFinite(cost) || cost < 0) {
     return res.status(400).json({ error: 'Dados inválidos' });
   }
   // Usa o ouro informado caso seja a primeira interação do jogador
   const currentGold = players.has(playerId)
     ? players.get(playerId)
     : typeof gold === 'number' ? gold : 0;
+  if (!Number.isFinite(currentGold) || currentGold < cost) {
+    return res.status(400).json({ error: 'Ouro insuficiente' });
+  }
   const newGold = currentGold - cost;
   players.set(playerId, newGold);
   res.json({ gold: newGold });

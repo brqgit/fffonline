@@ -10,10 +10,23 @@
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://fffarmfightformula.com">
   <meta property="og:image" content="img/ui/logos/logo2.png">
-  <link rel="icon" href="/favicon.png" type="image/png">
+  <link rel="icon" href="/favicon.ico" type="image/x-icon">
+  <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="css/style.css">
+  <script>
+    (() => {
+      const protocol = location.protocol === 'https:' ? 'https:' : 'http:';
+      const url = `${protocol}//${location.host}/__live_reload`;
+      try {
+        const source = new EventSource(url);
+        source.onmessage = (event) => {
+          if (event && event.data === 'reload') location.reload();
+        };
+      } catch (_) {}
+    })();
+  </script>
 </head>
 <body>
   <!-- Main menu -->
@@ -178,6 +191,9 @@
           <button class="fbtn" data-deck="animais">Animais</button>
           <button class="fbtn" data-deck="pescadores">Pescadores</button>
           <button class="fbtn" data-deck="floresta">Floresta</button>
+          <button class="fbtn" data-deck="totens">Totens</button>
+          <button class="fbtn" data-deck="reliquias">Relíquias</button>
+          <button class="fbtn" data-deck="efeitos">Efeitos</button>
         </div>
       </div>
       <div class="ency-grid" id="encyGrid"></div>
@@ -210,6 +226,31 @@
           <b>Mana</b>
           <span class="value" id="aiMana">0/0</span>
           <div class="bar"><div class="fill" id="barAiMana"></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="story-run-hud" id="storyRunHud" style="display:none" aria-live="polite">
+      <div class="story-chip" id="storyActChip">Ato 1</div>
+      <div class="story-chip" id="storyRoundChip">Round 1</div>
+      <div class="story-chip" id="storyEncounterChip">Encontro normal</div>
+      <div class="story-chip" id="storyBossModChip" style="display:none"></div>
+      <div class="story-chip" id="storySeedChip">Seed -</div>
+      <div class="story-chip" id="storyGoldChip">Ouro 0</div>
+      <div class="story-chip" id="storyDeckChip">Deck 0</div>
+      <div class="story-chip" id="storyRelicChip">Relíquias 0</div>
+      <div class="story-chip" id="storyPathChip">Próximo: -</div>
+      <div class="story-progress" id="storyProgress">
+        <div class="story-progress-item">
+          <div class="story-progress-label" id="storyEliteLabel">Elite em -</div>
+          <div class="story-progress-track">
+            <div class="story-progress-fill elite" id="storyEliteFill"></div>
+          </div>
+        </div>
+        <div class="story-progress-item">
+          <div class="story-progress-label" id="storyBossLabel">Boss em -</div>
+          <div class="story-progress-track">
+            <div class="story-progress-fill boss" id="storyBossFill"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -286,17 +327,29 @@
   <!-- Shop Modal -->
   <div id="shopModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="shopTitle" aria-describedby="shopMsg" aria-hidden="true">
     <div class="box">
-      <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
-  <img id="shopVendor" class="shop-keeper" src="img/ui/shopkeeper.png" alt="Vendedor" loading="lazy" decoding="async">
-        <h2 id="shopTitle" style="margin:0">Loja</h2>
-  <span style="margin-left:auto"><span class="coin-icon"></span> <b id="shopGold">0</b></span>
-        <button class="btn" id="btnReroll">Re-rolar</button>
-        <button class="btn" id="btnRemoveCard" style="background:linear-gradient(180deg,#7a2e36,#5a1f25)">🔥 Remover Carta (15 ouro)</button>
+      <div class="shop-head">
+        <div class="shop-head-title">
+          <img id="shopVendor" class="shop-keeper" src="img/ui/shopkeeper.png" alt="Vendedor" loading="lazy" decoding="async">
+          <h2 id="shopTitle" style="margin:0">Loja</h2>
+        </div>
+        <div class="shop-head-actions">
+          <span class="shop-gold-chip"><span class="coin-icon"></span> <b id="shopGold">0</b></span>
+          <button class="btn" id="btnReroll">Re-rolar</button>
+          <button class="btn" id="btnRemoveCard" style="background:linear-gradient(180deg,#7a2e36,#5a1f25)">🔥 Remover Carta (15 ouro)</button>
+        </div>
       </div>
       <div id="shopMsg" class="shop-msg" aria-live="polite"></div>
-      <div class="shop-grid" id="shopChoices"></div>
-      <div style="margin-top:12px;text-align:right">
-        <button id="closeShop" class="btn">Fechar</button>
+      <div class="shop-layout">
+        <div class="shop-catalog">
+          <section id="shopSpecialsPanel" class="shop-specials-panel" style="display:none">
+            <h3 class="shop-side-title">Relíquias e Upgrades</h3>
+            <div id="shopSpecialChoices" class="shop-specials-grid"></div>
+          </section>
+          <div class="shop-grid" id="shopChoices"></div>
+          <div style="text-align:right">
+            <button id="closeShop" class="btn btn-ghost">Fechar</button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -379,6 +432,41 @@
     </div>
   </div>
 
+  <!-- Story Map Modal -->
+  <div id="storyMapModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="storyMapTitle" aria-hidden="true">
+    <div class="box" style="max-width: 920px">
+      <h2 id="storyMapTitle" style="margin-top:0">Mapa da Campanha</h2>
+      <p id="storyMapSubtitle" class="sub" style="margin-bottom:14px">Escolha a próxima rota.</p>
+      <div class="story-map-layout">
+        <div id="storyMapGrid" class="story-map-grid">
+          <svg id="storyMapLines" class="story-map-lines" viewBox="0 0 800 1060" preserveAspectRatio="xMidYMid meet"></svg>
+          <div id="storyMapNodes" class="story-map-nodes"></div>
+        </div>
+        <aside class="story-map-sidebar">
+          <div class="story-map-panel">
+            <div class="story-map-panel-label">Nó selecionado</div>
+            <div id="storyMapDetailIcon" class="story-map-detail-icon">⚔️</div>
+            <h3 id="storyMapDetailTitle" class="story-map-detail-title">Combate</h3>
+            <p id="storyMapDetailDesc" class="story-map-detail-desc">Passe o mouse ou selecione um nó para ver os detalhes.</p>
+            <div id="storyMapDetailMeta" class="story-map-detail-meta"></div>
+          </div>
+          <div class="story-map-panel">
+            <div class="story-map-panel-label">Legenda</div>
+            <div class="story-map-legend">
+              <div class="story-map-legend-item"><span class="story-map-legend-dot combat">⚔️</span><span>Combate</span></div>
+              <div class="story-map-legend-item"><span class="story-map-legend-dot elite">💀</span><span>Elite</span></div>
+              <div class="story-map-legend-item"><span class="story-map-legend-dot event">❓</span><span>Evento</span></div>
+              <div class="story-map-legend-item"><span class="story-map-legend-dot shop">🛒</span><span>Loja</span></div>
+              <div class="story-map-legend-item"><span class="story-map-legend-dot rest">🔥</span><span>Descanso</span></div>
+              <div class="story-map-legend-item"><span class="story-map-legend-dot treasure">🧰</span><span>Tesouro</span></div>
+              <div class="story-map-legend-item"><span class="story-map-legend-dot boss">👑</span><span>Boss</span></div>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </div>
+
   <!-- Card Removal Modal -->
   <div id="removalModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="removalTitle" aria-hidden="true">
     <div class="box" style="max-width: 800px">
@@ -387,6 +475,27 @@
       <div id="removalChoices" class="removal-grid"></div>
       <div style="margin-top:16px;text-align:right">
         <button class="btn-ghost" id="cancelRemoval">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="restModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="restTitle" aria-hidden="true">
+    <div class="box rest-box" style="max-width: 900px">
+      <h2 id="restTitle" style="margin-top:0">🔥 Descanso na Fogueira</h2>
+      <p id="restSubtitle" class="sub" style="margin-bottom:18px">Respire, recupere forças ou aprimore uma carta da campanha.</p>
+      <div class="rest-layout">
+        <section class="rest-panel">
+          <h3 class="rest-panel-title">Escolhas</h3>
+          <div id="restChoices" class="event-choices rest-choices"></div>
+          <div id="restResult" class="rest-result"></div>
+        </section>
+        <section class="rest-panel">
+          <h3 class="rest-panel-title">Deck para reforjar</h3>
+          <div id="restForgeGrid" class="selection-grid rest-forge-grid"></div>
+        </section>
+      </div>
+      <div style="margin-top:16px;text-align:right">
+        <button class="btn-ghost" id="restClose">Fechar</button>
       </div>
     </div>
   </div>

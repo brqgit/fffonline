@@ -314,7 +314,7 @@
           testModal.style.display = 'none';
           setElementHidden(testModal, true);
         }
-        if (window.openShop) window.openShop({ faction: 'random', gold: 30, unlimited: true });
+        if (window.openShop) window.openShop({ faction: 'random', gold: 9999, unlimited: true });
       });
     }
 

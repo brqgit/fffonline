@@ -48,6 +48,16 @@ NODE_ENV=production npm start
 - `scripts/` – utilidades para desenvolvimento.
 - `docs/` – documentação adicional.
 
+## Notas de Manutenção
+
+- Loja, enciclopédia, recompensas e outras vitrines de carta devem reutilizar o mesmo renderer compartilhado: `cardNode(...)` em [public/js/game.js](public/js/game.js).
+- `cardNode` precisa continuar exposto em `window.cardNode`. Se isso for removido, módulos como a loja caem em fallback visual e deixam de carregar a arte real das cartas.
+- Ao ajustar a loja, não recrie um renderer paralelo para cartas. O fluxo correto é:
+  1. obter cartas do pool normalizado do jogo;
+  2. renderizar com `window.cardNode`;
+  3. limitar ajustes da loja a layout/CSS do container, sem alterar o pipeline de arte da carta.
+- Se a enciclopédia estiver mostrando arte corretamente e a loja não, a primeira verificação deve ser: `window.cardNode` está disponível no escopo global e a loja está usando esse renderer?
+
 ## Contribuição
 
 Contribuições são bem-vindas! Abra uma issue ou envie um pull request.
