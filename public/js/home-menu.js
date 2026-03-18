@@ -5,8 +5,10 @@
   window.__fffMenuInitialized = true;
   // Story Mode 2 temporarily disabled until further notice.
   var STORY2_ENABLED = false;
+  var SCREEN_TRANSITION_MS = 220;
 
   function initMenuScreens() {
+    var isDevMode = !!window.__FFF_DEV_MODE__;
     var titleMenu = document.getElementById('titleMenu');
     var deckScreen = document.getElementById('start');
     var multiMenu = document.getElementById('multiplayerMenu');
@@ -24,6 +26,15 @@
     var testModal = document.getElementById('testModal');
     var closeTest = document.getElementById('closeTest');
     var testShopBtn = document.getElementById('testShopBtn');
+    var testMapBtn = document.getElementById('testMapBtn');
+    var testEventBtn = document.getElementById('testEventBtn');
+    var testRestBtn = document.getElementById('testRestBtn');
+    var testRelicBtn = document.getElementById('testRelicBtn');
+    var testRewardsBtn = document.getElementById('testRewardsBtn');
+    var testRemovalBtn = document.getElementById('testRemovalBtn');
+    var testUpgradeBtn = document.getElementById('testUpgradeBtn');
+    var testRewardCardBtn = document.getElementById('testRewardCardBtn');
+    var testEncyBtn = document.getElementById('testEncyBtn');
     var testTotemBtn = document.getElementById('testTotemBtn');
     var toggleInstantWin = document.getElementById('toggleInstantWin');
     var toggleSilentArt = document.getElementById('toggleSilentArt');
@@ -34,6 +45,18 @@
     var muteToggles = [];
     for (var i = 0; i < toggleNodes.length; i += 1) {
       muteToggles.push(toggleNodes[i]);
+    }
+
+    if (testBtn) {
+      if (isDevMode) {
+        testBtn.hidden = false;
+        testBtn.removeAttribute('aria-hidden');
+        testBtn.removeAttribute('tabindex');
+      } else {
+        testBtn.hidden = true;
+        testBtn.setAttribute('aria-hidden', 'true');
+        testBtn.setAttribute('tabindex', '-1');
+      }
     }
 
     function setElementHidden(el, hidden) {
@@ -52,16 +75,74 @@
       el.setAttribute('aria-hidden', hidden ? 'true' : 'false');
     }
 
+    function showAppScreen(screen) {
+      var screens = [
+        { key: 'title', el: titleMenu, display: 'flex' },
+        { key: 'deck', el: deckScreen, display: 'flex' },
+        { key: 'multiplayer', el: multiMenu, display: 'grid' },
+        { key: 'game', el: document.getElementById('gameWrap'), display: 'block' }
+      ];
+      var target = null;
+      var current = null;
+      for (var index = 0; index < screens.length; index += 1) {
+        var item = screens[index];
+        if (!item.el) continue;
+        if (item.key === screen) target = item;
+        if (item.el.style.display && item.el.style.display !== 'none') current = item;
+      }
+      if (!target || !target.el) return;
+      if (!current || current.key === target.key) {
+        for (var sameIndex = 0; sameIndex < screens.length; sameIndex += 1) {
+          var sameEntry = screens[sameIndex];
+          if (!sameEntry.el) continue;
+          var sameVisible = sameEntry.key === screen;
+          sameEntry.el.style.display = sameVisible ? sameEntry.display : 'none';
+          sameEntry.el.classList.remove('app-screen-enter', 'app-screen-enter-active', 'app-screen-leave', 'app-screen-leave-active');
+          setElementHidden(sameEntry.el, !sameVisible);
+        }
+        return;
+      }
+      current.el.classList.add('app-screen-transition', 'app-screen-leave');
+      target.el.style.display = target.display;
+      setElementHidden(target.el, false);
+      target.el.classList.add('app-screen-transition', 'app-screen-enter');
+      void target.el.offsetWidth;
+      current.el.classList.add('app-screen-leave-active');
+      target.el.classList.add('app-screen-enter-active');
+      window.setTimeout(function () {
+        current.el.style.display = 'none';
+        setElementHidden(current.el, true);
+        current.el.classList.remove('app-screen-transition', 'app-screen-leave', 'app-screen-leave-active');
+        target.el.classList.remove('app-screen-transition', 'app-screen-enter', 'app-screen-enter-active');
+      }, SCREEN_TRANSITION_MS);
+    }
+    window.showAppScreen = showAppScreen;
+
     function setDeckScreenDifficultyVisible(visible) {
       if (diffLabel) diffLabel.style.display = visible ? '' : 'none';
       if (diffSelect) diffSelect.style.display = visible ? '' : 'none';
+    }
+    function closeTestModal() {
+      if (!testModal) return;
+      if (testModal.classList) testModal.classList.remove('show');
+      testModal.style.display = 'none';
+      setElementHidden(testModal, true);
+    }
+    function runTest(kind) {
+      if (!isDevMode) return;
+      if (typeof window.cleanupTransientUi === 'function') {
+        window.cleanupTransientUi();
+      }
+      if (typeof window.runGameTest === 'function') {
+        window.runGameTest(kind);
+      }
     }
 
     function updateStartButtonForMode(mode) {
       var startBtn = document.getElementById('startGame');
       if (!startBtn) return;
       if (mode === 'story') {
-        startBtn.textContent = 'Iniciar História';
+        startBtn.textContent = 'PLAY';
         startBtn.disabled = true;
       } else if (mode === 'story2') {
         if (!STORY2_ENABLED) {
@@ -72,13 +153,14 @@
         startBtn.textContent = 'Iniciar História 2 (beta)';
         startBtn.disabled = true;
       } else {
-        startBtn.textContent = 'Jogar';
+        startBtn.textContent = 'PLAY';
         startBtn.disabled = true;
       }
     }
 
 
     var playPopupOpen = false;
+    var playPopupReturnFocusEl = null;
 
     function matchesSelector(element, selector) {
       if (!element) return false;
@@ -96,6 +178,30 @@
         current = current.parentElement;
       }
       return null;
+    }
+
+    function getPlayPopupItems() {
+      if (!playPopup) return [];
+      var items = playPopup.querySelectorAll('[role="menuitem"]');
+      var result = [];
+      for (var idx = 0; idx < items.length; idx += 1) {
+        var item = items[idx];
+        if (!item || item.hidden || item.disabled) continue;
+        if (item.getAttribute('aria-hidden') === 'true') continue;
+        result.push(item);
+      }
+      return result;
+    }
+
+    function focusPlayPopupItem(index) {
+      var items = getPlayPopupItems();
+      if (!items.length) return;
+      var safeIndex = index;
+      if (safeIndex < 0) safeIndex = items.length - 1;
+      if (safeIndex >= items.length) safeIndex = 0;
+      try {
+        items[safeIndex].focus();
+      } catch (_) { }
     }
 
     function positionPlayPopup() {
@@ -121,15 +227,20 @@
 
     function openPlayPopup() {
       if (!playPopup || playPopupOpen) return;
+      playPopupReturnFocusEl = document.activeElement;
       playPopup.hidden = false;
       playPopup.removeAttribute('aria-hidden');
       if (playPopup.classList) playPopup.classList.add('show');
       if (playBtn) playBtn.setAttribute('aria-expanded', 'true');
       playPopupOpen = true;
       positionPlayPopup();
+      window.setTimeout(function () {
+        focusPlayPopupItem(0);
+      }, 0);
     }
 
-    function closePlayPopup() {
+    function closePlayPopup(options) {
+      var restoreFocus = !options || options.restoreFocus !== false;
       if (!playPopup) return;
       if (playPopup.classList) playPopup.classList.remove('show');
       playPopup.hidden = true;
@@ -139,6 +250,15 @@
       playPopup.style.left = '';
       playPopup.style.top = '';
       playPopup.style.transform = '';
+      if (restoreFocus) {
+        var target = playPopupReturnFocusEl && typeof playPopupReturnFocusEl.focus === 'function'
+          ? playPopupReturnFocusEl
+          : playBtn;
+        if (target && typeof target.focus === 'function') {
+          try { target.focus(); } catch (_) { }
+        }
+      }
+      playPopupReturnFocusEl = null;
     }
 
     function handlePlayChoice(mode) {
@@ -148,33 +268,30 @@
         return;
       }
       if (mode === 'multiplayer') {
-        if (titleMenu) titleMenu.style.display = 'none';
-        if (deckScreen) deckScreen.style.display = 'none';
-        if (multiMenu) {
-          multiMenu.style.display = 'grid';
-          setElementHidden(multiMenu, false);
-        }
+        showAppScreen('multiplayer');
         window.currentGameMode = 'multi';
         return;
       }
-      if (titleMenu) titleMenu.style.display = 'none';
-      if (multiMenu) {
-        multiMenu.style.display = 'none';
-        setElementHidden(multiMenu, true);
-      }
-      if (deckScreen) deckScreen.style.display = 'flex';
-      if (mode === 'story') {
-        setDeckScreenDifficultyVisible(false);
-        updateStartButtonForMode('story');
-        window.currentGameMode = 'story';
-      } else if (mode === 'story2') {
-        setDeckScreenDifficultyVisible(false);
-        updateStartButtonForMode('story2');
-        window.currentGameMode = 'story2';
+      var openDeckScreen = function () {
+        showAppScreen('deck');
+        if (mode === 'story') {
+          setDeckScreenDifficultyVisible(false);
+          updateStartButtonForMode('story');
+          window.currentGameMode = 'story';
+        } else if (mode === 'story2') {
+          setDeckScreenDifficultyVisible(false);
+          updateStartButtonForMode('story2');
+          window.currentGameMode = 'story2';
+        } else {
+          setDeckScreenDifficultyVisible(true);
+          updateStartButtonForMode('solo');
+          window.currentGameMode = 'solo';
+        }
+      };
+      if (typeof window.preloadDeckCarouselAssets === 'function') {
+        window.preloadDeckCarouselAssets().catch(function () { }).finally(openDeckScreen);
       } else {
-        setDeckScreenDifficultyVisible(true);
-        updateStartButtonForMode('solo');
-        window.currentGameMode = 'solo';
+        openDeckScreen();
       }
     }
 
@@ -223,8 +340,38 @@
     });
 
     document.addEventListener('keydown', function (event) {
-      if (event.key === 'Escape' && playPopupOpen) {
+      if (!playPopupOpen) return;
+      var items = getPlayPopupItems();
+      var activeIndex = items.indexOf(document.activeElement);
+      if (event.key === 'Escape') {
+        event.preventDefault();
         closePlayPopup();
+        return;
+      }
+      if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        focusPlayPopupItem(activeIndex >= 0 ? activeIndex + 1 : 0);
+        return;
+      }
+      if (event.key === 'ArrowUp') {
+        event.preventDefault();
+        focusPlayPopupItem(activeIndex >= 0 ? activeIndex - 1 : items.length - 1);
+        return;
+      }
+      if (event.key === 'Home') {
+        event.preventDefault();
+        focusPlayPopupItem(0);
+        return;
+      }
+      if (event.key === 'End') {
+        event.preventDefault();
+        focusPlayPopupItem(items.length - 1);
+        return;
+      }
+      if (event.key === 'Tab') {
+        event.preventDefault();
+        if (!items.length) return;
+        focusPlayPopupItem(activeIndex + (event.shiftKey ? -1 : 1));
       }
     });
 
@@ -232,7 +379,7 @@
       if (!playPopupOpen) return;
       if (playBtn && (event.target === playBtn || playBtn.contains(event.target))) return;
       if (playPopup && (event.target === playPopup || playPopup.contains(event.target))) return;
-      closePlayPopup();
+      closePlayPopup({ restoreFocus: false });
     });
 
     if (encyBtn) {
@@ -260,6 +407,7 @@
 
     if (testBtn) {
       testBtn.addEventListener('click', function () {
+        if (!isDevMode) return;
         closePlayPopup();
         if (testModal && testModal.classList) {
           testModal.classList.add('show');
@@ -273,15 +421,13 @@
 
     if (backToMenu) {
       backToMenu.addEventListener('click', function () {
-        if (deckScreen) deckScreen.style.display = 'none';
-        if (multiMenu) {
-          multiMenu.style.display = 'none';
-          setElementHidden(multiMenu, true);
+        if (typeof window.cleanupTransientUi === 'function') {
+          window.cleanupTransientUi();
         }
-        if (titleMenu) titleMenu.style.display = 'flex';
+        showAppScreen('title');
         var startBtn = document.getElementById('startGame');
         if (startBtn) {
-          startBtn.textContent = 'Jogar';
+          startBtn.textContent = 'PLAY';
           startBtn.disabled = true;
         }
         window.currentGameMode = null;
@@ -300,21 +446,68 @@
 
     if (closeTest) {
       closeTest.addEventListener('click', function () {
-        if (testModal && testModal.classList) {
-          testModal.classList.remove('show');
-          setElementHidden(testModal, true);
-        }
+        closeTestModal();
       });
     }
 
     if (testShopBtn) {
       testShopBtn.addEventListener('click', function () {
-        if (testModal) {
-          if (testModal.classList) testModal.classList.remove('show');
-          testModal.style.display = 'none';
-          setElementHidden(testModal, true);
-        }
-        if (window.openShop) window.openShop({ faction: 'random', gold: 9999, unlimited: true });
+        closeTestModal();
+        runTest('shop');
+      });
+    }
+    if (testMapBtn) {
+      testMapBtn.addEventListener('click', function () {
+        closeTestModal();
+        runTest('map');
+      });
+    }
+    if (testEventBtn) {
+      testEventBtn.addEventListener('click', function () {
+        closeTestModal();
+        runTest('event');
+      });
+    }
+    if (testRestBtn) {
+      testRestBtn.addEventListener('click', function () {
+        closeTestModal();
+        runTest('rest');
+      });
+    }
+    if (testRelicBtn) {
+      testRelicBtn.addEventListener('click', function () {
+        closeTestModal();
+        runTest('relic');
+      });
+    }
+    if (testRewardsBtn) {
+      testRewardsBtn.addEventListener('click', function () {
+        closeTestModal();
+        runTest('rewards');
+      });
+    }
+    if (testRemovalBtn) {
+      testRemovalBtn.addEventListener('click', function () {
+        closeTestModal();
+        runTest('removal');
+      });
+    }
+    if (testUpgradeBtn) {
+      testUpgradeBtn.addEventListener('click', function () {
+        closeTestModal();
+        runTest('upgrade');
+      });
+    }
+    if (testRewardCardBtn) {
+      testRewardCardBtn.addEventListener('click', function () {
+        closeTestModal();
+        runTest('reward-card');
+      });
+    }
+    if (testEncyBtn) {
+      testEncyBtn.addEventListener('click', function () {
+        closeTestModal();
+        runTest('ency');
       });
     }
 
@@ -337,11 +530,7 @@
     var testStoryWinBtn = document.getElementById('testStoryWinBtn');
     if (testStoryWinBtn) {
       testStoryWinBtn.addEventListener('click', function () {
-        if (testModal) {
-          if (testModal.classList) testModal.classList.remove('show');
-          testModal.style.display = 'none';
-          setElementHidden(testModal, true);
-        }
+        closeTestModal();
         // Start story mode properly like the Play button does
         window.currentGameMode = 'story';
         window.storyTestMode = true; // Flag to show instant win button
@@ -351,12 +540,8 @@
 
     if (testTotemBtn) {
       testTotemBtn.addEventListener('click', function () {
-        if (testModal) {
-          if (testModal.classList) testModal.classList.remove('show');
-          testModal.style.display = 'none';
-          setElementHidden(testModal, true);
-        }
-        if (window.startTotemTest) window.startTotemTest();
+        closeTestModal();
+        runTest('totem');
       });
     }
 
@@ -460,15 +645,12 @@
           if (resetTimer) clearTimeout(resetTimer);
           resetTimer = setTimeout(function () {
             clickCount = 0;
-          }, 600);
+          }, 900);
           if (clickCount >= 3) {
             clickCount = 0;
             if (resetTimer) {
               clearTimeout(resetTimer);
               resetTimer = null;
-            }
-            if (!logo.classList.contains('logo-spin-secret')) {
-              logo.classList.add('logo-spin-secret');
             }
             if (brand) {
               if (fanTimeout) {
@@ -477,24 +659,13 @@
               }
               if (brand.classList.contains('logo-secret-active')) {
                 brand.classList.remove('logo-secret-active');
-                // force reflow so animation can restart
                 void brand.offsetWidth;
               }
               brand.classList.add('logo-secret-active');
               fanTimeout = setTimeout(function () {
-                brand.classList.add('logo-secret-fadeout');
-                setTimeout(function(){
-                  brand.classList.remove('logo-secret-active');
-                  brand.classList.remove('logo-secret-fadeout');
-                }, 800);
-              }, 3000);
+                brand.classList.remove('logo-secret-active');
+              }, 3600);
             }
-          }
-        });
-
-        logo.addEventListener('animationend', function (event) {
-          if (event.animationName === 'logo-secret-spin') {
-            logo.classList.remove('logo-spin-secret');
           }
         });
       })(logos[k]);

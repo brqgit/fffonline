@@ -15,6 +15,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/home.css">
   <script>
     (() => {
       const protocol = location.protocol === 'https:' ? 'https:' : 'http:';
@@ -27,6 +28,14 @@
       } catch (_) {}
     })();
   </script>
+  <script>
+    (() => {
+      const host = String(location.hostname || '').toLowerCase();
+      const isLocalHost = host === 'localhost' || host === '127.0.0.1' || host === '::1';
+      const isPrivateNet = /^192\.168\./.test(host) || /^10\./.test(host) || /^172\.(1[6-9]|2\d|3[0-1])\./.test(host);
+      window.__FFF_DEV_MODE__ = isLocalHost || isPrivateNet;
+    })();
+  </script>
 </head>
 <body>
   <!-- Main menu -->
@@ -35,23 +44,26 @@
       <div class="brand">
         <div class="logo-secret-fan" aria-hidden="true">
           <img src="img/decks/farm-vikings/deck-backs/fv-db-default.png" alt="" class="logo-secret-card">
-          <img src="img/decks/north-beasts/deck-backs/nb-db-default.webp" alt="" class="logo-secret-card">
-          <img src="img/decks/fJord-fishers/deck-backs/jf-db-default.webp" alt="" class="logo-secret-card">
-          <img src="img/decks/forest-beasts/deck-backs/fb-db-default.webp" alt="" class="logo-secret-card">
+          <img src="img/decks/north-beasts/deck-backs/nb-db-default.png" alt="" class="logo-secret-card">
+          <img src="img/decks/fJord-fishers/deck-backs/jf-db-default.png" alt="" class="logo-secret-card">
+          <img src="img/decks/forest-beasts/deck-backs/fb-db-default.png" alt="" class="logo-secret-card">
         </div>
         <img src="img/ui/logos/logo2.png" class="logo-wordmark holo-logo" alt="Farm Fight Formula logo">
+        <div class="home-intro" aria-label="Resumo do jogo">
+          <p class="home-kicker">Decks nórdicos, duelos sem pausa.</p>
+        </div>
       </div>
       <div class="panel">
-        <div class="panel-toolbar">
-          <button class="btn-ghost mute-toggle" type="button" data-action="toggle-music" aria-pressed="false">🔊 Música</button>
-        </div>
-        <div class="main-actions">
-          <button class="btn" id="menuPlay" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="playPopup">Jogar</button>
-          <button class="btn" id="menuOptions" type="button">Opções</button>
-          <button class="btn" id="menuTestes" type="button">Testes</button>
+        <div class="title-menu-surface" aria-hidden="true"></div>
+        <div class="title-menu-content">
+          <div class="main-actions">
+            <button class="btn" id="menuPlay" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="playPopup">Jogar</button>
+            <button class="btn" id="menuOptions" type="button">Opções</button>
+            <button class="btn" id="menuTestes" type="button" hidden aria-hidden="true" tabindex="-1">Testes</button>
+          </div>
         </div>
       </div>
-      <div class="play-popup" id="playPopup" role="menu" hidden>
+      <div class="play-popup" id="playPopup" role="menu" aria-labelledby="menuPlay" aria-orientation="vertical" hidden>
         <button class="btn" id="menuPlayStory" type="button" role="menuitem">História</button>
         <button class="btn" id="menuPlayStory2" type="button" role="menuitem" hidden>História 2 (beta)</button>
         <button class="btn" id="menuPlayQuick" type="button" role="menuitem">Partida rápida</button>
@@ -63,75 +75,65 @@
 
   <!-- Deck selection -->
   <div class="start" id="start" style="display:none">
-    <div class="start-layout">
-      <div class="brand">
-        <div class="logo-secret-fan" aria-hidden="true">
-          <img src="img/decks/farm-vikings/deck-backs/fv-db-default.png" alt="" class="logo-secret-card" loading="lazy" decoding="async">
-          <img src="img/decks/north-beasts/deck-backs/nb-db-default.webp" alt="" class="logo-secret-card" loading="lazy" decoding="async">
-          <img src="img/decks/fJord-fishers/deck-backs/jf-db-default.webp" alt="" class="logo-secret-card" loading="lazy" decoding="async">
-          <img src="img/decks/forest-beasts/deck-backs/fb-db-default.webp" alt="" class="logo-secret-card" loading="lazy" decoding="async">
-        </div>
-        <img src="img/ui/logos/logo2.png" class="logo-wordmark holo-logo" alt="Farm Fight Formula logo" loading="lazy" decoding="async">
+    <div class="deck-selection-screen">
+      <div class="deck-screen-topbar">
+        <button class="btn-ghost deck-screen-back" id="deckScreenBackTop" type="button">Retornar</button>
       </div>
-      <div class="panel">
-        <div class="panel-toolbar">
-          <button class="btn-ghost mute-toggle" type="button" data-action="toggle-music" aria-pressed="false">🔊 Música</button>
-        </div>
-        <p class="sub">Escolha um deck e parta para a arena.</p>
+      <div class="deck-selection-content">
         <div class="deckpick">
-          <div class="deck-option">
-            <button class="btn deckbtn" data-deck="vikings" type="button">
-              <span class="deck-label">👩‍🌾 Fazendeiros Vikings</span>
-              <span class="ribbon">Cura e proteção</span>
-            </button>
-            <button class="view-cards" data-deck="vikings" data-tip="Ver cartas" aria-label="Ver cartas do deck Fazendeiros Vikings" type="button">📖</button>
-          </div>
-          <div class="deck-option">
-            <button class="btn deckbtn" data-deck="animais" type="button">
-              <span class="deck-label">🐺 Bestas do Norte</span>
-              <span class="ribbon">Ataque bruto</span>
-            </button>
-            <button class="view-cards" data-deck="animais" data-tip="Ver cartas" aria-label="Ver cartas do deck Bestas do Norte" type="button">📖</button>
-          </div>
-          <div class="deck-option">
-            <button class="btn deckbtn" data-deck="pescadores" type="button">
-              <span class="deck-label">🎣 Pescadores do Fiorde</span>
-              <span class="ribbon">Suporte e bônus</span>
-            </button>
-            <button class="view-cards" data-deck="pescadores" data-tip="Ver cartas" aria-label="Ver cartas do deck Pescadores do Fiorde" type="button">📖</button>
-          </div>
-          <div class="deck-option">
-            <button class="btn deckbtn" data-deck="floresta" type="button">
-              <span class="deck-label">🌲 Feras da Floresta</span>
-              <span class="ribbon">Pressão constante</span>
-            </button>
-            <button class="view-cards" data-deck="floresta" data-tip="Ver cartas" aria-label="Ver cartas do deck Feras da Floresta" type="button">📖</button>
-          </div>
-          <div class="deck-option">
-            <button class="btn deckbtn" data-deck="custom" type="button">
-              <span class="deck-label">🧩 Deck Personalizado</span>
-              <span class="ribbon">Monte seu baralho</span>
-            </button>
-            <button class="view-cards" data-deck="custom" data-tip="Ver cartas" aria-label="Ver cartas do deck personalizado" type="button">📖</button>
+          <div class="deck-carousel-shell">
+            <div class="deck-carousel" id="deckCarousel" aria-live="polite"></div>
+            <div class="deck-carousel-info" id="deckCarouselInfo" aria-live="polite">
+              <div class="deck-carousel-name" id="deckCarouselName"></div>
+              <div class="deck-carousel-tag" id="deckCarouselTag"></div>
+            </div>
           </div>
         </div>
-        <div id="deckBuilder" style="display:none">
-          <p>Monte seu baralho: <span id="countDeck">0</span>/20</p>
-          <div id="curve"></div>
-          <div id="pool"></div>
-          <div id="chosen"></div>
-          <button class="btn" id="saveDeck">Salvar Deck</button>
+        <div class="deck-selection-hidden-ui" aria-hidden="true" hidden>
+          <div id="deckBuilder" style="display:none">
+            <p>Monte seu baralho: <span id="countDeck">0</span>/20</p>
+            <div id="curve"></div>
+            <div id="pool"></div>
+            <div id="chosen"></div>
+            <button class="btn" id="saveDeck">Salvar Deck</button>
+          </div>
+          <label for="difficulty" class="sub">Dificuldade:</label>
+          <select id="difficulty" class="difficulty">
+            <option value="0">Ameba</option>
+            <option value="1" selected>Equilibrado</option>
+            <option value="2">IMPOSSIBLE!!!</option>
+          </select>
+          <button class="btn" id="startGame" disabled>PLAY</button>
+          <button class="btn" id="backToMenu">Menu</button>
         </div>
-        <div class="footer">
-          <div class="controls">
-            <label for="difficulty" class="sub">Dificuldade:</label>
-            <select id="difficulty" class="difficulty">
-              <option value="0">Ameba</option>
-              <option value="1" selected>Equilibrado</option>
-              <option value="2">IMPOSSIBLE!!!</option>
-            </select>
-            <button class="btn" id="startGame" disabled>Jogar</button>
-            <button class="btn" id="backToMenu">Menu</button>
+        <div class="deck-preview-screen" id="deckPreviewScreen" hidden aria-hidden="true">
+          <div class="deck-preview-topbar">
+            <button class="btn-ghost" id="deckPreviewBackBtn" type="button">Retornar</button>
+          </div>
+          <div class="deck-preview-body">
+            <div class="deck-preview-copy">
+              <h2 class="deck-preview-title" id="deckPreviewTitle">Deck</h2>
+              <p class="deck-preview-sub" id="deckPreviewSubtitle">9 cartas</p>
+            </div>
+            <div class="deck-preview-layout">
+              <div class="deck-preview-grid" id="deckPreviewGrid"></div>
+              <div class="deck-preview-hero">
+                <img id="deckPreviewBack" alt="Verso do deck" loading="lazy" decoding="async">
+              </div>
+            </div>
+          </div>
+          <div class="deck-preview-bottombar">
+            <div class="deck-preview-actions">
+              <div class="deck-preview-difficulty">
+                <span class="deck-preview-difficulty-label">Dificuldade</span>
+                <select id="deckPreviewDifficulty" class="difficulty">
+                  <option value="0">Ameba</option>
+                  <option value="1" selected>Equilibrado</option>
+                  <option value="2">IMPOSSIBLE!!!</option>
+                </select>
+              </div>
+              <button class="btn" id="deckPreviewPlay" type="button">Play</button>
+            </div>
           </div>
         </div>
       </div>
@@ -156,9 +158,15 @@
   <div class="options-menu" id="optionsMenu" style="display:none" role="dialog" aria-modal="true" aria-labelledby="optionsTitle" aria-hidden="true">
     <div class="panel">
       <h2 id="optionsTitle">Opções</h2>
-      <label>Música <input type="range" id="musicVol" min="0" max="1" step="0.01" value="1"></label>
-      <label>Efeitos <input type="range" id="sfxVol" min="0" max="1" step="0.01" value="1"></label>
-      <label><input type="checkbox" id="disableAnims"> Desativar animações</label>
+      <div class="options-group">
+        <div class="options-group-title">Áudio</div>
+        <label>Música <input type="range" id="musicVol" min="0" max="1" step="0.01" value="1"></label>
+        <label>Efeitos <input type="range" id="sfxVol" min="0" max="1" step="0.01" value="1"></label>
+      </div>
+      <div class="options-group">
+        <div class="options-group-title">Interface</div>
+        <label><input type="checkbox" id="disableAnims"> Desativar animações</label>
+      </div>
       <button class="btn-ghost" id="closeOptions">Fechar</button>
     </div>
   </div>
@@ -173,6 +181,15 @@
       <label style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
         <input type="checkbox" id="toggleSilentArt" checked> Usar arte placeholder (sem requisições)
       </label>
+      <button class="btn" id="testMapBtn">Mapa da Campanha</button>
+      <button class="btn" id="testEventBtn">Evento Aleatório</button>
+      <button class="btn" id="testRestBtn">Descanso</button>
+      <button class="btn" id="testRelicBtn">Escolha de Relíquia</button>
+      <button class="btn" id="testRewardsBtn">Tela de Recompensa</button>
+      <button class="btn" id="testRemovalBtn">Remoção de Carta</button>
+      <button class="btn" id="testUpgradeBtn">Upgrade de Carta</button>
+      <button class="btn" id="testRewardCardBtn">Carta de Evento</button>
+      <button class="btn" id="testEncyBtn">Enciclopédia</button>
       <button class="btn" id="testShopBtn">Abrir Loja</button>
       <button class="btn" id="testStoryWinBtn">Vitória instantânea (História)</button>
       <button class="btn" id="testTotemBtn">Totens</button>
@@ -205,56 +222,77 @@
   </div>
 
   <!-- Game area -->
-  <div class="" id="gameWrap" style="display:none">
+  <div class="game-layout" id="gameWrap" style="display:none">
+    <div class="game-section game-section-hud">
     <div class="hud">
-      <div>
-        <div class="meter player"><b>Seu HP</b><span class="value" id="playerHP">30</span><div class="player-img" id="playerAvatar">👤</div><div class="bar"><div class="fill" id="barPlayerHP"></div></div></div>
-        <div class="meter mana"><b>Mana</b><span class="value" id="mana">0/0</span><div class="bar"><div class="fill" id="barMana"></div></div></div>
-        <div class="gold-display"><span class="coin-icon"></span><span id="playerGoldHUD">0</span></div>
-      </div>
-      <div class="center-hud"><button class="btn-ghost" id="muteBtn" title="Som" aria-pressed="false">🔊 Som</button><button class="btn-ghost" id="openMenuBtn" title="Menu">☰ Menu</button></div>
-      <div class="enemy-hud" style="justify-self:end;display:flex;gap:8px;align-items:center">
-        <div class="meter enemy">
-          <b>HP Inimigo</b>
-          <span class="opp-label" id="opponentLabel"></span>
-          <span class="value" id="aiHP">30</span>
-          <div class="enemy-img" id="aiAvatar">🧿</div>
-          <div class="bar"><div class="fill" id="barAiHP"></div></div>
+      <div class="hud-panel hud-panel-left">
+        <div class="player-img" id="playerAvatar">👤</div>
+        <div class="story-player-chips">
+          <div class="story-chip" id="storyRoundChip">Round 1</div>
+          <div class="story-chip" id="storyActChip">Ato 1</div>
         </div>
-        <!-- enemy mana as a sibling meter to mirror player HUD structure -->
-        <div class="meter mana enemy-mana">
-          <b>Mana</b>
-          <span class="value" id="aiMana">0/0</span>
-          <div class="bar"><div class="fill" id="barAiMana"></div></div>
+        <div class="hud-side-content hud-side-content-left">
+          <div class="meter player hud-meter life-meter">
+            <b>Seu HP</b>
+            <div class="hud-meter-track">
+              <div class="hud-meter-fill" id="barPlayerHP">
+                <img src="./img/ui/HUD/Life.png" alt="" class="hud-meter-fill-image">
+              </div>
+              <img src="./img/ui/HUD/LifeBar.png" alt="" class="hud-meter-frame">
+              <span class="value hud-meter-value" id="playerHP">30</span>
+            </div>
+          </div>
+          <div class="meter mana hud-meter mana-meter">
+            <b>Mana</b>
+            <div class="hud-meter-track">
+              <div class="hud-meter-fill" id="barMana">
+                <img src="./img/ui/HUD/Mana.png" alt="" class="hud-meter-fill-image">
+              </div>
+              <img src="./img/ui/HUD/ManaBar.png" alt="" class="hud-meter-frame">
+              <span class="value hud-meter-value" id="mana">0/0</span>
+            </div>
+          </div>
+          <div class="gold-display"><span class="coin-icon"></span><span id="playerGoldHUD">0</span></div>
+        </div>
+      </div>
+      <div class="hud-panel hud-panel-center center-hud">
+        <button class="btn-ghost" id="muteBtn" title="Som" aria-pressed="false">🔊 Som</button>
+        <button class="btn-ghost" id="openMenuBtn" title="Menu">☰ Menu</button>
+      </div>
+      <div class="hud-panel hud-panel-right enemy-hud">
+        <div class="enemy-img" id="aiAvatar">🧿</div>
+        <div class="hud-side-content hud-side-content-right">
+          <div class="meter enemy hud-meter life-meter">
+            <b>HP Inimigo</b>
+            <span class="opp-label" id="opponentLabel"></span>
+            <div class="hud-meter-track">
+              <div class="hud-meter-fill" id="barAiHP">
+                <img src="./img/ui/HUD/Life.png" alt="" class="hud-meter-fill-image">
+              </div>
+              <img src="./img/ui/HUD/LifeBar.png" alt="" class="hud-meter-frame">
+              <span class="value hud-meter-value" id="aiHP">30</span>
+            </div>
+          </div>
+          <div class="meter mana enemy-mana hud-meter mana-meter">
+            <b>Mana</b>
+            <div class="hud-meter-track">
+              <div class="hud-meter-fill" id="barAiMana">
+                <img src="./img/ui/HUD/Mana.png" alt="" class="hud-meter-fill-image">
+              </div>
+              <img src="./img/ui/HUD/ManaBar.png" alt="" class="hud-meter-frame">
+              <span class="value hud-meter-value" id="aiMana">0/0</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
     <div class="story-run-hud" id="storyRunHud" style="display:none" aria-live="polite">
-      <div class="story-chip" id="storyActChip">Ato 1</div>
-      <div class="story-chip" id="storyRoundChip">Round 1</div>
-      <div class="story-chip" id="storyEncounterChip">Encontro normal</div>
       <div class="story-chip" id="storyBossModChip" style="display:none"></div>
-      <div class="story-chip" id="storySeedChip">Seed -</div>
-      <div class="story-chip" id="storyGoldChip">Ouro 0</div>
-      <div class="story-chip" id="storyDeckChip">Deck 0</div>
-      <div class="story-chip" id="storyRelicChip">Relíquias 0</div>
-      <div class="story-chip" id="storyPathChip">Próximo: -</div>
       <div class="story-progress" id="storyProgress">
-        <div class="story-progress-item">
-          <div class="story-progress-label" id="storyEliteLabel">Elite em -</div>
-          <div class="story-progress-track">
-            <div class="story-progress-fill elite" id="storyEliteFill"></div>
-          </div>
-        </div>
-        <div class="story-progress-item">
-          <div class="story-progress-label" id="storyBossLabel">Boss em -</div>
-          <div class="story-progress-track">
-            <div class="story-progress-fill boss" id="storyBossFill"></div>
-          </div>
-        </div>
       </div>
     </div>
     </div>
+    <div class="game-section game-section-status">
     <div class="active-effects" id="activeEffects" aria-live="polite" style="display:none">
       <div class="effects-title">Relíquias da Campanha</div>
       <div class="effects-list" id="effectsList"></div>
@@ -263,23 +301,33 @@
       <div class="relics-title">⚡ Relíquias Ativas</div>
       <div class="relics-list" id="relicsList"></div>
     </div>
-    <div class="row enemy-row">
-  <div class="pile" id="aiDrawPile"><img src="img/decks/fJord-fishers/deck-backs/jf-db-default.webp" alt="deck" loading="lazy" decoding="async"><div class="pile-label">DECK</div></div>
-      <div class="board" id="aiBoard"></div>
-  <div class="pile" id="aiDiscardPile"><img src="img/decks/fJord-fishers/deck-backs/jf-db-default.webp" alt="discard" loading="lazy" decoding="async"><div class="pile-label">DESCARTE</div></div>
     </div>
+    <div class="game-section game-section-enemy-side">
+    <div class="row enemy-row">
+  <div class="pile" id="aiDrawPile"><img src="img/decks/fJord-fishers/deck-backs/jf-db-default.png" alt="deck" loading="lazy" decoding="async"><div class="pile-label">DECK</div></div>
+      <div class="board" id="aiBoard"></div>
+  <div class="pile" id="aiDiscardPile"><img src="img/decks/fJord-fishers/deck-backs/jf-db-default.png" alt="discard" loading="lazy" decoding="async"><div class="pile-label">DESCARTE</div></div>
+    </div>
+    </div>
+    <div class="game-section game-section-turn-bar">
     <div class="turn-bar"><div class="turn-indicator" id="turnIndicator"></div><button class="btn" id="endTurnBtn">Encerrar turno</button><button class="btn" id="instantWinBtn" type="button" aria-label="Vitória instantânea (teste)">⚡ Vitória Instantânea</button></div>
+    </div>
+    <div class="game-section game-section-player-side">
     <div class="row">
       <div class="pile-wrap" id="drawWrap">
-        <div class="pile" id="drawPile"><img src="img/decks/fJord-fishers/deck-backs/jf-db-default.webp" alt="deck" loading="lazy" decoding="async"><div class="count" id="drawCount">0</div><div class="pile-label">SEU DECK</div></div>
+        <div class="pile" id="drawPile"><img src="img/decks/fJord-fishers/deck-backs/jf-db-default.png" alt="deck" loading="lazy" decoding="async"><div class="count" id="drawCount">0</div><div class="pile-label">SEU DECK</div></div>
         <div class="totem-bar" id="totemBar"></div>
       </div>
       <div class="board" id="playerBoard"></div>
-  <div class="pile" id="discardPile"><img src="img/decks/fJord-fishers/deck-backs/jf-db-default.webp" alt="discard" loading="lazy" decoding="async"><div class="count" id="discardCount">0</div><div class="pile-label">DESCARTE</div></div>
+  <div class="pile" id="discardPile"><img src="img/decks/fJord-fishers/deck-backs/jf-db-default.png" alt="discard" loading="lazy" decoding="async"><div class="count" id="discardCount">0</div><div class="pile-label">DESCARTE</div></div>
       <div class="log-wrap"><div class="zone-title">Registro</div><div class="log" id="log"></div></div>
     </div>
+    </div>
     <div class="effects-hud" id="effectsHud"></div>
+    <div class="game-section game-section-player-hand">
     <div class="hand" id="playerHand"></div>
+    </div>
+    <div class="game-section game-section-emotes">
     <div class="emoji-bar" id="emojiBar">
       <button class="emoji-btn" data-emoji="😡">😡</button>
       <button class="emoji-btn" data-emoji="🤔">🤔</button>
@@ -288,6 +336,7 @@
     </div>
     <div class="emoji-popup player" id="playerEmoji"></div>
     <div class="emoji-popup opponent" id="opponentEmoji"></div>
+    </div>
   </div>
 
     <div id="eventRewardOverlay" class="event-reward-overlay" aria-live="polite"></div>
@@ -308,6 +357,7 @@
     <div class="end-box">
       <div class="end-msg" id="endMsg"></div>
       <div class="end-sub" id="endSub"></div>
+      <div class="end-stats" id="endStats" aria-live="polite"></div>
       <div class="end-actions">
         <button class="btn" id="playAgainBtn">Jogar de novo</button>
         <button class="btn" id="rematchBtn">Revanche</button>
@@ -326,11 +376,14 @@
 
   <!-- Shop Modal -->
   <div id="shopModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="shopTitle" aria-describedby="shopMsg" aria-hidden="true">
-    <div class="box">
+    <div class="box shop-shell">
       <div class="shop-head">
         <div class="shop-head-title">
           <img id="shopVendor" class="shop-keeper" src="img/ui/shopkeeper.png" alt="Vendedor" loading="lazy" decoding="async">
-          <h2 id="shopTitle" style="margin:0">Loja</h2>
+          <div class="shop-head-copy">
+            <h2 id="shopTitle" style="margin:0">Loja</h2>
+            <div id="shopVendorLine" class="shop-vendor-line">Tenho algumas ofertas para sua jornada.</div>
+          </div>
         </div>
         <div class="shop-head-actions">
           <span class="shop-gold-chip"><span class="coin-icon"></span> <b id="shopGold">0</b></span>
@@ -339,17 +392,48 @@
         </div>
       </div>
       <div id="shopMsg" class="shop-msg" aria-live="polite"></div>
+      <div class="shop-statusbar">
+        <div id="shopVisitMeta" class="shop-visit-meta">Visita 1</div>
+        <div class="shop-budget">
+          <span class="shop-budget-item">Atual: <b id="shopGoldNow">0</b></span>
+          <span class="shop-budget-item">Após compra: <b id="shopGoldAfter">0</b></span>
+        </div>
+      </div>
       <div class="shop-layout">
         <div class="shop-catalog">
+          <div class="shop-filters" id="shopFilters" aria-label="Filtros da loja"></div>
           <section id="shopSpecialsPanel" class="shop-specials-panel" style="display:none">
             <h3 class="shop-side-title">Relíquias e Upgrades</h3>
             <div id="shopSpecialChoices" class="shop-specials-grid"></div>
           </section>
           <div class="shop-grid" id="shopChoices"></div>
-          <div style="text-align:right">
+          <div class="shop-footer">
             <button id="closeShop" class="btn btn-ghost">Fechar</button>
           </div>
         </div>
+        <aside class="shop-preview-panel" id="shopPreviewPanel" aria-live="polite">
+          <div class="shop-preview-empty" id="shopPreviewEmpty">
+            <div class="shop-preview-empty-title">Selecione uma oferta</div>
+            <div class="shop-preview-empty-copy">Veja detalhes, sinergias e impacto no seu ouro antes de comprar.</div>
+          </div>
+          <div class="shop-preview-detail" id="shopPreviewDetail" hidden>
+            <div class="shop-preview-cardwrap" id="shopPreviewCardWrap"></div>
+            <div class="shop-preview-meta">
+              <div class="shop-preview-topline">
+                <span class="shop-preview-type" id="shopPreviewType">Carta</span>
+                <span class="shop-preview-rarity" id="shopPreviewRarity">Comum</span>
+              </div>
+              <h3 class="shop-preview-name" id="shopPreviewName">Oferta</h3>
+              <p class="shop-preview-desc" id="shopPreviewDesc">Descricao</p>
+              <div class="shop-preview-chips" id="shopPreviewChips"></div>
+              <div class="shop-preview-economy">
+                <div class="shop-preview-economy-item">Custo <b id="shopPreviewCost">0</b></div>
+                <div class="shop-preview-economy-item">Apos compra <b id="shopPreviewAfterGold">0</b></div>
+              </div>
+              <button class="btn shop-preview-buy" id="shopPreviewBuy" type="button">Comprar</button>
+            </div>
+          </div>
+        </aside>
       </div>
     </div>
   </div>
@@ -423,12 +507,22 @@
 
   <!-- Event Modal (Random encounters) -->
   <div id="eventModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="eventTitle" aria-hidden="true">
-    <div class="box" style="max-width: 650px">
-      <div style="text-align:center;font-size:64px;margin-bottom:16px" id="eventIcon"></div>
-      <h2 id="eventTitle" style="margin-top:0;text-align:center"></h2>
-      <p id="eventDesc" class="sub" style="margin-bottom:24px;text-align:center;font-size:16px"></p>
-      <div id="eventChoices" class="event-choices"></div>
-      <div id="eventResult" style="color:#4ade80;margin-top:16px;min-height:24px;text-align:center;font-weight:600"></div>
+    <div class="box event-screen-box">
+      <div id="eventScreen" class="event-screen">
+        <div id="eventScene" class="event-scene">
+          <div class="event-scene-overlay"></div>
+          <div id="eventIcon" class="event-scene-icon"></div>
+        </div>
+        <aside class="event-panel">
+          <div class="event-panel-copy">
+            <div id="eventEyebrow" class="event-eyebrow">Evento Aleatório</div>
+            <h2 id="eventTitle" class="event-title"></h2>
+            <p id="eventDesc" class="event-desc"></p>
+          </div>
+          <div id="eventChoices" class="event-choices"></div>
+          <div id="eventResult" class="event-result"></div>
+        </aside>
+      </div>
     </div>
   </div>
 
@@ -471,7 +565,7 @@
   <div id="removalModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="removalTitle" aria-hidden="true">
     <div class="box" style="max-width: 800px">
       <h2 id="removalTitle" style="margin-top:0">🔥 Remover Carta do Deck</h2>
-      <p class="sub" style="margin-bottom:20px">Selecione uma carta para remover permanentemente:</p>
+      <p id="removalSubtitle" class="sub" style="margin-bottom:20px">Selecione uma carta para remover permanentemente:</p>
       <div id="removalChoices" class="removal-grid"></div>
       <div style="margin-top:16px;text-align:right">
         <button class="btn-ghost" id="cancelRemoval">Cancelar</button>
@@ -489,10 +583,6 @@
           <div id="restChoices" class="event-choices rest-choices"></div>
           <div id="restResult" class="rest-result"></div>
         </section>
-        <section class="rest-panel">
-          <h3 class="rest-panel-title">Deck para reforjar</h3>
-          <div id="restForgeGrid" class="selection-grid rest-forge-grid"></div>
-        </section>
       </div>
       <div style="margin-top:16px;text-align:right">
         <button class="btn-ghost" id="restClose">Fechar</button>
@@ -502,6 +592,16 @@
 
   <div id="encounterBanner"></div>
   <div id="encounterTransition"></div>
+  <div id="pileViewer" class="pile-viewer" aria-hidden="true">
+    <div class="pile-viewer-backdrop" id="pileViewerBackdrop"></div>
+    <div class="pile-viewer-panel">
+      <div class="pile-viewer-head">
+        <h2 id="pileViewerTitle">Pilha</h2>
+        <button class="btn-ghost" id="pileViewerClose" type="button">Fechar</button>
+      </div>
+      <div id="pileViewerGrid" class="pile-viewer-grid"></div>
+    </div>
+  </div>
   <script src="js/particles.js" defer></script>
   <script src="js/player-id.js" defer></script>
   <script>
@@ -519,7 +619,7 @@
   </script>
   <script src="js/net-client.js" defer></script>
   <script src="js/multiplayer.js" defer></script>
-  <script src="js/menu.js" defer></script>
+  <script src="js/home-menu.js" defer></script>
   <script src="js/shop.js" defer></script>
   <script src="js/enemies.js" defer></script>
   <script src="js/game.js" defer></script>

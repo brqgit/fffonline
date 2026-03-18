@@ -68,9 +68,29 @@ let shopState = {
   removals: 0,
   pending: [],
   selectedOffer: null,
+  offers: [],
+  filter: 'all',
   visitId: 0
 };
 let rerollCount = 0;
+
+const SHOP_FILTERS = [
+  { key: 'all', label: 'Todos' },
+  { key: 'unit', label: 'Unidades' },
+  { key: 'spell', label: 'Feiticos' },
+  { key: 'totem', label: 'Totens' },
+  { key: 'special', label: 'Especiais' },
+  { key: 'cheap', label: 'Mais baratas' },
+  { key: 'synergy', label: 'Sinergia' }
+];
+
+const SHOP_VENDOR_LINES = [
+  'Tenho algumas ofertas para sua jornada.',
+  'Reliquias raras. Ouro curto. Escolha direito.',
+  'Sem ouro, sem negocio. Com ouro, talvez eu ajude.',
+  'Algo aqui combina com seu deck atual.',
+  'Hoje tenho reforcos e upgrades permanentes.'
+];
 
 const REMOVAL_COST_BY_RARITY = {
   common: 15,
@@ -183,29 +203,135 @@ const tooltip = (() => {
 })();
 
 function genShopOffers(){
-  // produce up to 6 offers so the catalog fits without scroll
-  const maxOffers = 6;
-  const pool = [];
+  const maxCardOffers = 6;
+  const specialPool = [];
   if(shopState.story || shopState.unlimited){
     const storyPicks = shuffle(STORY_ITEMS).slice(0, 3).map(it => Object.assign({}, it));
     for(const item of storyPicks){
-      if(pool.length >= maxOffers) break;
-      if(!pool.some(p => p.name === item.name)) pool.push(item);
+      if(!specialPool.some(p => p.name === item.name)) specialPool.push(item);
     }
   }
   const cardsPool = buildShopCardPool(shopState.deckKey);
-  for(const card of cardsPool){
-    if(pool.length >= maxOffers) break;
-    if(pool.some(p => String(p.name).trim().toLowerCase() === String(card.name).trim().toLowerCase())) continue;
-    pool.push(card);
+  const preferred = cardsPool.filter(card => card && card.deck === shopState.deckKey);
+  const offDeck = cardsPool.filter(card => card && card.deck !== shopState.deckKey);
+  const chosenCards = [];
+  while(chosenCards.length < maxCardOffers && (preferred.length || offDeck.length)){
+    const useOffDeck = offDeck.length && preferred.length && Math.random() < 0.18;
+    const source = useOffDeck ? offDeck : (preferred.length ? preferred : offDeck);
+    const card = source.shift();
+    if(!card) break;
+    if(chosenCards.some(p => String(p.name).trim().toLowerCase() === String(card.name).trim().toLowerCase())) continue;
+    chosenCards.push(card);
   }
-  const offers = pool.slice(0, maxOffers).map(it => {
+  const offers = specialPool.concat(chosenCards).map(it => {
     let base = Object.assign({}, it);
     if(window.hydrateCardArt){ base = window.hydrateCardArt(base); }
     else if(window && window.G && window.G.playerDeckChoice && !base.deck){ base.deck = window.G.playerDeckChoice; }
     return withImg(base);
   });
-  return offers.slice(0, maxOffers);
+  return offers;
+}
+
+function getOfferPrice(offer){
+  return Math.max(0, Number(offer && offer.cost) || 0);
+}
+
+function isOfferSynergy(offer){
+  if(!offer) return false;
+  return offer.deck === shopState.deckKey || offer.faction === shopState.deckKey || isCampaignSpecialOffer(offer);
+}
+
+function getOfferKindLabel(offer){
+  if(!offer) return 'Item';
+  const map = { unit:'Unidade', spell:'Feitico', totem:'Totem', relic:'Reliquia', buff:'Upgrade' };
+  return map[offer.type] || 'Item';
+}
+
+function getOfferRarityLabel(offer){
+  const rarity = String((offer && offer.rarity) || 'common').toLowerCase();
+  const map = { common:'Comum', rare:'Rara', epic:'Epica', legendary:'Lendaria' };
+  return map[rarity] || 'Comum';
+}
+
+function getOfferChips(offer){
+  const chips = [];
+  if(!offer) return chips;
+  if(isCampaignSpecialOffer(offer)) chips.push({ tone:'special', label:'Especial da campanha' });
+  if(isOfferSynergy(offer)) chips.push({ tone:'synergy', label:'Sinergia com seu deck' });
+  if(window && window.G && Array.isArray(window.G.playerDeck) && window.G.playerDeck.some(c => c && c.name === offer.name)){
+    chips.push({ tone:'duplicate', label:'Ja possui copia' });
+  } else if(['unit','spell','totem'].includes(offer.type)) {
+    chips.push({ tone:'new', label:'Novo no deck' });
+  }
+  if(offer.bonus && !['unit','spell','totem'].includes(offer.type)){
+    chips.push({ tone:'permanent', label:'Efeito permanente' });
+  }
+  if(isOfferPurchased(offer)) chips.push({ tone:'owned', label:'Comprado nesta visita' });
+  if(!shopState.unlimited && getOfferPrice(offer) > shopState.gold) chips.push({ tone:'warning', label:'Sem ouro suficiente' });
+  return chips;
+}
+
+function filteredOffers(){
+  const offers = Array.isArray(shopState.offers) ? shopState.offers.slice() : [];
+  const filter = shopState.filter || 'all';
+  if(filter === 'all') return offers;
+  if(filter === 'cheap') return offers.slice().sort((a,b)=>getOfferPrice(a)-getOfferPrice(b));
+  if(filter === 'special') return offers.filter(isCampaignSpecialOffer);
+  if(filter === 'synergy') return offers.filter(isOfferSynergy);
+  return offers.filter(offer => offer && offer.type === filter);
+}
+
+function updateVendorCopy(){
+  const line = document.getElementById('shopVendorLine');
+  const meta = document.getElementById('shopVisitMeta');
+  if(line){
+    line.textContent = SHOP_VENDOR_LINES[(shopState.visitId + rerollCount) % SHOP_VENDOR_LINES.length];
+  }
+  if(meta){
+    meta.textContent = `Visita ${shopState.visitId} · Re-rolagens: ${rerollCount}`;
+  }
+}
+
+function updateBudgetPreview(){
+  const now = document.getElementById('shopGoldNow');
+  const after = document.getElementById('shopGoldAfter');
+  const hud = document.getElementById('shopGold');
+  const active = shopState.selectedOffer;
+  const nextGold = active ? Math.max(0, shopState.gold - getOfferPrice(active)) : shopState.gold;
+  if(hud) hud.textContent = String(shopState.gold);
+  if(now) now.textContent = String(shopState.gold);
+  if(after) after.textContent = String(nextGold);
+}
+
+function updateShopSelectionUi(){
+  document.querySelectorAll('.shop-card,.shop-special-card').forEach(node => {
+    const selected = !!(shopState.selectedOffer && node.dataset.offerSlug === slug(shopState.selectedOffer.name));
+    node.classList.toggle('selected', selected);
+  });
+}
+
+function setSelectedOffer(offer){
+  shopState.selectedOffer = offer || null;
+  updateShopSelectionUi();
+  updateShopPreviewPanel(shopState.selectedOffer);
+}
+
+function renderShopFilters(){
+  const root = document.getElementById('shopFilters');
+  if(!root) return;
+  root.innerHTML = '';
+  SHOP_FILTERS.forEach(filter => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'shop-filter-btn';
+    if((shopState.filter || 'all') === filter.key) btn.classList.add('active');
+    btn.textContent = filter.label;
+    btn.addEventListener('click', () => {
+      shopState.filter = filter.key;
+      renderShop();
+    });
+    root.appendChild(btn);
+  });
 }
 
 function isCampaignSpecialOffer(offer){
@@ -213,7 +339,62 @@ function isCampaignSpecialOffer(offer){
 }
 
 function updateShopPreviewPanel(offer){
-  shopState.selectedOffer = offer || null;
+  const empty = document.getElementById('shopPreviewEmpty');
+  const detail = document.getElementById('shopPreviewDetail');
+  const cardWrap = document.getElementById('shopPreviewCardWrap');
+  const type = document.getElementById('shopPreviewType');
+  const rarity = document.getElementById('shopPreviewRarity');
+  const name = document.getElementById('shopPreviewName');
+  const desc = document.getElementById('shopPreviewDesc');
+  const chips = document.getElementById('shopPreviewChips');
+  const cost = document.getElementById('shopPreviewCost');
+  const after = document.getElementById('shopPreviewAfterGold');
+  const buy = document.getElementById('shopPreviewBuy');
+  if(!empty || !detail || !cardWrap || !type || !rarity || !name || !desc || !chips || !cost || !after || !buy) return;
+  updateBudgetPreview();
+  if(!offer){
+    empty.hidden = false;
+    detail.hidden = true;
+    return;
+  }
+  empty.hidden = true;
+  detail.hidden = false;
+  cardWrap.innerHTML = '';
+  let previewNode;
+  if(['unit','spell','totem'].includes(offer.type) && window.cardNode){
+    let nodeData = Object.assign({}, offer);
+    if(window.hydrateCardArt) nodeData = window.hydrateCardArt(nodeData);
+    previewNode = window.cardNode(nodeData, 'player');
+    previewNode.classList.add('shop-preview-feature-card');
+  } else {
+    previewNode = document.createElement('div');
+    previewNode.className = 'shop-preview-feature-fallback';
+    previewNode.textContent = offer.icon || SHOP_ICONS[offer.flair] || SHOP_ICONS[offer.type] || '🛒';
+  }
+  cardWrap.appendChild(previewNode);
+  type.textContent = getOfferKindLabel(offer);
+  rarity.textContent = getOfferRarityLabel(offer);
+  rarity.dataset.rarity = String((offer.rarity || 'common')).toLowerCase();
+  name.textContent = offer.name;
+  desc.textContent = offer.desc || offer.text || 'Oferta da loja.';
+  chips.innerHTML = '';
+  getOfferChips(offer).forEach(chip => {
+    const node = document.createElement('span');
+    node.className = 'shop-context-chip';
+    node.dataset.tone = chip.tone;
+    node.textContent = chip.label;
+    chips.appendChild(node);
+  });
+  cost.textContent = String(getOfferPrice(offer));
+  after.textContent = String(Math.max(0, shopState.gold - getOfferPrice(offer)));
+  const purchased = isOfferPurchased(offer);
+  const unaffordable = !shopState.unlimited && getOfferPrice(offer) > shopState.gold;
+  buy.disabled = purchased || unaffordable;
+  buy.textContent = purchased ? 'Comprado' : unaffordable ? 'Sem ouro suficiente' : `Comprar por ${getOfferPrice(offer)}`;
+  buy.onclick = () => {
+    const btn = document.querySelector(`.price-btn[data-offer-slug="${slug(offer.name)}"]`);
+    purchaseOffer(offer, btn);
+  };
 }
 
 function refreshShopAffordability(){
@@ -232,6 +413,8 @@ function refreshShopAffordability(){
         amt.classList.remove('unaffordable');
       }
     });
+    updateBudgetPreview();
+    updateShopPreviewPanel(shopState.selectedOffer);
   }catch(_){ }
 }
 
@@ -275,12 +458,14 @@ function purchaseOffer(it, btn){
   }
   const applyLocal = () => {
     shopState.gold = Math.max(0, shopState.gold - it.cost);
-    $('#shopGold').textContent = shopState.gold;
+    updateBudgetPreview();
     if(window.updateGoldHUD) window.updateGoldHUD();
     if(btn){
       btn.textContent = '✔';
       btn.disabled = true;
       btn.dataset.purchased = '1';
+      const card = btn.closest('.shop-card,.shop-special-card');
+      if(card) card.classList.add('purchased');
     }
     markOfferPurchased(it);
     const purchaseItem = window.hydrateCardArt ? window.hydrateCardArt(Object.assign({}, it)) : Object.assign({}, it);
@@ -289,6 +474,7 @@ function purchaseOffer(it, btn){
     refreshShopAffordability();
     if(window.playSfx) window.playSfx('reward');
     showShopMsg('✓ Compra registrada');
+    updateShopPreviewPanel(it);
   };
   const useServer = !!(window.isMultiplayer || window.usePurchaseAPI);
   if(!useServer){
@@ -315,11 +501,13 @@ function purchaseOffer(it, btn){
   .then(data => {
     if(!data || typeof data.gold !== 'number'){ throw new Error('Resposta inválida'); }
     shopState.gold = Math.max(0, data.gold);
-    $('#shopGold').textContent = shopState.gold;
+    updateBudgetPreview();
     if(btn){
       btn.textContent = '✔';
       btn.disabled = true;
       btn.dataset.purchased = '1';
+      const card = btn.closest('.shop-card,.shop-special-card');
+      if(card) card.classList.add('purchased');
     }
     markOfferPurchased(it);
     const purchaseItem = window.hydrateCardArt ? window.hydrateCardArt(Object.assign({}, it)) : Object.assign({}, it);
@@ -329,6 +517,7 @@ function purchaseOffer(it, btn){
     refreshShopAffordability();
     if(window.playSfx) window.playSfx('reward');
     showShopMsg('✓ Compra registrada');
+    updateShopPreviewPanel(it);
   })
   .catch(err => {
     console.warn('Falha na API de compra, usando fallback local:', err.message);
@@ -346,9 +535,11 @@ function renderShop(){
   if(specialWrap) specialWrap.innerHTML = '';
   tooltip.hide();
   shopState.offers = genShopOffers();
-  shopState.selectedOffer = null;
-  const specialOffers = shopState.offers.filter(isCampaignSpecialOffer);
-  const regularOffers = shopState.offers.filter(it => !isCampaignSpecialOffer(it));
+  renderShopFilters();
+  updateVendorCopy();
+  const visibleOffers = filteredOffers();
+  const specialOffers = visibleOffers.filter(isCampaignSpecialOffer);
+  const regularOffers = visibleOffers.filter(it => !isCampaignSpecialOffer(it));
   if(specialPanel) specialPanel.style.display = specialOffers.length ? '' : 'none';
   specialOffers.forEach(it => {
     if(!specialWrap) return;
@@ -356,6 +547,7 @@ function renderShop(){
     const flair = (it && (it.flair || it.type)) || 'item';
     card.className = 'shop-special-card';
     card.dataset.flair = flair;
+    card.dataset.offerSlug = slug(it.name);
     const icon = document.createElement('div');
     icon.className = 'shop-special-icon';
     icon.textContent = it.icon || SHOP_ICONS[flair] || SHOP_ICONS[it.type] || '🛒';
@@ -367,13 +559,15 @@ function renderShop(){
     desc.textContent = it.desc || it.text || 'Item de campanha';
     const btn = document.createElement('button');
     btn.className = 'btn price-btn';
+    btn.dataset.offerSlug = slug(it.name);
     btn.innerHTML = `<span class="price-amt">${it.cost}</span><span class="coin-icon"></span>`;
-    const alreadyPurchased = isOfferPurchased(it);
+    const purchased = isOfferPurchased(it);
     const unaffordable = (!shopState.unlimited && shopState.gold < it.cost);
-    if(alreadyPurchased){
+    if(purchased){
       btn.textContent = '✔';
       btn.disabled = true;
       btn.dataset.purchased = '1';
+      card.classList.add('purchased');
     }else if(unaffordable){
       btn.classList.add('unaffordable');
       btn.disabled = true;
@@ -382,29 +576,24 @@ function renderShop(){
     card.append(icon,name,desc,btn);
     card.addEventListener('click', ev => {
       if(ev.target === btn) return;
-      tooltip.show(it, card);
+      setSelectedOffer(it);
     });
     btn.onclick = ev => {
       ev.stopPropagation();
       purchaseOffer(it, btn);
     };
-    card.addEventListener('mouseenter', () => tooltip.show(it, card));
-    card.addEventListener('mouseleave', () => tooltip.hide());
     specialWrap.appendChild(card);
   });
   regularOffers.forEach(it => {
     const card = document.createElement('div');
     card.className = 'shop-card';
+    card.dataset.offerSlug = slug(it.name);
     const flair = (it && (it.flair || (it.type === 'buff' && it.bonus && it.bonus.startMana ? 'mana' : it.type))) || 'item';
     card.dataset.flair = flair;
     if(it && it.type) card.dataset.type = it.type;
-    const hoverData = window.hydrateCardArt ? window.hydrateCardArt(Object.assign({}, it)) : it;
-
-    // Use the shared card renderer from game.js so shop cards stay visually
-    // identical to encyclopedia/game cards and keep the same art-loading path.
     if(['unit','spell','totem'].includes(it.type) && window.cardNode){
       let nodeData = Object.assign({}, it);
-      if(window.hydrateCardArt){ nodeData = window.hydrateCardArt(nodeData); }
+      if(window.hydrateCardArt) nodeData = window.hydrateCardArt(nodeData);
       const node = window.cardNode(nodeData,'player');
       node.classList.add('ency-card', 'shop-card-face', 'shop-preview');
       card.appendChild(node);
@@ -417,71 +606,73 @@ function renderShop(){
       art.appendChild(iconSpan);
       const kind = document.createElement('span');
       kind.className = 'shop-art-kind';
-      kind.textContent = it.type === 'relic' ? 'Relíquia' : it.type === 'buff' ? 'Upgrade' : it.type === 'totem' ? 'Totem' : 'Item';
+      kind.textContent = getOfferKindLabel(it);
       art.appendChild(kind);
       card.appendChild(art);
-      card.addEventListener('mousemove', e => {
-        const r = card.getBoundingClientRect();
-        const x = e.clientX - r.left, y = e.clientY - r.top;
-        const rx = (y - r.height/2)/(r.height/2)*-8;
-        const ry = (x - r.width/2)/(r.width/2)*8;
-        art.style.transform = `perspective(1000px) rotateX(${rx}deg) rotateY(${ry}deg)`;
-      });
-      card.addEventListener('mouseleave', () => { art.style.transform=''; });
     }
     const name = document.createElement('div');
     name.className = 'shop-item-name';
     name.textContent = it.name;
     card.appendChild(name);
-    card.addEventListener('click', () => {
-      tooltip.show(hoverData, card);
+    const context = document.createElement('div');
+    context.className = 'shop-inline-chips';
+    getOfferChips(it).slice(0,2).forEach(chip => {
+      const node = document.createElement('span');
+      node.className = 'shop-inline-chip';
+      node.dataset.tone = chip.tone;
+      node.textContent = chip.label;
+      context.appendChild(node);
     });
-
+    card.appendChild(context);
     const btn = document.createElement('button');
     btn.className = 'btn price-btn';
-    // show price with a span we can style when unaffordable
+    btn.dataset.offerSlug = slug(it.name);
     btn.innerHTML = `<span class="price-amt">${it.cost}</span><span class="coin-icon"></span>`;
-    const alreadyPurchased = isOfferPurchased(it);
-    // initial disabled state if unaffordable
+    const purchased = isOfferPurchased(it);
     const unaffordable = (!shopState.unlimited && shopState.gold < it.cost);
-    if (alreadyPurchased) {
+    if(purchased){
       btn.textContent = '✔';
       btn.disabled = true;
       btn.dataset.purchased = '1';
-    } else if (unaffordable) {
+      card.classList.add('purchased');
+    } else if(unaffordable) {
       btn.classList.add('unaffordable');
       btn.disabled = true;
       const amt = btn.querySelector('.price-amt'); if (amt) amt.classList.add('unaffordable');
     }
-    btn.onclick = () => {
+    btn.onclick = ev => {
+      ev.stopPropagation();
       purchaseOffer(it, btn);
     };
     card.appendChild(btn);
-
-    card.addEventListener('mouseenter', () => tooltip.show(hoverData, card));
-    card.addEventListener('mouseleave', () => tooltip.hide());
-    card.addEventListener('click', ev => { ev.stopPropagation(); tooltip.show(hoverData, card); });
-
+    card.addEventListener('click', ev => {
+      if(ev.target === btn) return;
+      setSelectedOffer(it);
+    });
     wrap.appendChild(card);
   });
+  const selectedSlug = shopState.selectedOffer ? slug(shopState.selectedOffer.name) : '';
+  const nextSelected = selectedSlug && visibleOffers.find(offer => slug(offer.name) === selectedSlug);
+  setSelectedOffer(nextSelected || visibleOffers[0] || null);
 }
 
 function updateRerollBtn(){
   const btn = document.getElementById('btnReroll');
   if(!btn) return;
   const cost = 5 * (rerollCount + 1);
+  const nextCost = 5 * (rerollCount + 2);
   if(!shopState.unlimited){
     const remaining = Math.max(0, 1 - rerollCount);
     if(remaining <= 0){
       btn.disabled = true;
-      btn.innerHTML = 'Re-rolar (0 restantes)';
+      btn.innerHTML = `Re-rolar (0 restantes · prox. ${nextCost}<span class="coin-icon"></span>)`;
       return;
     }
     btn.disabled = false;
-    btn.innerHTML = `Re-rolar (${cost}<span class="coin-icon"></span>, ${remaining} restantes)`;
+    btn.innerHTML = `Re-rolar (${cost}<span class="coin-icon"></span> · ${remaining} restantes · prox. ${nextCost}<span class="coin-icon"></span>)`;
   }else{
     btn.disabled = false;
-    btn.innerHTML = `Re-rolar (${cost}<span class="coin-icon"></span>)`;
+    btn.innerHTML = `Re-rolar (${cost}<span class="coin-icon"></span> · prox. ${nextCost}<span class="coin-icon"></span>)`;
   }
 }
 
@@ -509,7 +700,7 @@ function openShop({ faction, gold, onClose, unlimited=false, story=false, resume
   }
   shopState.story = !!story;
   updateRerollBtn();
-  $('#shopGold').textContent = shopState.gold;
+  updateBudgetPreview();
   $('#shopMsg').textContent = '';
   renderShop();
   // Atualiza texto do botão de remoção com custo dinâmico
@@ -536,6 +727,7 @@ function openShop({ faction, gold, onClose, unlimited=false, story=false, resume
     const focusTarget = modal.querySelector('#closeShop') || modal.querySelector('button');
     if(focusTarget && typeof focusTarget.focus==='function'){ focusTarget.focus(); }
   }
+  updateVendorCopy();
 }
 
 function hideShopModal(){
@@ -578,7 +770,7 @@ document.getElementById('btnReroll')?.addEventListener('click', () => {
   }
   if(rerollBtn) rerollBtn.classList.remove('insufficient-funds');
   shopState.gold -= cost;
-  $('#shopGold').textContent = shopState.gold;
+  updateBudgetPreview();
   rerollCount++;
   renderShop();
   updateRerollBtn();
@@ -615,7 +807,7 @@ document.getElementById('btnRemoveCard')?.addEventListener('click', () => {
     onCardRemoved: () => {
       removedCard = true;
       shopState.gold = Math.max(0, shopState.gold - cost);
-      $('#shopGold').textContent = shopState.gold;
+      updateBudgetPreview();
       if(window.updateGoldHUD) window.updateGoldHUD();
       if(typeof window.log==='function'){
         window.log(`💰 Custo de remoção: ${cost} ouro (base + ${shopState.removals * 5} incremental)`);

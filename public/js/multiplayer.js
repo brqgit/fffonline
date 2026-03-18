@@ -80,7 +80,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const customBtn = document.querySelector('.deckbtn[data-deck="custom"]');
       if (customBtn) customBtn.style.display = '';
       const startBtn = document.getElementById('startGame');
-      if (startBtn){startBtn.textContent='Jogar';startBtn.disabled=true;}
+      if (startBtn){startBtn.textContent='PLAY';startBtn.disabled=true;}
     });
   }
 
