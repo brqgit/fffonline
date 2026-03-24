@@ -816,7 +816,8 @@ function renderHand() {
       (c.type !== "totem" && G.playerBoard.length >= 5);
     d.classList.toggle("blocked", cantPay);
     d.style.opacity = cantPay || disable ? 0.9 : 1;
-    d.style.cursor = cantPay || disable ? "not-allowed" : "pointer";
+    d.style.cursor =
+      cantPay || disable ? "var(--cursor-blocked)" : "var(--cursor-pointer)";
     els.pHand.appendChild(d);
   });
   stackHand();

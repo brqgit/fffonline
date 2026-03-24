@@ -46,6 +46,34 @@ function buffIconFor(card, stat){
   return icons.join(' ');
 }
 
+function emitCardStatChange(card,{ atk=0, hp=0, icon=null, sourceId=null, sourceType=null, permanent=false, temporary=false }={}){
+  if(!card || (!atk && !hp)) return;
+  try{
+    if(window.FFFEvents && typeof window.FFFEvents.emit === 'function'){
+      const type = (atk < 0 || hp < 0) ? 'card:debuffed' : 'card:buffed';
+      window.FFFEvents.emit(type, {
+        id: card.id,
+        name: card.name,
+        side: getCardSide(card),
+        atk,
+        hp,
+        icon,
+        sourceId,
+        sourceType,
+        permanent: !!permanent,
+        temporary: !!temporary,
+        deck: card.deck || null,
+        tribe: card.tribe || null,
+        combatStyle: card.combatStyle || null,
+        currentAtk: card.atk,
+        currentHp: card.hp,
+        baseAtk: card.baseAtk || card.atk,
+        baseHp: card.baseHp || card.hp
+      });
+    }
+  }catch(_){ }
+}
+
 function applyCardBuff(card,{ atk=0, hp=0, icon, sourceId, sourceType, permanent=false }={}){
   if(!card) return;
   ensureCardBase(card);
@@ -59,6 +87,7 @@ function applyCardBuff(card,{ atk=0, hp=0, icon, sourceId, sourceType, permanent
     addBuffBadge(card,'hp',hp,{icon,sourceId,sourceType,temporary:!permanent});
     if(permanent) card.baseHp = card.hp;
   }
+  emitCardStatChange(card,{ atk, hp, icon, sourceId, sourceType, permanent, temporary:!permanent });
   try{ handleCardBuffTriggers(card,{atk,hp,icon,sourceId,sourceType,permanent}); }catch(_){ }
 }
 function ensureTurnState(){
@@ -88,12 +117,32 @@ function applyTurnBuff(card,{atk=0,hp=0,icon='✨',sourceId=null,sourceType='tur
   if(!card) return;
   if(atk){ card.atk += atk; addBuffBadge(card,'atk',atk,{icon,sourceId,sourceType,temporary:true}); }
   if(hp){ card.hp += hp; addBuffBadge(card,'hp',hp,{icon,sourceId,sourceType,temporary:true}); }
+  emitCardStatChange(card,{ atk, hp, icon, sourceId, sourceType, permanent:false, temporary:true });
 }
 function healUnit(card, amount, sourceCard=null){
   if(!card || !amount) return 0;
   const before=card.hp;
   card.hp=Math.min((card.baseHp||card.hp)+5, card.hp + amount);
   const healed=Math.max(0, card.hp - before);
+  if(healed){
+    try{
+      if(window.FFFEvents && typeof window.FFFEvents.emit === 'function'){
+        window.FFFEvents.emit('card:healed', {
+          id: card.id,
+          name: card.name,
+          side: getCardSide(card),
+          amount: healed,
+          hp: card.hp,
+          maxHp: card.baseHp || card.hp,
+          sourceId: sourceCard && sourceCard.id ? sourceCard.id : null,
+          sourceType: sourceCard && sourceCard.type ? sourceCard.type : null,
+          deck: (sourceCard && sourceCard.deck) || card.deck || null,
+          tribe: (sourceCard && sourceCard.tribe) || card.tribe || null,
+          combatStyle: (sourceCard && sourceCard.combatStyle) || card.combatStyle || null
+        });
+      }
+    }catch(_){ }
+  }
   if(healed && card.onHealedGainAtk){
     applyCardBuff(card,{atk:card.onHealedGainAtk,icon:(sourceCard&&sourceCard.emoji)||'💧',sourceId:(sourceCard&&sourceCard.id)||card.id,sourceType:'healTrigger',permanent:true});
   }
@@ -439,8 +488,52 @@ function deriveAudioProfile(card){
   return { gender, race, element };
 }
 
+function emitVisualEvent(name, payload={}){
+  try{
+    if(!name || !window.FFFEvents || typeof window.FFFEvents.emit !== 'function') return false;
+    window.FFFEvents.emit(name, payload);
+    return true;
+  }catch(_){ }
+  return false;
+}
+
+function isPixiVisualActive(){
+  try{
+    const visualRoot = document.getElementById('visualRoot');
+    return !!(visualRoot && visualRoot.dataset && visualRoot.dataset.pixiActive === 'true');
+  }catch(_){ }
+  return false;
+}
+
+function shouldUseLegacyVisualFallback(){
+  return !isPixiVisualActive();
+}
+
+let lastTurnUiVisualState = null;
+
+function syncTurnUiVisuals(side){
+  const currentSide = side === 'ai' ? 'ai' : 'player';
+  if(lastTurnUiVisualState === currentSide) return;
+  lastTurnUiVisualState = currentSide;
+  emitVisualEvent('visual:turn-ui', {
+    side: currentSide,
+    yourTurn: currentSide === 'player',
+    source: 'turn-indicator'
+  });
+}
+
 function playCharacterCue(card,stage){
-  return;
+  emitVisualEvent('visual:character-cue', {
+    stage: stage || 'idle',
+    id: card && card.id ? card.id : null,
+    name: card && card.name ? card.name : null,
+    type: card && card.type ? card.type : null,
+    side: card ? getCardSide(card) : null,
+    deck: card && card.deck ? card.deck : null,
+    tribe: card && card.tribe ? card.tribe : null,
+    combatStyle: card && card.combatStyle ? card.combatStyle : null,
+    source: 'playCharacterCue'
+  });
 }
 function playBurnDestroySfx(){
   try{
@@ -488,7 +581,17 @@ function playBurnDestroySfx(){
 }
 
 function playAbilityCue(effect,card){
-  return;
+  emitVisualEvent('visual:ability-cue', {
+    effect: effect || 'ability',
+    id: card && card.id ? card.id : null,
+    name: card && card.name ? card.name : null,
+    type: card && card.type ? card.type : null,
+    side: card ? getCardSide(card) : null,
+    deck: card && card.deck ? card.deck : null,
+    tribe: card && card.tribe ? card.tribe : null,
+    combatStyle: card && card.combatStyle ? card.combatStyle : null,
+    source: 'playAbilityCue'
+  });
 }
 
 function setSrcFallback(el,urls,onFail){
@@ -1756,7 +1859,7 @@ function getStoryState(variant){
   if(!G.story) G.story=new StoryMode({level:1});
   return G.story;
 }
-const els={pHP:$('#playerHP'),pHP2:$('#playerHP2'),aHP:$('#aiHP'),aHP2:$('#aiHP2'),opponentLabel:$('#opponentLabel'),mana:$('#mana'),aiMana:$('#aiMana'),pHand:$('#playerHand'),pBoard:$('#playerBoard'),aBoard:$('#aiBoard'),endBtn:$('#endTurnBtn'),instantWinBtn:$('#instantWinBtn'),muteBtn:$('#muteBtn'),aAva:$('#aiAvatar'),drawCount:$('#drawCount'),discardCount:$('#discardCount'),barPHP:$('#barPlayerHP'),barAHP:$('#barAiHP'),barMana:$('#barMana'),barAiMana:$('#barAiMana'),wrap:$('#gameWrap'),start:$('#start'),openEncy:$('#openEncy'),ency:$('#ency'),encyGrid:$('#encyGrid'),encyFilters:$('#encyFilters'),closeEncy:$('#closeEncy'),startGame:$('#startGame'),endOverlay:$('#endOverlay'),endMsg:$('#endMsg'),endSub:$('#endSub'),endStats:$('#endStats'),playAgainBtn:$('#playAgainBtn'),rematchBtn:$('#rematchBtn'),menuBtn:$('#menuBtn'),openMenuBtn:$('#openMenuBtn'),gameMenu:$('#gameMenu'),closeMenuBtn:$('#closeMenuBtn'),resignBtn:$('#resignBtn'),restartBtn:$('#restartBtn'),mainMenuBtn:$('#mainMenuBtn'),turnIndicator:$('#turnIndicator'),emojiBar:$('#emojiBar'),playerEmoji:$('#playerEmoji'),opponentEmoji:$('#opponentEmoji'),deckBuilder:$('#deckBuilder'),saveDeck:$('#saveDeck'),storyRunHud:$('#storyRunHud'),storyActChip:$('#storyActChip'),storyRoundChip:$('#storyRoundChip'),storyEncounterChip:$('#storyEncounterChip'),storyBossModChip:$('#storyBossModChip'),storySeedChip:$('#storySeedChip'),storyGoldChip:$('#storyGoldChip'),storyDeckChip:$('#storyDeckChip'),storyRelicChip:$('#storyRelicChip'),storyPathChip:$('#storyPathChip'),storyEliteLabel:$('#storyEliteLabel'),storyEliteFill:$('#storyEliteFill'),storyBossLabel:$('#storyBossLabel'),storyBossFill:$('#storyBossFill')};
+const els={pHP:$('#playerHP'),pHP2:$('#playerHP2'),aHP:$('#aiHP'),aHP2:$('#aiHP2'),opponentLabel:$('#opponentLabel'),mana:$('#mana'),aiMana:$('#aiMana'),pHand:$('#playerHand'),pBoard:$('#playerBoard'),aBoard:$('#aiBoard'),endBtn:$('#endTurnBtn'),instantWinBtn:$('#instantWinBtn'),muteBtn:$('#muteBtn'),aAva:$('#aiAvatar'),drawCount:$('#drawCount'),discardCount:$('#discardCount'),barPHP:$('#barPlayerHP'),barAHP:$('#barAiHP'),barMana:$('#barMana'),barAiMana:$('#barAiMana'),wrap:$('#gameWrap'),start:$('#start'),openEncy:$('#openEncy'),ency:$('#ency'),encyGrid:$('#encyGrid'),encyFilters:$('#encyFilters'),closeEncy:$('#closeEncy'),startGame:$('#startGame'),endOverlay:$('#endOverlay'),endMsg:$('#endMsg'),endSub:$('#endSub'),endStats:$('#endStats'),playAgainBtn:$('#playAgainBtn'),rematchBtn:$('#rematchBtn'),menuBtn:$('#menuBtn'),openMenuBtn:$('#openMenuBtn'),gameMenu:$('#gameMenu'),closeMenuBtn:$('#closeMenuBtn'),resignBtn:$('#resignBtn'),restartBtn:$('#restartBtn'),mainMenuBtn:$('#mainMenuBtn'),turnIndicator:$('#turnIndicator'),emojiBar:$('#emojiBar'),playerEmoji:$('#playerEmoji'),opponentEmoji:$('#opponentEmoji'),deckBuilder:$('#deckBuilder'),saveDeck:$('#saveDeck'),storyRunHud:$('#storyRunHud'),storyActChip:$('#storyActChip'),storyRoundChip:$('#storyRoundChip'),storyEncounterChip:$('#storyEncounterChip'),storyBossModChip:$('#storyBossModChip'),storySeedChip:$('#storySeedChip'),storyGoldChip:$('#storyGoldChip'),storyDeckChip:$('#storyDeckChip'),storyRelicChip:$('#storyRelicChip'),storyPathChip:$('#storyPathChip'),storyEliteLabel:$('#storyEliteLabel'),storyEliteFill:$('#storyEliteFill'),storyBossLabel:$('#storyBossLabel'),storyBossFill:$('#storyBossFill'),confirmModal:$('#confirmModal'),confirmTitle:$('#confirmTitle'),confirmText:$('#confirmText'),confirmOkBtn:$('#confirmOkBtn'),confirmCancelBtn:$('#confirmCancelBtn')};
 function showPileViewer(title, cards, owner='player'){
   const viewer = document.getElementById('pileViewer');
   const grid = document.getElementById('pileViewerGrid');
@@ -1787,6 +1890,11 @@ function showPileViewer(title, cards, owner='player'){
   }
   viewer.classList.add('show');
   viewer.setAttribute('aria-hidden','false');
+  try{
+    if(window.FFFEvents && typeof window.FFFEvents.emit === 'function'){
+      window.FFFEvents.emit('overlay:archive:open', { id: 'pileViewer', title });
+    }
+  }catch(_){ }
 }
 function closePileViewer(){
   const viewer = document.getElementById('pileViewer');
@@ -1794,6 +1902,18 @@ function closePileViewer(){
   closeEncyCardFocus();
   viewer.classList.remove('show');
   viewer.setAttribute('aria-hidden','true');
+  try{
+    if(window.FFFEvents && typeof window.FFFEvents.emit === 'function'){
+      window.FFFEvents.emit('overlay:archive:close', { id: 'pileViewer' });
+    }
+  }catch(_){ }
+}
+function emitSystemOverlay(open, id){
+  try{
+    if(window.FFFEvents && typeof window.FFFEvents.emit === 'function'){
+      window.FFFEvents.emit(open ? 'overlay:system:open' : 'overlay:system:close', { id });
+    }
+  }catch(_){ }
 }
 function cleanupTransientUi(){
   closeEncyCardFocus();
@@ -1838,11 +1958,21 @@ function applyBattleTheme(theme){
     bodyEl.removeAttribute('data-battle-theme');
     if(wrap) wrap.removeAttribute('data-battle-theme');
     setBattleAmbience(null);
+    try{
+      if(window.FFFEvents && typeof window.FFFEvents.emit === 'function'){
+        window.FFFEvents.emit('battle:theme', { theme: null });
+      }
+    }catch(_){ }
     return;
   }
   bodyEl.setAttribute('data-battle-theme', theme);
   if(wrap) wrap.setAttribute('data-battle-theme', theme);
   setBattleAmbience(theme);
+  try{
+    if(window.FFFEvents && typeof window.FFFEvents.emit === 'function'){
+      window.FFFEvents.emit('battle:theme', { theme });
+    }
+  }catch(_){ }
 }
 ensureLeavesBackground();
 els.startGame.disabled=true;
@@ -1898,7 +2028,7 @@ function ensureStory2UI(){
   const style=document.createElement('style');
   style.textContent=`
   #story2Wrap{padding:12px;display:flex;flex-direction:column;gap:12px;background:#0b1724;color:#e5e7eb;height:100vh;overflow:hidden;}
-  #story2Wrap .btn{cursor:pointer;}
+  #story2Wrap .btn{cursor:var(--cursor-pointer);}
   .s2-hud{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;}
   .s2-route{background:#111827;padding:8px;border:1px solid #1f2937;border-radius:8px;}
   .s2-nodes{display:flex;gap:8px;flex-wrap:wrap;}
@@ -1906,7 +2036,7 @@ function ensureStory2UI(){
   .s2-node.active{border-color:#38bdf8;color:#38bdf8;}
   .s2-arena{flex:1;display:flex;flex-direction:column;gap:8px;border:1px solid #1f2937;background:#0f172a;padding:10px;border-radius:10px;min-height:260px;}
   .s2-enemies,.s2-allies{display:flex;gap:10px;align-items:flex-end;min-height:100px;}
-  .s2-card{background:#111827;border:1px solid #1f2937;border-radius:8px;padding:8px;min-width:110px;max-width:150px;cursor:pointer;display:flex;flex-direction:column;gap:6px;box-shadow:0 4px 8px rgba(0,0,0,.35);}
+  .s2-card{background:#111827;border:1px solid #1f2937;border-radius:8px;padding:8px;min-width:110px;max-width:150px;cursor:var(--cursor-pointer);display:flex;flex-direction:column;gap:6px;box-shadow:0 4px 8px rgba(0,0,0,.35);}
   .s2-hand{display:flex;gap:10px;flex-wrap:wrap;min-height:120px;}
   .s2-enemy{background:#1e293b;border:1px solid #334155;border-radius:10px;padding:8px;min-width:90px;text-align:center;}
   .s2-log{height:120px;overflow:auto;font-size:12px;background:#0f172a;border:1px solid #1f2937;border-radius:8px;padding:6px;}
@@ -2092,13 +2222,13 @@ function startStory2(){
 }
 const DECK_TITLES={vikings:'Fazendeiros Vikings',animais:'Bestas do Norte',pescadores:'Pescadores do Fiorde',floresta:'Feras da Floresta',custom:'Custom'};
 const DECK_ASSETS={
-  vikings:{folder:'farm-vikings',back:'fv',dbExt:'png',cbExt:'webp'},
-  pescadores:{folder:'fJord-fishers',back:'jf',dbExt:'png',cbExt:'webp'},
-  floresta:{folder:'forest-beasts',back:'fb',dbExt:'png',cbExt:'webp'},
-  animais:{folder:'north-beasts',back:'nb',dbExt:'png',cbExt:'webp'}
+  vikings:{folder:'farm-vikings',back:'fv',dbExt:'webp',cbExt:'webp'},
+  pescadores:{folder:'fJord-fishers',back:'jf',dbExt:'webp',cbExt:'webp'},
+  floresta:{folder:'forest-beasts',back:'fb',dbExt:'webp',cbExt:'webp'},
+  animais:{folder:'north-beasts',back:'nb',dbExt:'webp',cbExt:'webp'}
 };
 function assetExtFallbacks(primary){
-  return Array.from(new Set([primary,'png','webp','jpg','jpeg'].filter(Boolean)));
+  return primary ? [primary] : [];
 }
 function deckAssetCandidates(deck,kind){
   const info=DECK_ASSETS[deck];
@@ -2136,23 +2266,53 @@ const DECK_ASSET_INDEX = Object.fromEntries(Object.entries(DECK_IMAGES).map(([de
   return [deck, new Set(norm)];
 }));
 const IMG_CACHE={};
+const IMG_PRELOAD_PROMISES={};
+const DECK_PREVIEW_PRELOADS={};
+function preloadImageUrl(src){
+  if(!src) return Promise.resolve();
+  if(IMG_CACHE[src] && IMG_CACHE[src].complete) return Promise.resolve();
+  if(IMG_CACHE[src] && IMG_CACHE[src].failed) return Promise.resolve();
+  if(IMG_PRELOAD_PROMISES[src]) return IMG_PRELOAD_PROMISES[src];
+  IMG_PRELOAD_PROMISES[src] = new Promise(resolve=>{
+    const img = new Image();
+    const finalize = ()=>{
+      try{
+        IMG_CACHE[src] = img.cloneNode();
+        IMG_CACHE[src].complete = true;
+      }catch(_){ }
+      resolve();
+    };
+    img.onload = ()=>{
+      try{
+        const decodePromise = typeof img.decode === 'function' ? img.decode() : null;
+        if(decodePromise && typeof decodePromise.then === 'function'){
+          decodePromise.then(finalize).catch(finalize);
+          return;
+        }
+      }catch(_){ }
+      finalize();
+    };
+    img.onerror = ()=>{
+      try{ IMG_CACHE[src] = { failed:true }; }catch(_){ }
+      resolve();
+    };
+    img.src = src;
+  }).finally(()=>{ delete IMG_PRELOAD_PROMISES[src]; });
+  return IMG_PRELOAD_PROMISES[src];
+}
 function preloadAssets(){
   for(const [key,info] of Object.entries(DECK_ASSETS)){
-    deckAssetCandidates(key,'deck-back').forEach(src=>{
-      const dbImg=new Image();
-      dbImg.src=src;
-      IMG_CACHE[src]=dbImg;
-    });
-    deckAssetCandidates(key,'card-back').forEach(src=>{
-      const cbImg=new Image();
-      cbImg.src=src;
-      IMG_CACHE[src]=cbImg;
-    });
+    const deckBackSrc = primaryDeckAssetUrl(key,'deck-back');
+    if(deckBackSrc){
+      preloadImageUrl(deckBackSrc);
+    }
+    const cardBackSrc = primaryDeckAssetUrl(key,'card-back');
+    if(cardBackSrc){
+      preloadImageUrl(cardBackSrc);
+    }
     (DECK_IMAGES[key]||[]).forEach(fn=>{
-  const src=`img/decks/${info.folder}/characters/${fn.replace(/\.[^.]+$/,'')}.png`;
-      const img=new Image();
-      img.src=src;
-      IMG_CACHE[src]=img;
+      const src=`img/decks/${info.folder}/characters/${fn.replace(/\.[^.]+$/,'')}.png`;
+      preloadImageUrl(src);
     });
   }
 }
@@ -2220,6 +2380,25 @@ function nameBasedCharUrls(deck,name){
     }
   });
   return urls;
+}
+function cardArtUrls(card){
+  let urls = [];
+  const ic = iconUrl(card && card.deck, card && card.icon);
+  if(ic && ic.length) urls = urls.concat(ic);
+  if(card && card.name) urls = urls.concat(nameBasedCharUrls(card.deck, card.name));
+  if(card && typeof card.img === 'string' && card.img.trim() && !card.img.includes('img/cards/')) urls.push(card.img);
+  return [...new Set(urls.filter(Boolean))];
+}
+function preloadDeckPreviewAssets(deck){
+  if(DECK_PREVIEW_PRELOADS[deck]) return DECK_PREVIEW_PRELOADS[deck];
+  const urls = [];
+  const back = primaryDeckAssetUrl(deck,'deck-back');
+  if(back) urls.push(back);
+  previewDeckCards(deck).forEach(card=>{
+    urls.push(...cardArtUrls(card));
+  });
+  DECK_PREVIEW_PRELOADS[deck] = Promise.all([...new Set(urls)].map(preloadImageUrl)).then(()=>undefined,()=>undefined);
+  return DECK_PREVIEW_PRELOADS[deck];
 }
 
 function setDeckBacks(){
@@ -2329,12 +2508,12 @@ document.addEventListener('pointerleave', ev => {
   hideHoverTip();
 }, true);
 function createProjection(container,card){
+  if(container){
+    const existing = container.querySelector('img,canvas,.img-missing');
+    if(existing) existing.remove();
+  }
   // Build URL candidates: preferred deck character icon, then explicit img
-  let urls = [];
-  const ic = iconUrl(card.deck,card.icon);
-  if(ic && ic.length) urls = urls.concat(ic);
-  if(card && card.name){ urls = urls.concat(nameBasedCharUrls(card.deck, card.name)); }
-  if(card && typeof card.img === 'string' && card.img.trim() && !card.img.includes('img/cards/')) urls.push(card.img);
+  const urls = cardArtUrls(card);
 
   const showFallback=()=>{
     if(container.querySelector('canvas,.img-missing')) return;
@@ -2525,11 +2704,7 @@ function buildCardTextMarkup(card){
   return `<div class="rules-copy concise-rules"><span class="rules-summary">${buildInlineEffectSentence(card, effectTokens)}</span></div>`;
 }
 function cardNameScale(name){
-  const len = String(name || '').trim().length;
-  if(len >= 28) return 0.044;
-  if(len >= 24) return 0.048;
-  if(len >= 20) return 0.054;
-  return 0.064;
+  return 0.054;
 }
 function ensureStatusFx(cardNodeEl, variant){
   if(!cardNodeEl) return;
@@ -2652,15 +2827,24 @@ function resetCardState(c){
 }
 const hasGuard=b=>b.some(x=>x && !x._dying && (x.kw.includes('Protetor')||x.stance==='defense'));
 function updateMeters(){
+  const hasPrevSnapshot = !!G._meterSnapshot;
   const prev = G._meterSnapshot || { playerHP:G.playerHP, aiHP:G.aiHP, playerMana:G.playerMana, aiMana:G.aiMana };
   const pct=(v,max)=>(max>0?Math.max(0,Math.min(100,(v/max)*100)):0);
   const setMeter = (node, value, max) => {
     if(!node) return;
     const percent = pct(value, max);
-    node.style.width = percent + '%';
+    if(!hasPrevSnapshot){
+      node.style.transition = 'none';
+    }
+    node.style.width = '';
+    node.style.setProperty('--hud-fill-pct', String(percent / 100));
     node.style.opacity = percent > 0 ? '1' : '0';
     node.setAttribute('aria-valuenow', String(value));
     node.setAttribute('aria-valuemax', String(Math.max(0, max || 0)));
+    if(!hasPrevSnapshot){
+      void node.offsetWidth;
+      node.style.transition = '';
+    }
   };
   setMeter(els.barPHP, G.playerHP, 30);
   if(els.barAHP){ try{ setMeter(els.barAHP, G.aiHP, 30); }catch(_){ } }
@@ -2798,6 +2982,7 @@ function renderAll(){
     els.turnIndicator.classList.toggle('player-turn', G.current === 'player');
     els.turnIndicator.classList.toggle('ai-turn', G.current !== 'player');
   }
+  syncTurnUiVisuals(G.current);
   els.drawCount.textContent=G.playerDeck.length;
   els.discardCount.textContent=G.playerDiscard.length;
   updateMeters();updateOpponentLabel();updateStoryRunHUD();renderHand();renderBoard();renderTotems();renderStoryEffects();updateDirectAttackHint()
@@ -2836,7 +3021,7 @@ function renderHand(){
     d.classList.toggle('blocked-mana',cantPay);
     d.classList.toggle('playable',!cantPay&&!disable);
     d.classList.toggle('play-ready',!cantPay&&!disable&&G.current==='player');
-    d.style.cursor=(cantPay||disable)?'not-allowed':'pointer';
+    d.style.cursor=(cantPay||disable)?'var(--cursor-blocked)':'var(--cursor-pointer)';
     els.pHand.appendChild(d)
   });
   stackHand()
@@ -3135,6 +3320,14 @@ function openStanceChooser(anchor,cb,onCancel){
 }
 const closeStanceChooser=()=>{const old=document.querySelector('.stance-chooser');if(old)old.remove();document.querySelectorAll('.hand .card.chosen').forEach(c=>c.classList.remove('chosen'))}
 function spawnImpactRing(x,y,theme='heavy'){
+  emitVisualEvent('visual:impact-ring', {
+    x: typeof x === 'number' ? x : null,
+    y: typeof y === 'number' ? y : null,
+    theme: theme || 'heavy',
+    combatStyle: theme || 'heavy',
+    source: 'spawnImpactRing'
+  });
+  if(!shouldUseLegacyVisualFallback()) return;
   const ring=document.createElement('div');
   ring.className=`card-impact-ring ${theme||'heavy'}`;
   ring.style.left=`${x}px`;
@@ -3228,6 +3421,14 @@ const STORY_CONTINUE_DEAL_DELAY = 800; // ms
 let GAME_SESSION_ID = 0;
 
 function startGame(opts='player') {
+  try{
+    if(window.FFFEvents && typeof window.FFFEvents.emit === 'function'){
+      window.FFFEvents.emit('battle:start', {
+        mode: window.currentGameMode || 'solo',
+        opts: typeof opts === 'object' ? Object.assign({}, opts) : { first: opts }
+      });
+    }
+  }catch(_){ }
   GAME_SESSION_ID++;
   updateCardSize();
   const isObj = typeof opts === 'object';
@@ -3446,6 +3647,7 @@ function continueGameSetup(){
   G.playerHP = 30;
   G.aiHP = 30;
   G.current = first;
+  G._meterSnapshot = null;
   G.playerMana = 0;
   G.playerManaCap = 0;
   G.aiMana = 0;
@@ -3669,6 +3871,7 @@ function newTurn(skipDraw=false,prev){
 }
 function endTurn(){if(G.current!=='player')return;discardHand('player');G.current='ai';G.chosen=null;G.lastChosenId=null;updateTargetingUI();newTurn(false,'player');sfx('end');if(window.isMultiplayer){NET.sendTurn('end')}else{setTimeout(aiTurn,500)}}
 function castSpell(side,c){
+  emitCardPlayed(c,{ side, stance:'spell', source:'castSpell' });
   log(`${side==='player'?'Você':'Inimigo'} conjurou ${c.name}.`);
   const effects = triggerBattlecry(side,c);
   applyOnPlayRewards(side,c);
@@ -3680,6 +3883,7 @@ function castSpell(side,c){
 }
 function playFromHand(id,st){if(G.current!=='player')return;const i=G.playerHand.findIndex(c=>c.id===id);if(i<0)return;const c=G.playerHand[i];const boardFull=c.type==='unit'&&G.playerBoard.length>=5;if(c.cost>G.playerMana||boardFull)return;G.playerHand.splice(i,1);G.playerMana-=c.cost;getTurnState('player').played+=1;if(c.type==='totem'){if(G.totems.filter(t=>t.owner==='player').length>=3){log('Número máximo de Totens atingido.');G.playerDiscard.push(c);}else{const t={id:c.id,name:c.name,buffs:c.buffs||{atk:1,hp:1},icon:c.icon||totemIcon(c),theme:getTotemTheme(c),maxTargets:Math.min(3,Math.max(1,G.playerBoard.length||1)),owner:'player',...c};G.totems.push(t);applyTotemBuffsWithFx(t);animateTotemCast();log(`${c.name} ativado.`);}renderAll();return;}if(c.type==='spell'){castSpell('player',c);renderAll();return;}summon('player',c,st);renderAll();sfx(st==='defense'?'defense':'play')}
 function summon(side,c,st='attack',skipBC=false){
+  emitCardPlayed(c,{ side, stance:st, source:'summon' });
   const board = side==='player'?G.playerBoard:G.aiBoard;
   c.stance = st;
   c.canAttack = (st==='attack') && c.kw.includes('Furioso');
@@ -3801,7 +4005,7 @@ function triggerBattlecry(side,c){
         const t=rand(allies);
         healUnit(t,2,c);
         fxTextOnCard(t.id,'+2','heal');
-        if(window.playParticleEffect) playContextParticleOnCard(t,'heal',c);
+        playContextParticleOnCard(t,'heal',c);
         log(`${c.name}: curou 2 em ${t.name}.`);
         playAbilityCue('heal',c);
         effects.push({type:'heal',targetId:t.id,amount:2});
@@ -3813,7 +4017,7 @@ function triggerBattlecry(side,c){
       if(foes.length){
         const t=rand(foes);
         damageMinion(t,1);
-        if(window.playParticleEffect) playContextParticleOnCard(t,'attack',c,{scale:0.78});
+        playContextParticleOnCard(t,'attack',c,{scale:0.78});
         fxTextOnCard(t.id,'-1','dmg');
         log(`${c.name}: 1 de dano em ${t.name}.`);
         playAbilityCue('debuff',c);
@@ -4040,7 +4244,7 @@ function triggerBattlecry(side,c){
   }
   return effects;
 }
-function applyBattlecryEffects(side,effects){effects.forEach(e=>{if(e.type==='heal'){const allies=side==='player'?G.playerBoard:G.aiBoard;const t=allies.find(x=>x.id===e.targetId);if(t){healUnit(t,e.amount,t);fxTextOnCard(t.id,'+'+e.amount,'heal');if(window.playParticleEffect)playContextParticleOnCard(t,'heal',t)}}else if(e.type==='damage'){const foes=side==='player'?G.aiBoard:G.playerBoard;const t=foes.find(x=>x.id===e.targetId);if(t){damageMinion(t,e.amount);if(window.playParticleEffect)playContextParticleOnCard(t,'attack',t,{scale:0.78});fxTextOnCard(t.id,'-'+e.amount,'dmg')}}else if(e.type==='buff'){const allies=side==='player'?G.playerBoard:G.aiBoard;const t=allies.find(x=>x.id===e.targetId);if(t){t.atk+=e.atk;t.hp+=e.hp;fxTextOnCard(t.id,'+'+e.atk+(e.hp?'/'+e.hp:''),'buff');if(window.playParticleEffect)playContextParticleOnCard(t,'buff',t)}}else if(e.type==='mana'){if(side==='player'){G.playerManaCap=clamp(G.playerManaCap+e.amount,0,10);G.playerMana=Math.min(G.playerMana+e.amount,G.playerManaCap);}else{G.aiManaCap=clamp(G.aiManaCap+e.amount,0,10);G.aiMana=Math.min(G.aiMana+e.amount,G.aiManaCap);}}else if(e.type==='sacMana'){const allies=side==='player'?G.playerBoard:G.aiBoard;const discard=side==='player'?G.playerDiscard:G.aiDiscard;const t=allies.find(x=>x.id===e.targetId);if(t){allies.splice(allies.indexOf(t),1);discard.push(t);resetCardState(t);playContextParticleOnCard(t,'explosion',t);}if(side==='player'){G.playerMana=Math.min(G.playerMana+e.amount,G.playerManaCap);}else{G.aiMana=Math.min(G.aiMana+e.amount,G.aiManaCap);}}});checkDeaths()}
+function applyBattlecryEffects(side,effects){effects.forEach(e=>{if(e.type==='heal'){const allies=side==='player'?G.playerBoard:G.aiBoard;const t=allies.find(x=>x.id===e.targetId);if(t){healUnit(t,e.amount,t);fxTextOnCard(t.id,'+'+e.amount,'heal');playContextParticleOnCard(t,'heal',t)}}else if(e.type==='damage'){const foes=side==='player'?G.aiBoard:G.playerBoard;const t=foes.find(x=>x.id===e.targetId);if(t){damageMinion(t,e.amount);playContextParticleOnCard(t,'attack',t,{scale:0.78});fxTextOnCard(t.id,'-'+e.amount,'dmg')}}else if(e.type==='buff'){const allies=side==='player'?G.playerBoard:G.aiBoard;const t=allies.find(x=>x.id===e.targetId);if(t){t.atk+=e.atk;t.hp+=e.hp;fxTextOnCard(t.id,'+'+e.atk+(e.hp?'/'+e.hp:''),'buff');playContextParticleOnCard(t,'buff',t)}}else if(e.type==='mana'){if(side==='player'){G.playerManaCap=clamp(G.playerManaCap+e.amount,0,10);G.playerMana=Math.min(G.playerMana+e.amount,G.playerManaCap);}else{G.aiManaCap=clamp(G.aiManaCap+e.amount,0,10);G.aiMana=Math.min(G.aiMana+e.amount,G.aiManaCap);}}else if(e.type==='sacMana'){const allies=side==='player'?G.playerBoard:G.aiBoard;const discard=side==='player'?G.playerDiscard:G.aiDiscard;const t=allies.find(x=>x.id===e.targetId);if(t){allies.splice(allies.indexOf(t),1);discard.push(t);resetCardState(t);playContextParticleOnCard(t,'explosion',t);}if(side==='player'){G.playerMana=Math.min(G.playerMana+e.amount,G.playerManaCap);}else{G.aiMana=Math.min(G.aiMana+e.amount,G.aiManaCap);}}});checkDeaths()}
 
 function absorbFromAlly(side,c){const board=side==='player'?G.playerBoard:G.aiBoard;const allies=board.filter(x=>x.id!==c.id&&x.kw&&x.kw.length);if(!allies.length)return;const src=rand(allies);const choices=src.kw.filter(k=>!c.kw.includes(k));if(!choices.length)return;const kw=rand(choices);c.kw.push(kw);playContextParticleOnCard(c,'buff',c);fxTextOnCard(c.id,kw,'buff');log(`${c.name} absorveu ${kw}.`);if(c.name==='Sombra Rúnica'){applyCardBuff(c,{atk:1,hp:1,icon:c.emoji||'✨',sourceType:'absorb',sourceId:c.id,permanent:true});}if(c.name==='Capataz de Runas'){const foes=side==='player'?G.aiBoard:G.playerBoard;foes.forEach(t=>{damageMinion(t,1);playContextParticleOnCard(t,'attack',c,{scale:0.74});fxTextOnCard(t.id,'-1','dmg')});checkDeaths()}}
 
@@ -4071,9 +4275,16 @@ function ensureAttackArrow(){
   return svg;
 }
 function hideAttackArrow(){
+  emitVisualEvent('visual:attack-arrow', { active:false, source:'hideAttackArrow' });
   if(attackArrow) attackArrow.style.display = 'none';
 }
 function showAttackArrow(fromX, fromY, toX, toY){
+  emitVisualEvent('visual:attack-arrow', {
+    active:true,
+    fromX, fromY, toX, toY,
+    source:'showAttackArrow'
+  });
+  if(!shouldUseLegacyVisualFallback()) return;
   const svg = ensureAttackArrow();
   const path = svg.querySelector('.arrow-path');
   const shadow = svg.querySelector('.arrow-shadow');
@@ -4194,10 +4405,75 @@ function legalTarget(side,target){
   return hasGuard(b)?(target.kw.includes('Protetor')||target.stance==='defense'):true;
 }
 const nodeById=id=>document.querySelector(`.card[data-id="${id}"]`);
+function emitCardMana(card, amount, sideOverride=null){
+  if(!card || !amount) return;
+  try{
+    if(window.FFFEvents && typeof window.FFFEvents.emit === 'function'){
+      window.FFFEvents.emit('card:mana', {
+        id: card.id,
+        name: card.name,
+        side: sideOverride || getCardSide(card),
+        amount,
+        deck: card.deck || null,
+        tribe: card.tribe || null,
+        combatStyle: card.combatStyle || null,
+        sourceType: card.type || null
+      });
+    }
+  }catch(_){ }
+}
+function emitFaceDamaged(side, amount, sourceCard=null, meta={}){
+  if(!side || !amount) return;
+  try{
+    if(window.FFFEvents && typeof window.FFFEvents.emit === 'function'){
+      window.FFFEvents.emit('face:damaged', {
+        side,
+        amount,
+        sourceId: sourceCard && sourceCard.id ? sourceCard.id : null,
+        sourceName: sourceCard && sourceCard.name ? sourceCard.name : null,
+        sourceType: meta && meta.sourceType ? meta.sourceType : 'attack',
+        combatStyle: sourceCard && sourceCard.combatStyle ? sourceCard.combatStyle : null,
+        deck: sourceCard && sourceCard.deck ? sourceCard.deck : null,
+        tribe: sourceCard && sourceCard.tribe ? sourceCard.tribe : null,
+        hp: side === 'player' ? G.playerHP : G.aiHP,
+        maxHp: 30
+      });
+    }
+  }catch(_){ }
+}
+function emitCardPlayed(card,{ side=null, stance='attack', source='runtime' }={}){
+  if(!card || card._playedEventEmitted) return;
+  card._playedEventEmitted = true;
+  try{
+    if(window.FFFEvents && typeof window.FFFEvents.emit === 'function'){
+      window.FFFEvents.emit('card:played',{
+        id: card.id,
+        name: card.name,
+        type: card.type || 'unit',
+        cost: card.cost || 0,
+        stance: stance || card.stance || 'attack',
+        side: side || getCardSide(card),
+        source,
+        deck: card.deck || null,
+        tribe: card.tribe || null,
+        combatStyle: card.combatStyle || null,
+        keywords: Array.isArray(card.kw) ? card.kw.slice(0) : []
+      });
+    }
+  }catch(_){ }
+}
 const addAnim=(n,c,d=400)=>null;
 // (replaced below with sequenced version) original animateAttack removed to avoid duplicate const redeclaration
 const animateDefense=id=>null;
-function screenSlash(x,y,ang){return null}
+function screenSlash(x,y,ang){
+  emitVisualEvent('visual:screen-slash', {
+    x: typeof x === 'number' ? x : null,
+    y: typeof y === 'number' ? y : null,
+    angle: typeof ang === 'number' ? ang : 0,
+    source: 'screenSlash'
+  });
+  return null;
+}
 function screenParticle(n,x,y){return null}
 function applyOnPlayRewards(side,card){
   if(!card||!card.onPlay)return;
@@ -4208,6 +4484,7 @@ function applyOnPlayRewards(side,card){
       G.playerMana=Math.min(G.playerMana+info.mana,G.playerManaCap);
       const gained=G.playerMana-before;
       if(gained>0){
+        emitCardMana(card, gained, 'player');
         try{playContextParticleOnCard(card,'mana',card);fxTextOnCard(card.id,`+${gained} mana`,'buff');}catch(_){ }
         sfx('mana');
         log(`${card.name} canalizou ${gained} de mana.`);
@@ -4217,6 +4494,7 @@ function applyOnPlayRewards(side,card){
       const before=G.aiMana;
       G.aiMana=Math.min(G.aiMana+info.mana,G.aiManaCap);
       if(G.aiMana>before){
+        emitCardMana(card, G.aiMana-before, 'ai');
         try{playContextParticleOnCard(card,'mana',card);}catch(_){ }
         sfx('mana');
         log(`O inimigo canalizou energia com ${card.name}.`);
@@ -4238,6 +4516,13 @@ function showEncounterBanner(name,type='enemy'){
   try{ const board=document.getElementById('aiBoard'); const old=board&&board.querySelector('.board-banner'); if(old) old.remove(); }catch(_){ }
   const b=document.getElementById('encounterBanner');
   if(!b) return;
+  emitVisualEvent('visual:banner', {
+    kind: type || 'enemy',
+    title: name || 'Inimigo',
+    subtitle: '',
+    source: 'showEncounterBanner'
+  });
+  if(!shouldUseLegacyVisualFallback()) return;
   b.textContent=name;
   b.className=type+' show';
   setTimeout(()=>b.classList.remove('show'),1600);
@@ -4251,6 +4536,14 @@ function showEncounterIntro({ name, round, kind, deckKey }){
   if(typeof round === 'number' && round > 0) sub.push(`Round ${round}`);
   if(deckTitle) sub.push(deckTitle);
   if(kind === 'boss') sub.push('Chefão');
+  emitVisualEvent('visual:banner', {
+    kind: kind || 'enemy',
+    title: name || 'Inimigo',
+    subtitle: sub.join(' - '),
+    deck: deckKey || null,
+    source: 'showEncounterIntro'
+  });
+  if(!shouldUseLegacyVisualFallback()) return;
   b.innerHTML = `<div class=\"enc-title\">${name||'Inimigo'}</div>${sub.length?`<div class=\\\"enc-sub\\\">${sub.join(' — ')}</div>`:''}`;
   b.className = (kind||'enemy') + ' show';
   setTimeout(()=>b.classList.remove('show'), 1700);
@@ -4264,6 +4557,16 @@ function showVictoryBanner(enemyName,onContinue){
     return;
   }
   const subtitle = enemyName ? `Você derrotou ${enemyName}.` : 'Inimigo derrotado.';
+  emitVisualEvent('visual:banner', {
+    kind: 'victory',
+    title: 'Vitoria!',
+    subtitle,
+    source: 'showVictoryBanner'
+  });
+  if(!shouldUseLegacyVisualFallback()){
+    setTimeout(() => { onContinue?.(); }, 1700);
+    return;
+  }
   banner.innerHTML = `<div class="enc-title">Vitória!</div><div class="enc-sub">${subtitle}</div>`;
   banner.className = 'victory show';
   try{ sfx('reward'); }catch(_){ }
@@ -4273,12 +4576,40 @@ function showVictoryBanner(enemyName,onContinue){
   }, 1700);
 }
 function particleOnCard(cid,n){
+  const id = typeof cid === 'string' ? cid : (cid && cid.id ? cid.id : null);
+  if(!id) return null;
+  emitVisualEvent('visual:card-context', { id, context: n || 'attack', source: 'particleOnCard' });
   return null;
 }
 function particleOnFace(side,n,options={}){
+  if(!side) return null;
+  emitVisualEvent('visual:face-context', { side, context: n || 'face', source: 'particleOnFace' });
   return null;
 }
-function fxTextOnCard(cid,text,cls){const n=document.querySelector(`.card[data-id="${cid}"]`);if(!n)return;const r=n.getBoundingClientRect();const fx=document.createElement('div');fx.className='fx-float '+(cls||'');fx.textContent=text;fx.style.left=(r.left+r.width/2)+'px';fx.style.top=(r.top+r.height/2)+'px';document.body.appendChild(fx);setTimeout(()=>fx.remove(),950);}
+function fxTextOnCard(cid,text,cls){
+  const n=document.querySelector(`.card[data-id="${cid}"]`);
+  if(!n)return;
+  const card = typeof byId === 'function' ? byId(cid) : null;
+  emitVisualEvent('visual:text-float', {
+    id: cid,
+    text: text || '',
+    cls: cls || '',
+    side: card ? getCardSide(card) : null,
+    deck: card && card.deck ? card.deck : null,
+    tribe: card && card.tribe ? card.tribe : null,
+    combatStyle: card && card.combatStyle ? card.combatStyle : null,
+    source: 'fxTextOnCard'
+  });
+  if(!shouldUseLegacyVisualFallback()) return;
+  const r=n.getBoundingClientRect();
+  const fx=document.createElement('div');
+  fx.className='fx-float '+(cls||'');
+  fx.textContent=text;
+  fx.style.left=(r.left+r.width/2)+'px';
+  fx.style.top=(r.top+r.height/2)+'px';
+  document.body.appendChild(fx);
+  setTimeout(()=>fx.remove(),950);
+}
 
 function updateDirectAttackHint(){
   const board=document.getElementById('aiBoard');
@@ -4323,11 +4654,11 @@ function applyKillRewards(attacker,target){
       const before=G.playerMana;
       G.playerMana=Math.min(G.playerMana+manaGain,G.playerManaCap);
       const gained=G.playerMana-before;
-      if(gained>0){try{playContextParticleOnCard(attacker,'mana',attacker);fxTextOnCard(attacker.id,`+${gained} mana`,'buff');}catch(_){ }sfx('mana');playAbilityCue('mana',attacker);}
+      if(gained>0){emitCardMana(attacker, gained, 'player');try{playContextParticleOnCard(attacker,'mana',attacker);fxTextOnCard(attacker.id,`+${gained} mana`,'buff');}catch(_){ }sfx('mana');playAbilityCue('mana',attacker);}
     }else{
       const before=G.aiMana;
       G.aiMana=Math.min(G.aiMana+manaGain,G.aiManaCap);
-      if(G.aiMana>before){try{playContextParticleOnCard(attacker,'mana',attacker);}catch(_){ }sfx('mana');playAbilityCue('mana',attacker);}
+      if(G.aiMana>before){emitCardMana(attacker, G.aiMana-before, 'ai');try{playContextParticleOnCard(attacker,'mana',attacker);}catch(_){ }sfx('mana');playAbilityCue('mana',attacker);}
     }
   }
   if(drawGain){
@@ -4550,13 +4881,49 @@ function markCardDamaged(target, source){
 function triggerDeathVisual(card){
   const node = card && nodeById(card.id);
   if(!node) return;
+  emitVisualEvent('visual:death-burn', {
+    id: card && card.id ? card.id : null,
+    name: card && card.name ? card.name : null,
+    side: card ? getCardSide(card) : null,
+    deck: card && card.deck ? card.deck : null,
+    tribe: card && card.tribe ? card.tribe : null,
+    combatStyle: card && card.combatStyle ? card.combatStyle : null,
+    source: 'triggerDeathVisual'
+  });
   playBurnDestroySfx();
   spawnFireDissolve(card);
 }
 function playContextParticleOnCard(cardOrId, context='attack', sourceCard=null, options={}){
+  const card = typeof cardOrId === 'string'
+    ? { id: cardOrId }
+    : cardOrId;
+  const id = card && card.id ? card.id : null;
+  if(!id) return null;
+  emitVisualEvent('visual:card-context', {
+    id,
+    context: context || 'attack',
+    sourceId: sourceCard && sourceCard.id ? sourceCard.id : null,
+    sourceType: sourceCard && sourceCard.type ? sourceCard.type : null,
+    combatStyle: sourceCard && sourceCard.combatStyle ? sourceCard.combatStyle : null,
+    deck: (sourceCard && sourceCard.deck) || (card && card.deck) || null,
+    scale: options && options.scale ? options.scale : null,
+    side: card && card.id && typeof getCardSide === 'function' ? getCardSide(card) : null,
+    source: 'playContextParticleOnCard'
+  });
   return null;
 }
 function playContextParticleOnFace(side, context='face', sourceCard=null, options={}){
+  if(!side) return null;
+  emitVisualEvent('visual:face-context', {
+    side,
+    context: context || 'face',
+    sourceId: sourceCard && sourceCard.id ? sourceCard.id : null,
+    sourceType: sourceCard && sourceCard.type ? sourceCard.type : null,
+    combatStyle: sourceCard && sourceCard.combatStyle ? sourceCard.combatStyle : null,
+    deck: sourceCard && sourceCard.deck ? sourceCard.deck : null,
+    scale: options && options.scale ? options.scale : null,
+    source: 'playContextParticleOnFace'
+  });
   return null;
 }
 function attackCard(attacker,target){
@@ -4570,7 +4937,7 @@ function attackCard(attacker,target){
   if(a&&t){const ar=a.getBoundingClientRect(),tr=t.getBoundingClientRect();screenSlash(ar.right,ar.top+ar.height/2,15);}
   animateAttack(attacker.id,target.id);
   if(target.stance==='defense') setTimeout(()=>animateDefense(target.id), TARGET_HIT_ANIM_DELAY);
-  if(window.playParticleEffect) playContextParticleOnCard(target,'attack',attacker);
+  playContextParticleOnCard(target,'attack',attacker);
 
   const preAttackerHP = Math.max(0, attacker.hp);
   const preTargetHP = Math.max(0, target.hp);
@@ -4599,7 +4966,7 @@ function attackCard(attacker,target){
       markCardDamaged(attacker, target);
       damageMinion(attacker, counterDamage, { defer:true });
       fxTextOnCard(attacker.id, `-${counterDamage}`, 'reflect');
-      if(window.playParticleEffect && counterDamage>0) playContextParticleOnCard(attacker,'attack',target,{scale:0.76});
+      if(counterDamage>0) playContextParticleOnCard(attacker,'attack',target,{scale:0.76});
       if(DEBUG_COMBAT_SEQUENCE) log(`[SEQ] ${target.name} (${counterDamage} ATK) retaliated ${attacker.name} → ${attacker.hp} HP`);
     }else if(DEBUG_COMBAT_SEQUENCE){
       log(`[SEQ] ${target.name} did not counter (stance=${target.stance})`);
@@ -4612,10 +4979,12 @@ function attackCard(attacker,target){
       const faceFx=fx||'attack';
       if(isP){
         G.aiHP=Math.max(0, G.aiHP-overflow);
+        emitFaceDamaged('ai', overflow, attacker, { sourceType: 'overflow' });
         log(`${attacker.name} excedeu em ${overflow} e causou dano direto ao Inimigo!`);
         playContextParticleOnFace('ai','face',attacker);
       }else{
         G.playerHP=Math.max(0, G.playerHP-overflow);
+        emitFaceDamaged('player', overflow, attacker, { sourceType: 'overflow' });
         log(`${attacker.name} excedeu em ${overflow} e causou dano direto a Você!`);
         playContextParticleOnFace('player','face',attacker);
       }
@@ -4629,8 +4998,14 @@ function attackCard(attacker,target){
       if(attackerSurvived){
         applyKillRewards(attacker,target);
         if(attacker.onKillFaceDamage){
-          if(G.playerBoard.includes(attacker)) G.aiHP=Math.max(0,G.aiHP-attacker.onKillFaceDamage);
-          else G.playerHP=Math.max(0,G.playerHP-attacker.onKillFaceDamage);
+          if(G.playerBoard.includes(attacker)){
+            G.aiHP=Math.max(0,G.aiHP-attacker.onKillFaceDamage);
+            emitFaceDamaged('ai', attacker.onKillFaceDamage, attacker, { sourceType: 'killBonus' });
+          }
+          else{
+            G.playerHP=Math.max(0,G.playerHP-attacker.onKillFaceDamage);
+            emitFaceDamaged('player', attacker.onKillFaceDamage, attacker, { sourceType: 'killBonus' });
+          }
         }
       }
     }else if(attackerSurvived && attacker.onCombatSurviveTempBuff){
@@ -4674,10 +5049,12 @@ function attackFace(attacker,face){
   }
   if(face==='ai'){
     G.aiHP=Math.max(0, G.aiHP-dmg);
+    emitFaceDamaged('ai', dmg, attacker, { sourceType: 'attack' });
     log(`${attacker.name} causou ${dmg} ao Inimigo!`);
     sfx('crit');
   }else{
     G.playerHP=Math.max(0, G.playerHP-dmg);
+    emitFaceDamaged('player', dmg, attacker, { sourceType: 'attack' });
     log(`${attacker.name} causou ${dmg} a Você!`);
     sfx('hit');
   }
@@ -4696,6 +5073,19 @@ function damageMinion(m,amt,opts){
   const newHP = m.hp - amt;
   m.hp = Math.max(0, Math.min(99, newHP));
   const side = getCardSide(m);
+  try{
+    if(window.FFFEvents && typeof window.FFFEvents.emit === 'function'){
+      window.FFFEvents.emit('card:damaged', {
+        id: m.id,
+        name: m.name,
+        side: side || null,
+        amount: amt,
+        hp: m.hp,
+        maxHp: m.baseHp || m.hp,
+        deferred: !!(opts && opts.defer)
+      });
+    }
+  }catch(_){ }
   if(side) pulseMeter('hit', side);
   const defer = opts && opts.defer;
   if(m.hp<=0 && !defer) setTimeout(checkDeaths,10);
@@ -4727,7 +5117,7 @@ function checkDeaths(){
       c._dying = true;
       queuedDeath = true;
       triggerDeathVisual(c);
-      if(window.playParticleEffect) playContextParticleOnCard(c,'death',c);
+      playContextParticleOnCard(c,'death',c);
     });
     log('Uma criatura inimiga caiu.');
     setTimeout(()=>finalizeDeadCards('ai', deadA.filter(c => c && c._deathQueued)), BURN_DESTROY_DURATION + 60);
@@ -4743,7 +5133,7 @@ function checkDeaths(){
       c._dying = true;
       queuedDeath = true;
       triggerDeathVisual(c);
-      if(window.playParticleEffect) playContextParticleOnCard(c,'death',c);
+      playContextParticleOnCard(c,'death',c);
     });
     log('Sua criatura caiu.');
     setTimeout(()=>finalizeDeadCards('player', deadP.filter(c => c && c._deathQueued)), BURN_DESTROY_DURATION + 60);
@@ -4797,7 +5187,20 @@ async function aiTurn(){
   }
   setTimeout(next,500);
 }
-function fireworks(win){const b=document.createElement('div');b.className='boom';b.style.left='50%';b.style.top='50%';b.style.background=`radial-gradient(circle at 50% 50%, ${win?'#8bf5a2':'#ff8a8a'}, transparent)`;document.body.appendChild(b);setTimeout(()=>b.remove(),650);} 
+function fireworks(win){
+  emitVisualEvent('visual:celebration', {
+    kind: win ? 'victory' : 'defeat',
+    source: 'fireworks'
+  });
+  if(!shouldUseLegacyVisualFallback()) return;
+  const b=document.createElement('div');
+  b.className='boom';
+  b.style.left='50%';
+  b.style.top='50%';
+  b.style.background=`radial-gradient(circle at 50% 50%, ${win?'#8bf5a2':'#ff8a8a'}, transparent)`;
+  document.body.appendChild(b);
+  setTimeout(()=>b.remove(),650);
+} 
 function buildEndSummary(win){
   const story = G.story || null;
   const metrics = story && story.metrics ? story.metrics : null;
@@ -4833,17 +5236,26 @@ function renderEndSummary(win){
   });
 }
 function endGame(win){
+  try{
+    if(window.FFFEvents && typeof window.FFFEvents.emit === 'function'){
+      window.FFFEvents.emit('battle:end', {
+        win: !!win,
+        mode: G && G.mode ? G.mode : 'solo'
+      });
+    }
+  }catch(_){ }
   stopMenuMusic();
   els.endMsg.textContent=win?'Vitória!':'Fracasso!';
   els.endMsg.style.color=win?'#8bf5a2':'#ff8a8a';
   els.endSub.textContent=win?'Resumo da run concluída.':'Resumo da sua run até a derrota.';
   renderEndSummary(win);
   els.endOverlay.classList.add('show');
+  emitSystemOverlay(true, 'endOverlay');
   setAriaHidden(els.endOverlay,false);
   focusDialog(els.endOverlay);
   setTimeout(()=>fireworks(win),1000);
 } 
-const hideEndOverlay=()=>{if(!els.endOverlay)return;els.endOverlay.classList.remove('show');setAriaHidden(els.endOverlay,true)};
+const hideEndOverlay=()=>{if(!els.endOverlay)return;els.endOverlay.classList.remove('show');emitSystemOverlay(false, 'endOverlay');setAriaHidden(els.endOverlay,true)};
 function pulseNode(node, cls, duration=420){
   if(!node) return;
   node.classList.remove(cls);
@@ -4852,24 +5264,45 @@ function pulseNode(node, cls, duration=420){
   setTimeout(()=>{ try{ node.classList.remove(cls); }catch(_){ } }, duration);
 }
 function pulseMeter(kind, side='player'){
+  emitVisualEvent('visual:meter-pulse', {
+    kind: kind || 'hit',
+    side: side || 'player',
+    source: 'pulseMeter'
+  });
   if(kind==='mana'){
+    if(!shouldUseLegacyVisualFallback()) return;
     pulseNode(side==='player'?els.barMana:els.barAiMana,'meter-mana',320);
     return;
   }
+  if(!shouldUseLegacyVisualFallback()) return;
   pulseNode(side==='player'?els.barPHP:els.barAHP, kind==='heal'?'meter-heal':'meter-hit', kind==='heal'?420:340);
 }
 function emphasizeBoard(side='player'){
+  emitVisualEvent('visual:board-pulse', {
+    side: side || 'player',
+    source: 'emphasizeBoard'
+  });
+  if(!shouldUseLegacyVisualFallback()) return;
   pulseNode(side==='player'?els.pBoard:els.aBoard,'turn-focus',1550);
 }
 function animateSpellCast(side='player'){
   const board = side==='player'?els.pBoard:els.aBoard;
   if(!board) return;
   const card = board.querySelector('.card:last-child');
-  if(card) pulseNode(card,'spell-cast-pop',360);
+  emitVisualEvent('visual:spell-cast', {
+    side: side || 'player',
+    id: card && card.dataset ? card.dataset.id : null,
+    source: 'animateSpellCast'
+  });
+  if(shouldUseLegacyVisualFallback() && card) pulseNode(card,'spell-cast-pop',360);
   emphasizeBoard(side);
 }
 function animateTotemCast(){
   const items = document.querySelectorAll('#effectsHud .effect-item[data-type="totem"], .totem-slot');
+  emitVisualEvent('visual:totem-cast', {
+    source: 'animateTotemCast'
+  });
+  if(!shouldUseLegacyVisualFallback()) return;
   if(items.length){
     pulseNode(items[items.length-1],'totem-cast',420);
     pulseNode(items[items.length-1],'effect-pop',420);
@@ -5243,6 +5676,15 @@ function showModal(modal){
   modal.style.display = 'grid';
   if(window.setAriaHidden) setAriaHidden(modal, false);
   else modal.setAttribute('aria-hidden', 'false');
+  try{
+    if(window.FFFEvents && typeof window.FFFEvents.emit === 'function'){
+      if(modal.id === 'storyMapModal') window.FFFEvents.emit('campaign:map:open', { id: modal.id });
+      if(modal.id === 'eventModal') window.FFFEvents.emit('campaign:event:open', { id: modal.id });
+      if(['rewardsModal','cardSelectModal','totemSelectModal','evolveCardModal','relicModal','removalModal','restModal'].includes(modal.id)){
+        window.FFFEvents.emit('campaign:reward:open', { id: modal.id });
+      }
+    }
+  }catch(_){ }
 }
 
 function closeModal(modal){
@@ -5256,6 +5698,38 @@ function closeModal(modal){
   },220);
   if(window.setAriaHidden) setAriaHidden(modal, true);
   else modal.setAttribute('aria-hidden', 'true');
+  try{
+    if(window.FFFEvents && typeof window.FFFEvents.emit === 'function'){
+      if(modal.id === 'storyMapModal') window.FFFEvents.emit('campaign:map:close', { id: modal.id });
+      if(modal.id === 'eventModal') window.FFFEvents.emit('campaign:event:close', { id: modal.id });
+      if(['rewardsModal','cardSelectModal','totemSelectModal','evolveCardModal','relicModal','removalModal','restModal'].includes(modal.id)){
+        window.FFFEvents.emit('campaign:reward:close', { id: modal.id });
+      }
+    }
+  }catch(_){ }
+}
+
+let confirmModalResolver = null;
+function askGameConfirmation(message,{title='Confirmar',confirmLabel='Continuar',cancelLabel='Cancelar'}={}){
+  if(!els.confirmModal || !els.confirmTitle || !els.confirmText || !els.confirmOkBtn || !els.confirmCancelBtn){
+    return Promise.resolve(confirm(message));
+  }
+  if(confirmModalResolver){
+    try{ confirmModalResolver(false); }catch(_){ }
+    confirmModalResolver = null;
+  }
+  els.confirmTitle.textContent = title;
+  els.confirmText.textContent = message || 'Tem certeza?';
+  els.confirmOkBtn.textContent = confirmLabel;
+  els.confirmCancelBtn.textContent = cancelLabel;
+  showModal(els.confirmModal);
+  return new Promise(resolve => {
+    confirmModalResolver = value => {
+      confirmModalResolver = null;
+      closeModal(els.confirmModal);
+      resolve(!!value);
+    };
+  });
 }
 
 // ===== RELIC SYSTEM FUNCTIONS =====
@@ -5406,6 +5880,15 @@ function showRandomEvent(onComplete, opts={}){
   if(screen){
     screen.className = `event-screen ${eventThemeClass(event)}`;
   }
+  try{
+    if(window.FFFEvents && typeof window.FFFEvents.emit === 'function'){
+      window.FFFEvents.emit('campaign:event:theme', {
+        id: event.id,
+        theme: eventThemeClass(event),
+        source
+      });
+    }
+  }catch(_){ }
   icon.textContent = event.icon;
   if(eyebrow) eyebrow.textContent = source === 'map' ? 'Evento de Rota' : 'Evento Aleatório';
   title.textContent = event.name;
@@ -5726,9 +6209,9 @@ function showCardRemoval(opts){
       return;
     }
     
-    cardWrapper.onclick = () => {
+    cardWrapper.onclick = async () => {
       const prompt = typeof confirmMessage === 'function' ? confirmMessage(card) : (confirmMessage || `Remover ${card.name} permanentemente do seu deck?`);
-      if(prompt && !confirm(prompt)) return;
+      if(prompt && !await askGameConfirmation(prompt,{title:'Remover carta',confirmLabel:'Remover'})) return;
       cardWrapper.classList.add('removing');
       setTimeout(()=>{
         if(removeFromDeck){
@@ -5894,6 +6377,11 @@ function renderEncy(filter='all',locked=false){
   focusDialog(els.ency);
   els.encyFilters.style.display=locked?'none':'flex';
   $$('.filters .fbtn').forEach(b=>b.classList.toggle('active',b.dataset.deck===filter||filter==='all'&&b.dataset.deck==='all'));
+  try{
+    if(window.FFFEvents && typeof window.FFFEvents.emit === 'function'){
+      window.FFFEvents.emit('overlay:archive:open', { id: 'ency', filter, locked: !!locked });
+    }
+  }catch(_){ }
 }
 let encyFocusState = null;
 function closeEncyCardFocus(){
@@ -5976,6 +6464,11 @@ function openEncyCardFocus(cardEl){
 }
 const updateRestartVisibility=()=>{if(els.restartBtn)els.restartBtn.style.display=window.isMultiplayer?'none':'block'};
 const showAppScreen=screen=>{
+  try{
+    if(window.FFFEvents && typeof window.FFFEvents.emit === 'function'){
+      window.FFFEvents.emit('screen:change', { screen });
+    }
+  }catch(_){ }
   if(typeof window.showAppScreen==='function'){
     window.showAppScreen(screen);
     return;
@@ -5994,15 +6487,74 @@ const showAppScreen=screen=>{
     setAriaHidden(node, key!==screen);
   });
 };
-const toggleGameMenu=open=>{if(!els.gameMenu)return;if(open){els.gameMenu.classList.add('show');setAriaHidden(els.gameMenu,false);focusDialog(els.gameMenu);updateRestartVisibility();}else{els.gameMenu.classList.remove('show');setAriaHidden(els.gameMenu,true)}};
-window.addEventListener('keydown',e=>{if(e.key!=='Escape')return;if(G.chosen){cancelTargeting();return}if(!els.gameMenu)return;const t=els.gameMenu.classList.contains('show');t?toggleGameMenu(false):toggleGameMenu(true)});document.addEventListener('click',e=>{if(!G.chosen)return;if(e.target.closest('#aiBoard .card.selectable')||e.target.closest('#playerBoard .card.selectable')||e.target.closest('#aiBoard .face-attack-btn')||e.target.closest('#directAttackHint'))return;cancelTargeting()},{capture:true});
+const toggleGameMenu=open=>{if(!els.gameMenu)return;if(open){els.gameMenu.classList.add('show');emitSystemOverlay(true, 'gameMenu');setAriaHidden(els.gameMenu,false);focusDialog(els.gameMenu);updateRestartVisibility();}else{els.gameMenu.classList.remove('show');emitSystemOverlay(false, 'gameMenu');setAriaHidden(els.gameMenu,true)}};
+function toggleSimpleDialog(dialog, open){
+  if(!dialog) return;
+  dialog.style.display = open ? 'grid' : 'none';
+  setAriaHidden(dialog, !open);
+  if(open) focusDialog(dialog);
+}
+function initTestMenu(){
+  const testMenuBtn = document.getElementById('menuTestes');
+  const testModal = document.getElementById('testModal');
+  const closeTestBtn = document.getElementById('closeTest');
+  const testBindings = [
+    ['testMapBtn', 'map'],
+    ['testEventBtn', 'event'],
+    ['testRestBtn', 'rest'],
+    ['testRelicBtn', 'relic'],
+    ['testRewardsBtn', 'rewards'],
+    ['testRemovalBtn', 'removal'],
+    ['testUpgradeBtn', 'upgrade'],
+    ['testRewardCardBtn', 'reward-card'],
+    ['testEncyBtn', 'ency'],
+    ['testShopBtn', 'shop'],
+    ['testVisualFxBtn', 'visual-fx'],
+    ['testStoryWinBtn', 'story-win'],
+    ['testTotemBtn', 'totem']
+  ];
+
+  if(window.__FFF_DEV_MODE__ && testMenuBtn){
+    testMenuBtn.hidden = false;
+    testMenuBtn.removeAttribute('aria-hidden');
+    testMenuBtn.removeAttribute('tabindex');
+  }
+
+  if(testMenuBtn && !testMenuBtn.dataset.bound){
+    testMenuBtn.addEventListener('click', ()=>toggleSimpleDialog(testModal, true));
+    testMenuBtn.dataset.bound = '1';
+  }
+  if(closeTestBtn && !closeTestBtn.dataset.bound){
+    closeTestBtn.addEventListener('click', ()=>toggleSimpleDialog(testModal, false));
+    closeTestBtn.dataset.bound = '1';
+  }
+  if(testModal && !testModal.dataset.bound){
+    testModal.addEventListener('click', event => {
+      if(event.target === testModal){
+        toggleSimpleDialog(testModal, false);
+      }
+    });
+    testModal.dataset.bound = '1';
+  }
+
+  testBindings.forEach(([id, kind]) => {
+    const btn = document.getElementById(id);
+    if(!btn || btn.dataset.bound) return;
+    btn.addEventListener('click', () => {
+      toggleSimpleDialog(testModal, false);
+      runGameTest(kind);
+    });
+    btn.dataset.bound = '1';
+  });
+}
+window.addEventListener('keydown',e=>{if(e.key!=='Escape')return;if(confirmModalResolver){confirmModalResolver(false);return;}if(G.chosen){cancelTargeting();return}if(!els.gameMenu)return;const t=els.gameMenu.classList.contains('show');t?toggleGameMenu(false):toggleGameMenu(true)});document.addEventListener('click',e=>{if(!G.chosen)return;if(e.target.closest('#aiBoard .card.selectable')||e.target.closest('#playerBoard .card.selectable')||e.target.closest('#aiBoard .face-attack-btn')||e.target.closest('#directAttackHint'))return;cancelTargeting()},{capture:true});
 document.addEventListener('pointermove',e=>{if(!G.chosen)return;const from=attackerCenter(G.chosen);if(from)showAttackArrow(from.x,from.y,e.clientX,e.clientY);},{capture:true});
-function confirmExit(){return G.mode==='story'?confirm('Progresso da história será perdido. Continuar?'):confirm('Tem certeza?');}
+function confirmExit(){return askGameConfirmation(G.mode==='story'?'Progresso da história será perdido. Continuar?':'Tem certeza?',{title:'Sair da partida',confirmLabel:'Continuar'});}
 if(els.openMenuBtn)els.openMenuBtn.addEventListener('click',()=>{toggleGameMenu(true)});
 if(els.closeMenuBtn)els.closeMenuBtn.addEventListener('click',()=>{toggleGameMenu(false)});
-if(els.mainMenuBtn)els.mainMenuBtn.addEventListener('click',()=>{if(!confirmExit())return;toggleGameMenu(false);cleanupTransientUi();showAppScreen('title');applyBattleTheme(null);cleanupGameElements();startMenuMusic('menu');if(window.isMultiplayer&&window.NET){NET.disconnect();}window.isMultiplayer=false;window.mpState=null;G.storyVariant=null;const custom=document.querySelector('.deckbtn[data-deck="custom"]');custom&&(custom.style.display='');if(els.startGame){els.startGame.textContent='PLAY';els.startGame.disabled=true;}});
-if(els.restartBtn)els.restartBtn.addEventListener('click',()=>{if(window.isMultiplayer)return;if(!confirmExit())return;toggleGameMenu(false);startGame()});
-if(els.resignBtn)els.resignBtn.addEventListener('click',()=>{if(!confirmExit())return;toggleGameMenu(false);if(window.isMultiplayer&&window.NET){NET.resign();}endGame(false)});
+if(els.mainMenuBtn)els.mainMenuBtn.addEventListener('click',async ()=>{if(!await confirmExit())return;toggleGameMenu(false);cleanupTransientUi();showAppScreen('title');applyBattleTheme(null);cleanupGameElements();startMenuMusic('menu');if(window.isMultiplayer&&window.NET){NET.disconnect();}window.isMultiplayer=false;window.mpState=null;G.storyVariant=null;const custom=document.querySelector('.deckbtn[data-deck="custom"]');custom&&(custom.style.display='');if(els.startGame){els.startGame.textContent='PLAY';els.startGame.disabled=true;}});
+if(els.restartBtn)els.restartBtn.addEventListener('click',async ()=>{if(window.isMultiplayer)return;if(!await confirmExit())return;toggleGameMenu(false);startGame()});
+if(els.resignBtn)els.resignBtn.addEventListener('click',async ()=>{if(!await confirmExit())return;toggleGameMenu(false);if(window.isMultiplayer&&window.NET){NET.resign();}endGame(false)});
 if(els.emojiBar){els.emojiBar.querySelectorAll('.emoji-btn').forEach(b=>b.addEventListener('click',()=>{const em=b.dataset.emoji;showEmoji('player',em);if(window.isMultiplayer&&window.NET){NET.sendEmoji(em)}}));}
 const DECK_TAGLINES={vikings:'Cura e protecao',animais:'Ataque bruto',pescadores:'Suporte e bonus',floresta:'Pressao constante'};
 const LOCKED_DECK_CARD={key:'locked',title:'???',tag:'Novos decks poderao ser desbloqueados',locked:true,variant:'mystery'};
@@ -6021,21 +6573,24 @@ function deckBackUrl(deck){
   return primaryDeckAssetUrl(deck,'deck-back');
 }
 function preloadCarouselImage(src){
-  return new Promise(resolve=>{
-    if(!src){ resolve(); return; }
-    const img=new Image();
-    img.onload=()=>resolve();
-    img.onerror=()=>resolve();
-    img.src=src;
-  });
+  return preloadImageUrl(src);
 }
 function preloadDeckCarouselAssets(){
   if(deckCarouselPreloadPromise) return deckCarouselPreloadPromise;
   const urls=ALL_DECKS.map(deck=>deckBackUrl(deck)).filter(Boolean);
+  urls.push('img/ui/DeckBackUnlock.webp');
   deckCarouselPreloadPromise=Promise.all(urls.map(preloadCarouselImage)).then(()=>undefined,()=>undefined);
   return deckCarouselPreloadPromise;
 }
 window.preloadDeckCarouselAssets = preloadDeckCarouselAssets;
+window.preloadDeckPreviewAssets = preloadDeckPreviewAssets;
+function preloadDeckScreenAssets(){
+  return Promise.all([
+    preloadDeckCarouselAssets(),
+    ...ALL_DECKS.map(deck=>preloadDeckPreviewAssets(deck))
+  ]).then(()=>undefined,()=>undefined);
+}
+window.preloadDeckScreenAssets = preloadDeckScreenAssets;
 function stopDeckCarouselSpin(){
   if(deckCarouselAnimationFrame){
     cancelAnimationFrame(deckCarouselAnimationFrame);
@@ -6108,16 +6663,16 @@ function nearestDeckCarouselIndexFromPoint(root, clickX){
 function deckCardMarkup(item){
   if(item.locked){
     if(item.variant==='unlock'){
-      return `<span class="deck-locked-art deck-locked-art-unlock" aria-hidden="true"><img src="img/ui/DeckBackUnlock.png" alt="" loading="lazy" decoding="async"><span class="deck-locked-overlay"></span><span class="deck-locked-icon"><img src="img/ui/Locker.png" alt="" loading="lazy" decoding="async"></span></span>`;
+      return `<span class="deck-back-frame deck-back-frame-carousel deck-locked-art deck-locked-art-unlock" aria-hidden="true"><img src="img/ui/DeckBackUnlock.webp" alt="" class="deck-locked-back" loading="eager" decoding="async"><span class="deck-locked-icon"><img src="img/ui/Locker.png" alt="" loading="eager" decoding="async"></span></span>`;
     }
     return `<svg viewBox="0 0 175 230" aria-hidden="true" focusable="false"><rect x="0" y="0" width="175" height="230" rx="18" fill="#0c1430"/><text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" font-size="108" font-family="'Press Start 2P', monospace" fill="#eef4ff">?</text></svg>`;
   }
-  return `<img src="${deckBackUrl(item.key)}" alt="${item.title}" loading="lazy" decoding="async" data-deck-back="${item.key}">`;
+  return `<span class="deck-back-frame deck-back-frame-carousel"><img src="${deckBackUrl(item.key)}" alt="${item.title}" loading="eager" decoding="async" data-deck-back="${item.key}"></span>`;
 }
 function previewDeckCards(deck){
   return (TEMPLATES[deck]||[]).slice(0,9).map(raw=>Object.assign(makeCard(raw),{deck}));
 }
-function openDeckPreview(deck){
+async function openDeckPreview(deck){
   const startScreen=document.getElementById('start');
   const screen=document.getElementById('deckPreviewScreen');
   const title=document.getElementById('deckPreviewTitle');
@@ -6127,10 +6682,14 @@ function openDeckPreview(deck){
   const previewDifficulty=document.getElementById('deckPreviewDifficulty');
   if(!screen||!title||!sub||!grid||!back) return;
   deckPreviewSelection = deck;
-  if(startScreen) startScreen.classList.add('preview-open');
+  if(startScreen){
+    startScreen.classList.add('preview-open');
+    startScreen.setAttribute('data-deck-theme', deck || 'locked');
+  }
   if(previewDifficulty && document.getElementById('difficulty')){
     previewDifficulty.value = document.getElementById('difficulty').value;
   }
+  await preloadDeckPreviewAssets(deck);
   title.textContent = DECK_TITLES[deck] || deck;
   sub.textContent = '9 cartas';
   attachAssetFallback(back, deckAssetCandidates(deck,'deck-back'));
@@ -6151,6 +6710,11 @@ function openDeckPreview(deck){
   screen.hidden = false;
   screen.classList.add('show');
   screen.setAttribute('aria-hidden','false');
+  try{
+    if(window.FFFEvents && typeof window.FFFEvents.emit === 'function'){
+      window.FFFEvents.emit('deck:preview:open', { deck });
+    }
+  }catch(_){ }
 }
 function closeDeckPreview(){
   const startScreen=document.getElementById('start');
@@ -6160,6 +6724,11 @@ function closeDeckPreview(){
   screen.hidden = true;
   screen.classList.remove('show');
   screen.setAttribute('aria-hidden','true');
+  try{
+    if(window.FFFEvents && typeof window.FFFEvents.emit === 'function'){
+      window.FFFEvents.emit('deck:preview:close', { deck: deckPreviewSelection });
+    }
+  }catch(_){ }
 }
 function applyDeckSelection(pick){
   G.playerDeckChoice=pick;
@@ -6289,8 +6858,9 @@ function initCommonButtonHover(){
 if(document.readyState!=='loading'){
   initDeckButtons();
   initCommonButtonHover();
+  initTestMenu();
 } else {
-  document.addEventListener('DOMContentLoaded',()=>{ initDeckButtons(); initCommonButtonHover(); });
+  document.addEventListener('DOMContentLoaded',()=>{ initDeckButtons(); initCommonButtonHover(); initTestMenu(); });
 }
 [
   { id:'drawPile', title:'Seu Deck', getCards:()=>G.playerDeck, owner:'player' },
@@ -6308,9 +6878,10 @@ const pileViewerClose = document.getElementById('pileViewerClose');
 const pileViewerBackdrop = document.getElementById('pileViewerBackdrop');
 if(pileViewerClose) pileViewerClose.addEventListener('click', closePileViewer);
 if(pileViewerBackdrop) pileViewerBackdrop.addEventListener('click', closePileViewer);
-if(els.endBtn){ els.endBtn.addEventListener('click', endTurn); }
+if(els.endBtn){ els.endBtn.addEventListener('click', ()=>{ emitVisualEvent('visual:turn-ui', { side:'player', yourTurn:true, source:'end-turn' }); endTurn(); }); }
 if(els.instantWinBtn){
   els.instantWinBtn.addEventListener('click', ()=>{
+    emitVisualEvent('visual:turn-ui', { side:'player', yourTurn:true, source:'instant-win' });
     if(G.mode!=='story'||!window.storyTestMode) return;
     G.aiHP = 0;
     try{ particleOnFace('ai','explosion'); }catch(_){ }
@@ -6321,8 +6892,11 @@ if(els.instantWinBtn){
 }
 if(els.saveDeck)els.saveDeck.addEventListener('click',()=>{if(G.customDeck&&G.customDeck.length){els.deckBuilder.style.display='none';els.startGame.disabled=false;}});
 els.startGame.addEventListener('click',()=>{if(els.startGame.disabled)return;if(window.isMultiplayer){if(window.mpState==='readyStart'){NET.startReady();window.mpState='waitingStart';els.startGame.textContent='Aguardando oponente iniciar...';els.startGame.disabled=true}else if(!window.mpState){NET.deckChoice(G.playerDeckChoice);if(window.opponentConfirmed){window.mpState='readyStart';els.startGame.textContent='PLAY';els.startGame.disabled=false}else{window.mpState='waitingDeck';els.startGame.textContent='Aguardando oponente confirmar deck...';els.startGame.disabled=true}}}else{if(window.currentGameMode==='story2'){startStory2();return;}showAppScreen('game');initAudio();ensureRunning();stopMenuMusic();startGame()}});
-els.openEncy.addEventListener('click',()=>renderEncy('all',false));els.closeEncy.addEventListener('click',()=>{closeEncyCardFocus();els.ency.classList.remove('show');setAriaHidden(els.ency,true)});$$('.filters .fbtn').forEach(b=>b.addEventListener('click',()=>{closeEncyCardFocus();renderEncy(b.dataset.deck,false)}));
-els.playAgainBtn.addEventListener('click',()=>{if(!confirmExit())return;if(window.isMultiplayer){showMultiplayerDeckSelect();hideEndOverlay();}else{hideEndOverlay();startGame()}});els.rematchBtn.addEventListener('click',()=>{if(!confirmExit())return;if(window.isMultiplayer&&window.NET){NET.requestRematch();els.rematchBtn.disabled=true;els.endSub.textContent='Aguardando oponente';}else{hideEndOverlay();startGame()}});els.menuBtn.addEventListener('click',()=>{if(!confirmExit())return;hideEndOverlay();cleanupTransientUi();applyBattleTheme(null);showAppScreen('deck');cleanupGameElements();startMenuMusic('menu');if(window.isMultiplayer&&window.NET){NET.disconnect();}window.isMultiplayer=false;window.mpState=null;G.storyVariant=null;const custom=document.querySelector('.deckbtn[data-deck="custom"]');custom&&(custom.style.display='');if(els.startGame){els.startGame.textContent='PLAY';els.startGame.disabled=true;}});
+els.openEncy.addEventListener('click',()=>renderEncy('all',false));els.closeEncy.addEventListener('click',()=>{closeEncyCardFocus();els.ency.classList.remove('show');setAriaHidden(els.ency,true);try{if(window.FFFEvents&&typeof window.FFFEvents.emit==='function'){window.FFFEvents.emit('overlay:archive:close',{id:'ency'});}}catch(_){ }});$$('.filters .fbtn').forEach(b=>b.addEventListener('click',()=>{closeEncyCardFocus();renderEncy(b.dataset.deck,false)}));
+els.playAgainBtn.addEventListener('click',async ()=>{if(!await confirmExit())return;if(window.isMultiplayer){showMultiplayerDeckSelect();hideEndOverlay();}else{hideEndOverlay();startGame()}});els.rematchBtn.addEventListener('click',async ()=>{if(!await confirmExit())return;if(window.isMultiplayer&&window.NET){NET.requestRematch();els.rematchBtn.disabled=true;els.endSub.textContent='Aguardando oponente';}else{hideEndOverlay();startGame()}});els.menuBtn.addEventListener('click',async ()=>{if(!await confirmExit())return;hideEndOverlay();cleanupTransientUi();applyBattleTheme(null);showAppScreen('deck');cleanupGameElements();startMenuMusic('menu');if(window.isMultiplayer&&window.NET){NET.disconnect();}window.isMultiplayer=false;window.mpState=null;G.storyVariant=null;const custom=document.querySelector('.deckbtn[data-deck="custom"]');custom&&(custom.style.display='');if(els.startGame){els.startGame.textContent='PLAY';els.startGame.disabled=true;}});
+if(els.confirmOkBtn && !els.confirmOkBtn.dataset.bound){els.confirmOkBtn.addEventListener('click',()=>{if(confirmModalResolver) confirmModalResolver(true);});els.confirmOkBtn.dataset.bound='1';}
+if(els.confirmCancelBtn && !els.confirmCancelBtn.dataset.bound){els.confirmCancelBtn.addEventListener('click',()=>{if(confirmModalResolver) confirmModalResolver(false);});els.confirmCancelBtn.dataset.bound='1';}
+if(els.confirmModal && !els.confirmModal.dataset.bound){els.confirmModal.addEventListener('click',event=>{if(event.target===els.confirmModal && confirmModalResolver) confirmModalResolver(false);});els.confirmModal.dataset.bound='1';}
 window.startTotemTest=()=>{
   window.currentGameMode='solo';
   const deck=[
@@ -6453,6 +7027,7 @@ function playFromHand(id,st){
     openTotemConfirm(node||document.body, doConfirm, ()=>{});
     return;
   }
+  emitCardPlayed(c,{ side:'player', stance:c.type==='spell' ? 'spell' : (st||'attack'), source:'playFromHand' });
   G.playerHand.splice(i,1); G.playerMana-=c.cost;
   summon('player',c,st); renderAll(); sfx(st==='defense'?'defense':'play')
 }
@@ -6486,6 +7061,7 @@ window._activateTotemByIdImpl = function(cardId, anchor){
   if(i<0) return;
   const c = G.playerHand[i];
   if(G.totems.length>=3){ log('Número máximo de Totens atingido.'); return; }
+  emitCardPlayed(c,{ side:'player', stance:'totem', source:'activateTotem' });
   G.playerHand.splice(i,1); G.playerMana-=c.cost;
   const t={
     id:c.id,
@@ -6542,6 +7118,466 @@ function ensureTestBattleState(){
   renderAll();
   stackHand();
 }
+const VISUAL_FX_LAB_CARD_ID = 'visual-fx-lab-card';
+function getVisualFxLabCard(){
+  const raw = (TEMPLATES.vikings||[])[0] || (TEMPLATES.animais||[])[0] || null;
+  if(!raw) return null;
+  const card = makeCard(raw);
+  card.id = VISUAL_FX_LAB_CARD_ID;
+  card.atk = card.baseAtk = 4;
+  card.hp = card.baseHp = 5;
+  card.cost = Math.max(1, card.cost || 1);
+  card._labPreview = true;
+  return card;
+}
+function ensureVisualFxLabPreview(){
+  const slot = document.getElementById('visualFxCardSlot');
+  if(!slot) return null;
+  let node = slot.querySelector(`.card[data-id="${VISUAL_FX_LAB_CARD_ID}"]`);
+  if(node) return node;
+  const card = getVisualFxLabCard();
+  if(!card) return null;
+  slot.innerHTML = '';
+  node = cardNode(card, 'player', true);
+  node.dataset.id = VISUAL_FX_LAB_CARD_ID;
+  node.classList.add('visual-fx-lab-card');
+  slot.appendChild(node);
+  return node;
+}
+function clearVisualFxLabOverlay(){
+  const overlay = document.getElementById('visualFxOverlay');
+  if(overlay) overlay.innerHTML = '';
+}
+function spawnVisualFxLabNode(className, styles={}){
+  const overlay = document.getElementById('visualFxOverlay');
+  if(!overlay) return null;
+  const node = document.createElement('div');
+  node.className = className;
+  Object.keys(styles).forEach(key => node.style.setProperty(key, styles[key]));
+  overlay.appendChild(node);
+  return node;
+}
+function visualFxLabBounds(){
+  const overlay = document.getElementById('visualFxOverlay');
+  const card = ensureVisualFxLabPreview();
+  if(!overlay || !card) return null;
+  const overlayRect = overlay.getBoundingClientRect();
+  const cardRect = card.getBoundingClientRect();
+  return {
+    overlay,
+    left: cardRect.left - overlayRect.left,
+    top: cardRect.top - overlayRect.top,
+    width: cardRect.width,
+    height: cardRect.height,
+    centerX: (cardRect.left - overlayRect.left) + (cardRect.width / 2),
+    centerY: (cardRect.top - overlayRect.top) + (cardRect.height / 2)
+  };
+}
+function flashVisualFxLabCard(className, duration=360){
+  const card = ensureVisualFxLabPreview();
+  if(!card) return;
+  card.classList.remove(className);
+  void card.offsetWidth;
+  card.classList.add(className);
+  setTimeout(()=>{ try{ card.classList.remove(className); }catch(_){ } }, duration);
+}
+function runVisualFxLabAction(action){
+  const bounds = visualFxLabBounds();
+  if(!bounds) return;
+  clearVisualFxLabOverlay();
+  const toneMap = {
+    battle: '#7cc4ff',
+    end: '#fb7185',
+    spell: '#a78bfa',
+    totem: '#22d3ee',
+    damage: '#fb7185',
+    heal: '#4ade80',
+    mana: '#60a5fa',
+    buff: '#facc15',
+    debuff: '#f97316'
+  };
+  const themedAttackMap = {
+    flame: { primary: '#f97316', secondary: '#fb7185', accent: '#fdba74', label: 'Flame' },
+    storm: { primary: '#a78bfa', secondary: '#60a5fa', accent: '#e9d5ff', label: 'Storm' },
+    tidal: { primary: '#38bdf8', secondary: '#22d3ee', accent: '#e0f2fe', label: 'Tidal' },
+    feral: { primary: '#84cc16', secondary: '#facc15', accent: '#fef08a', label: 'Feral' },
+    heavy: { primary: '#f59e0b', secondary: '#fb7185', accent: '#ffedd5', label: 'Heavy' },
+    mystic: { primary: '#c084fc', secondary: '#67e8f9', accent: '#f5d0fe', label: 'Mystic' }
+  };
+  const themedEntryMap = {
+    mystic: { primary: '#c084fc', secondary: '#67e8f9', accent: '#f5d0fe', label: 'Entrada' },
+    floresta: { primary: '#4ade80', secondary: '#84cc16', accent: '#dcfce7', label: 'Broto' }
+  };
+  const themedSupportMap = {
+    floresta: { primary: '#4ade80', secondary: '#84cc16', accent: '#dcfce7', label: '+2 HP' },
+    pescadores: { primary: '#38bdf8', secondary: '#22d3ee', accent: '#e0f2fe', label: '+1 Mana' },
+    feral: { primary: '#84cc16', secondary: '#facc15', accent: '#fef08a', label: 'Buff' },
+    heavy: { primary: '#f59e0b', secondary: '#fb7185', accent: '#ffedd5', label: 'Debuff' }
+  };
+  const ring = (color, scale='1') => spawnVisualFxLabNode('visual-fx-ring', {
+    '--fx-color': color,
+    left: `${bounds.left}px`,
+    top: `${bounds.top}px`,
+    width: `${bounds.width}px`,
+    height: `${bounds.height}px`,
+    transform: `scale(${scale})`
+  });
+  const flash = color => spawnVisualFxLabNode('visual-fx-flash', {
+    '--fx-color': color,
+    left: `${bounds.left}px`,
+    top: `${bounds.top}px`,
+    width: `${bounds.width}px`,
+    height: `${bounds.height}px`
+  });
+  const pill = (color, text, yOffset=0) => {
+    const node = spawnVisualFxLabNode('visual-fx-pill', {
+      '--fx-color': color,
+      left: `${bounds.centerX}px`,
+      top: `${bounds.centerY + yOffset}px`
+    });
+    if(node) node.textContent = text;
+  };
+  const orb = (color, x, y) => spawnVisualFxLabNode('visual-fx-orb', {
+    '--fx-color': color,
+    left: `${x}px`,
+    top: `${y}px`
+  });
+  const slash = (color, rot) => spawnVisualFxLabNode('visual-fx-slash', {
+    '--fx-color': color,
+    '--fx-rot': `${rot}deg`,
+    left: `${bounds.centerX}px`,
+    top: `${bounds.centerY}px`,
+    width: `${Math.max(54, bounds.width * 0.42)}px`
+  });
+  const themedAttack = theme => {
+    const palette = themedAttackMap[theme];
+    if(!palette) return;
+    flashVisualFxLabCard('hit');
+    ring(palette.primary, '.9');
+    flash(palette.accent);
+    slash(palette.secondary, 32);
+    slash(palette.accent, -28);
+    orb(palette.primary, bounds.centerX - 12, bounds.centerY + 10);
+    orb(palette.secondary, bounds.centerX + 14, bounds.centerY - 4);
+    pill(palette.primary, palette.label, -4);
+  };
+  const themedEntry = theme => {
+    const palette = themedEntryMap[theme];
+    if(!palette) return;
+    ring(palette.primary, '.84');
+    flash(palette.accent);
+    orb(palette.secondary, bounds.centerX - 16, bounds.centerY + 14);
+    orb(palette.primary, bounds.centerX + 16, bounds.centerY + 8);
+    pill(palette.primary, palette.label, -8);
+  };
+  const themedSupport = (theme, kind) => {
+    const palette = themedSupportMap[theme];
+    if(!palette) return;
+    if(kind === 'heal' || kind === 'buff') flashVisualFxLabCard('buffed');
+    else flashVisualFxLabCard('hit');
+    ring(palette.primary, kind === 'debuff' ? '.94' : '.9');
+    orb(palette.secondary, bounds.centerX, bounds.centerY + 14);
+    if(kind === 'debuff'){
+      slash(palette.primary, 35);
+      slash(palette.accent, -35);
+    }else if(kind === 'buff'){
+      flash(palette.accent);
+    }
+    pill(palette.primary, palette.label, -6);
+  };
+  const abilityCue = (primary, secondary, accent, label) => {
+    ring(secondary, '.92');
+    flash(accent);
+    orb(primary, bounds.centerX, bounds.centerY + 10);
+    pill(primary, label, -8);
+  };
+  const characterCue = (primary, secondary, label) => {
+    ring(primary, '.9');
+    orb(secondary, bounds.centerX, bounds.centerY + 6);
+    pill(primary, label, -8);
+  };
+  const textFloat = (primary, label) => {
+    orb(primary, bounds.centerX, bounds.centerY + 4);
+    pill(primary, label, -4);
+  };
+  const bannerFx = (primary, title, subtitle='') => {
+    ring(primary, '1.06');
+    flash(primary);
+    pill(primary, title, -26);
+    if(subtitle) pill(primary, subtitle, 8);
+  };
+  const arrowFx = () => {
+    slash('#60a5fa', -12);
+    slash('#e0e7ff', -12);
+    orb('#60a5fa', bounds.centerX + Math.max(48, bounds.width * 0.34), bounds.centerY - 8);
+  };
+  const faceBurst = (color, text) => {
+    ring(color, '1.06');
+    flash(color);
+    pill(color, text, -8);
+    slash(color, 35);
+    slash(color, -35);
+  };
+
+  switch(action){
+    case 'battle-start':
+      ring(toneMap.battle, '.92');
+      flash(toneMap.battle);
+      pill(toneMap.battle, 'Batalha', -8);
+      break;
+    case 'battle-end':
+      ring(toneMap.end, '1');
+      flash(toneMap.end);
+      pill(toneMap.end, 'Fim', -8);
+      break;
+    case 'play-unit':
+      ring(toneMap.mana, '.82');
+      flash(toneMap.mana);
+      orb(toneMap.mana, bounds.centerX, bounds.centerY);
+      pill(toneMap.mana, 'Invocar', -8);
+      break;
+    case 'play-spell':
+      ring(toneMap.spell, '.84');
+      orb(toneMap.spell, bounds.centerX - 18, bounds.centerY + 14);
+      orb(toneMap.spell, bounds.centerX + 18, bounds.centerY + 10);
+      pill(toneMap.spell, 'Spell', -8);
+      break;
+    case 'play-totem':
+      ring(toneMap.totem, '.86');
+      flash(toneMap.totem);
+      pill(toneMap.totem, 'Totem', -8);
+      break;
+    case 'play-mystic':
+      themedEntry('mystic');
+      break;
+    case 'play-floresta':
+      themedEntry('floresta');
+      break;
+    case 'impact-card':
+      flashVisualFxLabCard('hit');
+      ring(toneMap.damage, '.94');
+      slash(toneMap.damage, 35);
+      slash(toneMap.damage, -35);
+      pill(toneMap.damage, 'Impacto', -4);
+      break;
+    case 'explode-card':
+      flashVisualFxLabCard('hit');
+      ring('#ffa861', '1.04');
+      flash('#ffa861');
+      orb('#ffa861', bounds.centerX - 14, bounds.centerY + 8);
+      orb('#fb7185', bounds.centerX + 14, bounds.centerY + 2);
+      pill('#ffa861', 'Explosao', -4);
+      break;
+    case 'screen-slash':
+      flashVisualFxLabCard('hit');
+      slash('#fb7185', 18);
+      slash('#ffe4e6', 18);
+      orb('#fb7185', bounds.centerX, bounds.centerY);
+      break;
+    case 'attack-flame':
+      themedAttack('flame');
+      break;
+    case 'attack-storm':
+      themedAttack('storm');
+      break;
+    case 'attack-tidal':
+      themedAttack('tidal');
+      break;
+    case 'attack-feral':
+      themedAttack('feral');
+      break;
+    case 'attack-heavy':
+      themedAttack('heavy');
+      break;
+    case 'attack-mystic':
+      themedAttack('mystic');
+      break;
+    case 'cue-mana':
+      abilityCue('#60a5fa', '#38bdf8', '#e0f2fe', 'Mana');
+      break;
+    case 'cue-spell':
+      abilityCue('#a78bfa', '#c084fc', '#f5d0fe', 'Spell');
+      break;
+    case 'cue-totem':
+      abilityCue('#22d3ee', '#67e8f9', '#ccfbf1', 'Totem');
+      break;
+    case 'cue-attack':
+      characterCue('#93c5fd', '#e0f2fe', 'Ataque');
+      break;
+    case 'cue-hit':
+      flashVisualFxLabCard('hit');
+      characterCue('#fb7185', '#ffa861', 'Hit');
+      break;
+    case 'cue-death':
+      flashVisualFxLabCard('hit');
+      characterCue('#f97316', '#fdba74', 'Morte');
+      break;
+    case 'death-burn':
+      flashVisualFxLabCard('hit');
+      ring('#f97316', '1.02');
+      orb('#f97316', bounds.centerX - 10, bounds.centerY + 14);
+      orb('#fdba74', bounds.centerX + 12, bounds.centerY + 8);
+      pill('#f97316', 'Burn', -6);
+      break;
+    case 'text-buff':
+      flashVisualFxLabCard('buffed');
+      textFloat('#facc15', '+1/+1');
+      break;
+    case 'text-heal':
+      flashVisualFxLabCard('buffed');
+      textFloat('#4ade80', '+2');
+      break;
+    case 'text-dmg':
+      flashVisualFxLabCard('hit');
+      textFloat('#fb7185', '-3');
+      break;
+    case 'banner-enemy':
+      bannerFx('#7cc4ff', 'Inimigo', 'Round 1');
+      break;
+    case 'banner-victory':
+      bannerFx('#34d399', 'Vitoria!', 'Inimigo derrotado');
+      break;
+    case 'meter-hit':
+      ring('#fb7185', '1.02');
+      pill('#fb7185', 'HP', -4);
+      break;
+    case 'meter-heal':
+      ring('#4ade80', '.98');
+      pill('#4ade80', 'Heal', -4);
+      break;
+    case 'meter-mana':
+      ring('#60a5fa', '.98');
+      pill('#60a5fa', 'Mana', -4);
+      break;
+    case 'turn-ui-player':
+      emitVisualEvent('visual:turn-ui', { side:'player', yourTurn:true, source:'visual-fx-lab' });
+      ring('#7cc4ff', '1.1');
+      flash('#7cc4ff');
+      pill('#7cc4ff', 'Seu turno', -6);
+      break;
+    case 'turn-ui-ai':
+      emitVisualEvent('visual:turn-ui', { side:'ai', yourTurn:false, source:'visual-fx-lab' });
+      ring('#fb7185', '1.1');
+      flash('#fb7185');
+      pill('#fb7185', 'Oponente', -6);
+      break;
+    case 'board-pulse':
+      ring('#7cc4ff', '1.18');
+      pill('#7cc4ff', 'Board', -4);
+      break;
+    case 'spell-cast':
+      flash('#a78bfa');
+      ring('#a78bfa', '.98');
+      orb('#c084fc', bounds.centerX, bounds.centerY + 8);
+      pill('#a78bfa', 'Spell', -6);
+      break;
+    case 'totem-cast':
+      flash('#22d3ee');
+      ring('#22d3ee', '.98');
+      orb('#67e8f9', bounds.centerX, bounds.centerY + 8);
+      pill('#22d3ee', 'Totem', -6);
+      break;
+    case 'celebration-victory':
+      ring('#34d399', '1.12');
+      flash('#34d399');
+      orb('#bbf7d0', bounds.centerX - 18, bounds.centerY + 10);
+      orb('#34d399', bounds.centerX + 18, bounds.centerY + 2);
+      pill('#34d399', 'Vitoria!', -6);
+      break;
+    case 'celebration-defeat':
+      ring('#fb7185', '1.12');
+      flash('#fb7185');
+      orb('#fecdd3', bounds.centerX - 18, bounds.centerY + 10);
+      orb('#fb7185', bounds.centerX + 18, bounds.centerY + 2);
+      pill('#fb7185', 'Derrota', -6);
+      break;
+    case 'impact-ring':
+      ring('#f59e0b', '1.08');
+      break;
+    case 'attack-arrow':
+      arrowFx();
+      break;
+    case 'damage-player':
+    case 'damage-ai':
+      flashVisualFxLabCard('hit');
+      ring(toneMap.damage, '.94');
+      slash(toneMap.damage, 35);
+      slash(toneMap.damage, -35);
+      pill(toneMap.damage, '-2 HP', -4);
+      break;
+    case 'face-player':
+      faceBurst(toneMap.damage, 'Face');
+      break;
+    case 'face-ai':
+      faceBurst('#ffa861', 'Face');
+      break;
+    case 'heal-player':
+    case 'heal-ai':
+      flashVisualFxLabCard('buffed');
+      ring(toneMap.heal, '.92');
+      orb(toneMap.heal, bounds.centerX, bounds.centerY + 14);
+      pill(toneMap.heal, '+2 HP', -6);
+      break;
+    case 'heal-floresta':
+      themedSupport('floresta', 'heal');
+      break;
+    case 'mana-player':
+    case 'mana-ai':
+      ring(toneMap.mana, '.9');
+      orb(toneMap.mana, bounds.centerX, bounds.centerY + 18);
+      pill(toneMap.mana, '+1 Mana', 0);
+      break;
+    case 'mana-pescadores':
+      themedSupport('pescadores', 'mana');
+      break;
+    case 'buff-player':
+    case 'buff-ai':
+      flashVisualFxLabCard('buffed');
+      ring(toneMap.buff, '.9');
+      flash(toneMap.buff);
+      pill(toneMap.buff, 'Buff', -6);
+      break;
+    case 'buff-feral':
+      themedSupport('feral', 'buff');
+      break;
+    case 'debuff-player':
+    case 'debuff-ai':
+      flashVisualFxLabCard('hit');
+      ring(toneMap.debuff, '.94');
+      pill(toneMap.debuff, 'Debuff', -6);
+      break;
+    case 'debuff-heavy':
+      themedSupport('heavy', 'debuff');
+      break;
+  }
+
+  const overlay = document.getElementById('visualFxOverlay');
+  if(overlay){
+    window.clearTimeout(runVisualFxLabAction._resetTimer);
+    runVisualFxLabAction._resetTimer = window.setTimeout(()=>clearVisualFxLabOverlay(), 760);
+  }
+}
+function showVisualFxLab(){
+  const modal = document.getElementById('visualFxModal');
+  const grid = document.getElementById('visualFxGrid');
+  if(!modal || !grid) return;
+  ensureVisualFxLabPreview();
+  clearVisualFxLabOverlay();
+  showModal(modal);
+  if(!grid.dataset.bound){
+    grid.addEventListener('click', (event)=>{
+      const btn = event.target && event.target.closest ? event.target.closest('[data-vfx-action]') : null;
+      if(!btn) return;
+      runVisualFxLabAction(btn.dataset.vfxAction);
+    });
+    grid.dataset.bound = '1';
+  }
+  const closeBtn = document.getElementById('visualFxClose');
+  if(closeBtn && !closeBtn.dataset.bound){
+    closeBtn.addEventListener('click', ()=>closeModal(modal));
+    closeBtn.dataset.bound = '1';
+  }
+}
 function runGameTest(kind){
   switch(kind){
     case 'shop':
@@ -6589,6 +7625,9 @@ function runGameTest(kind){
     case 'totem':
       window.startTotemTest && window.startTotemTest();
       break;
+    case 'visual-fx':
+      showVisualFxLab();
+      break;
     case 'story-battle':
       ensureTestBattleState();
       break;
@@ -6612,6 +7651,7 @@ try{
   window.showEventUpgradeOverlay = showEventUpgradeOverlay;
   window.showEventRewardOverlay = showEventRewardOverlay;
   window.renderEncy = renderEncy;
+  window.showVisualFxLab = showVisualFxLab;
   window.cleanupTransientUi = cleanupTransientUi;
   window.runGameTest = runGameTest;
 }catch(_){ }
@@ -6622,6 +7662,7 @@ function activateTotemById(cardId, anchor){
   if(i<0) return;
   const c = G.playerHand[i];
   if(G.totems.length>=3){ log('Número máximo de Totens atingido.'); return; }
+  emitCardPlayed(c,{ side:'player', stance:'totem', source:'activateTotem' });
   G.playerHand.splice(i,1); G.playerMana-=c.cost;
   const t={
     id:c.id,

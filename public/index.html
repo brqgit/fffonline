@@ -9,7 +9,7 @@
   <meta property="og:description" content="Escolha sua facção favorita e lute em partidas solo ou multiplayer.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://fffarmfightformula.com">
-  <meta property="og:image" content="img/ui/logos/logo2.png">
+  <meta property="og:image" content="img/ui/logos/logo.png">
   <link rel="icon" href="/favicon.ico" type="image/x-icon">
   <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -18,6 +18,8 @@
   <link rel="stylesheet" href="css/home.css">
   <script>
     (() => {
+      const isLiveServer = /:(5500|5501|5502)\b/.test(location.host);
+      if (isLiveServer) return;
       const protocol = location.protocol === 'https:' ? 'https:' : 'http:';
       const url = `${protocol}//${location.host}/__live_reload`;
       try {
@@ -38,17 +40,21 @@
   </script>
 </head>
 <body>
+  <div id="renderRoot" class="render-root" aria-hidden="true">
+    <div id="threeLayer" class="render-layer render-layer-three"></div>
+    <div id="pixiLayer" class="render-layer render-layer-pixi"></div>
+  </div>
   <!-- Main menu -->
   <div class="start" id="titleMenu">
     <div class="start-layout">
       <div class="brand">
         <div class="logo-secret-fan" aria-hidden="true">
-          <img src="img/decks/farm-vikings/deck-backs/fv-db-default.png" alt="" class="logo-secret-card">
-          <img src="img/decks/north-beasts/deck-backs/nb-db-default.png" alt="" class="logo-secret-card">
-          <img src="img/decks/fJord-fishers/deck-backs/jf-db-default.png" alt="" class="logo-secret-card">
-          <img src="img/decks/forest-beasts/deck-backs/fb-db-default.png" alt="" class="logo-secret-card">
+          <span class="deck-back-frame logo-secret-card-frame"><img src="img/decks/farm-vikings/deck-backs/fv-db-default.webp" alt="" class="logo-secret-card"></span>
+          <span class="deck-back-frame logo-secret-card-frame"><img src="img/decks/north-beasts/deck-backs/nb-db-default.webp" alt="" class="logo-secret-card"></span>
+          <span class="deck-back-frame logo-secret-card-frame"><img src="img/decks/fJord-fishers/deck-backs/jf-db-default.webp" alt="" class="logo-secret-card"></span>
+          <span class="deck-back-frame logo-secret-card-frame"><img src="img/decks/forest-beasts/deck-backs/fb-db-default.webp" alt="" class="logo-secret-card"></span>
         </div>
-        <img src="img/ui/logos/logo2.png" class="logo-wordmark holo-logo" alt="Farm Fight Formula logo">
+        <img src="img/ui/logos/logo.png" class="logo-wordmark holo-logo" alt="Farm Fight Formula logo">
         <div class="home-intro" aria-label="Resumo do jogo">
           <p class="home-kicker">Decks nórdicos, duelos sem pausa.</p>
         </div>
@@ -57,18 +63,15 @@
         <div class="title-menu-surface" aria-hidden="true"></div>
         <div class="title-menu-content">
           <div class="main-actions">
-            <button class="btn" id="menuPlay" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="playPopup">Jogar</button>
-            <button class="btn" id="menuOptions" type="button">Opções</button>
-            <button class="btn" id="menuTestes" type="button" hidden aria-hidden="true" tabindex="-1">Testes</button>
+            <button class="btn" id="menuPlayStory" type="button"><span class="menu-btn-label">História</span></button>
+            <button class="btn" id="menuPlayStory2" type="button" hidden><span class="menu-btn-label">História 2 (beta)</span></button>
+            <button class="btn" id="menuPlayQuick" type="button"><span class="menu-btn-label">Partida rápida</span></button>
+            <button class="btn" id="menuPlayMulti" type="button" hidden aria-hidden="true" tabindex="-1"><span class="menu-btn-label">Multiplayer</span></button>
+            <button class="btn" id="openEncy" type="button"><span class="menu-btn-label">Decks</span></button>
+            <button class="btn" id="menuOptions" type="button"><span class="menu-btn-label">Opções</span></button>
+            <button class="btn" id="menuTestes" type="button" hidden aria-hidden="true" tabindex="-1"><span class="menu-btn-label">Testes</span></button>
           </div>
         </div>
-      </div>
-      <div class="play-popup" id="playPopup" role="menu" aria-labelledby="menuPlay" aria-orientation="vertical" hidden>
-        <button class="btn" id="menuPlayStory" type="button" role="menuitem">História</button>
-        <button class="btn" id="menuPlayStory2" type="button" role="menuitem" hidden>História 2 (beta)</button>
-        <button class="btn" id="menuPlayQuick" type="button" role="menuitem">Partida rápida</button>
-        <button class="btn" id="menuPlayMulti" type="button" role="menuitem">Multiplayer</button>
-        <button class="btn" id="openEncy" type="button" role="menuitem">Enciclopédia</button>
       </div>
     </div>
   </div>
@@ -118,7 +121,7 @@
             <div class="deck-preview-layout">
               <div class="deck-preview-grid" id="deckPreviewGrid"></div>
               <div class="deck-preview-hero">
-                <img id="deckPreviewBack" alt="Verso do deck" loading="lazy" decoding="async">
+                <span class="deck-back-frame deck-back-frame-preview"><img id="deckPreviewBack" alt="Verso do deck" loading="eager" decoding="async"></span>
               </div>
             </div>
           </div>
@@ -191,9 +194,92 @@
       <button class="btn" id="testRewardCardBtn">Carta de Evento</button>
       <button class="btn" id="testEncyBtn">Enciclopédia</button>
       <button class="btn" id="testShopBtn">Abrir Loja</button>
+      <button class="btn" id="testVisualFxBtn">Laboratório Visual</button>
       <button class="btn" id="testStoryWinBtn">Vitória instantânea (História)</button>
       <button class="btn" id="testTotemBtn">Totens</button>
       <button class="btn-ghost" id="closeTest">Fechar</button>
+    </div>
+  </div>
+
+  <div id="visualFxModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="visualFxTitle" aria-hidden="true">
+    <div class="box">
+      <div class="visual-fx-head">
+        <h2 id="visualFxTitle" style="margin-top:0">Laboratório Visual</h2>
+        <p class="sub" style="margin-bottom:0">Dispare efeitos visuais atuais e use esta tela para validar novos VFX.</p>
+      </div>
+      <div class="visual-fx-layout">
+        <div class="visual-fx-stage" id="visualFxStage">
+          <div class="visual-fx-stage-copy">Carta de demonstração</div>
+          <div class="visual-fx-card-wrap">
+            <div class="visual-fx-card-slot" id="visualFxCardSlot"></div>
+            <div class="visual-fx-overlay" id="visualFxOverlay" aria-hidden="true"></div>
+          </div>
+        </div>
+        <aside class="visual-fx-panel">
+          <div class="visual-fx-panel-head">Biblioteca de efeitos</div>
+          <div class="visual-fx-grid" id="visualFxGrid">
+            <button class="btn" type="button" data-vfx-action="battle-start">Pulso de batalha</button>
+            <button class="btn" type="button" data-vfx-action="battle-end">Pulso de fim</button>
+            <button class="btn" type="button" data-vfx-action="play-unit">Entrada unidade</button>
+            <button class="btn" type="button" data-vfx-action="play-spell">Entrada spell</button>
+            <button class="btn" type="button" data-vfx-action="play-totem">Entrada totem</button>
+            <button class="btn" type="button" data-vfx-action="play-mystic">Entrada mystic</button>
+            <button class="btn" type="button" data-vfx-action="play-floresta">Entrada floresta</button>
+            <button class="btn" type="button" data-vfx-action="impact-card">Impacto carta</button>
+            <button class="btn" type="button" data-vfx-action="explode-card">Explosão carta</button>
+            <button class="btn" type="button" data-vfx-action="screen-slash">Slash de tela</button>
+            <button class="btn" type="button" data-vfx-action="attack-flame">Ataque flame</button>
+            <button class="btn" type="button" data-vfx-action="attack-storm">Ataque storm</button>
+            <button class="btn" type="button" data-vfx-action="attack-tidal">Ataque tidal</button>
+            <button class="btn" type="button" data-vfx-action="attack-feral">Ataque feral</button>
+            <button class="btn" type="button" data-vfx-action="attack-heavy">Ataque heavy</button>
+            <button class="btn" type="button" data-vfx-action="attack-mystic">Ataque mystic</button>
+            <button class="btn" type="button" data-vfx-action="cue-mana">Cue mana</button>
+            <button class="btn" type="button" data-vfx-action="cue-spell">Cue spell</button>
+            <button class="btn" type="button" data-vfx-action="cue-totem">Cue totem</button>
+            <button class="btn" type="button" data-vfx-action="cue-attack">Cue ataque</button>
+            <button class="btn" type="button" data-vfx-action="cue-hit">Cue hit</button>
+            <button class="btn" type="button" data-vfx-action="cue-death">Cue morte</button>
+            <button class="btn" type="button" data-vfx-action="death-burn">Morte burn</button>
+            <button class="btn" type="button" data-vfx-action="text-buff">Texto buff</button>
+            <button class="btn" type="button" data-vfx-action="text-heal">Texto cura</button>
+            <button class="btn" type="button" data-vfx-action="text-dmg">Texto dano</button>
+            <button class="btn" type="button" data-vfx-action="banner-enemy">Banner enemy</button>
+            <button class="btn" type="button" data-vfx-action="banner-victory">Banner victory</button>
+            <button class="btn" type="button" data-vfx-action="meter-hit">Meter hit</button>
+            <button class="btn" type="button" data-vfx-action="meter-heal">Meter heal</button>
+            <button class="btn" type="button" data-vfx-action="meter-mana">Meter mana</button>
+            <button class="btn" type="button" data-vfx-action="turn-ui-player">UI turno player</button>
+            <button class="btn" type="button" data-vfx-action="turn-ui-ai">UI turno oponente</button>
+            <button class="btn" type="button" data-vfx-action="board-pulse">Board pulse</button>
+            <button class="btn" type="button" data-vfx-action="spell-cast">Spell cast</button>
+            <button class="btn" type="button" data-vfx-action="totem-cast">Totem cast</button>
+            <button class="btn" type="button" data-vfx-action="celebration-victory">Celebration victory</button>
+            <button class="btn" type="button" data-vfx-action="celebration-defeat">Celebration defeat</button>
+            <button class="btn" type="button" data-vfx-action="impact-ring">Impact ring</button>
+            <button class="btn" type="button" data-vfx-action="attack-arrow">Attack arrow</button>
+            <button class="btn" type="button" data-vfx-action="damage-player">Dano aliado</button>
+            <button class="btn" type="button" data-vfx-action="damage-ai">Dano inimigo</button>
+            <button class="btn" type="button" data-vfx-action="face-player">Face aliada</button>
+            <button class="btn" type="button" data-vfx-action="face-ai">Face inimiga</button>
+            <button class="btn" type="button" data-vfx-action="heal-player">Cura aliada</button>
+            <button class="btn" type="button" data-vfx-action="heal-ai">Cura inimiga</button>
+            <button class="btn" type="button" data-vfx-action="heal-floresta">Cura floresta</button>
+            <button class="btn" type="button" data-vfx-action="mana-player">Mana aliada</button>
+            <button class="btn" type="button" data-vfx-action="mana-ai">Mana inimiga</button>
+            <button class="btn" type="button" data-vfx-action="mana-pescadores">Mana pescadores</button>
+            <button class="btn" type="button" data-vfx-action="buff-player">Buff aliado</button>
+            <button class="btn" type="button" data-vfx-action="buff-ai">Buff inimigo</button>
+            <button class="btn" type="button" data-vfx-action="buff-feral">Buff feral</button>
+            <button class="btn" type="button" data-vfx-action="debuff-player">Debuff aliado</button>
+            <button class="btn" type="button" data-vfx-action="debuff-ai">Debuff inimigo</button>
+            <button class="btn" type="button" data-vfx-action="debuff-heavy">Debuff heavy</button>
+          </div>
+        </aside>
+      </div>
+      <div class="visual-fx-actions">
+        <button class="btn-ghost" id="visualFxClose" type="button">Fechar</button>
+      </div>
     </div>
   </div>
 
@@ -226,62 +312,70 @@
     <div class="game-section game-section-hud">
     <div class="hud">
       <div class="hud-panel hud-panel-left">
-        <div class="player-img" id="playerAvatar">👤</div>
-        <div class="story-player-chips">
-          <div class="story-chip" id="storyRoundChip">Round 1</div>
-          <div class="story-chip" id="storyActChip">Ato 1</div>
-        </div>
-        <div class="hud-side-content hud-side-content-left">
-          <div class="meter player hud-meter life-meter">
-            <b>Seu HP</b>
-            <div class="hud-meter-track">
-              <div class="hud-meter-fill" id="barPlayerHP">
-                <img src="./img/ui/HUD/Life.png" alt="" class="hud-meter-fill-image">
-              </div>
-              <img src="./img/ui/HUD/LifeBar.png" alt="" class="hud-meter-frame">
-              <span class="value hud-meter-value" id="playerHP">30</span>
-            </div>
+        <div class="hud-side-shell hud-side-shell-left">
+          <div class="hud-side-avatar hud-side-avatar-left">
+            <div class="player-img" id="playerAvatar">👤</div>
           </div>
-          <div class="meter mana hud-meter mana-meter">
-            <b>Mana</b>
-            <div class="hud-meter-track">
-              <div class="hud-meter-fill" id="barMana">
-                <img src="./img/ui/HUD/Mana.png" alt="" class="hud-meter-fill-image">
+          <div class="hud-side-content hud-side-content-left">
+            <div class="meter player hud-meter life-meter meter-no-label">
+              <div class="hud-meter-track">
+                <div class="hud-meter-fill" id="barPlayerHP">
+                  <img src="./img/ui/HUD/Life.png" alt="" class="hud-meter-fill-image">
+                </div>
+                <img src="./img/ui/HUD/LifeBar.png" alt="" class="hud-meter-frame">
+                <span class="value hud-meter-value" id="playerHP">30</span>
               </div>
-              <img src="./img/ui/HUD/ManaBar.png" alt="" class="hud-meter-frame">
-              <span class="value hud-meter-value" id="mana">0/0</span>
             </div>
+            <div class="meter mana hud-meter mana-meter meter-no-label">
+              <div class="hud-meter-track">
+                <div class="hud-meter-fill" id="barMana">
+                  <img src="./img/ui/HUD/Mana.png" alt="" class="hud-meter-fill-image">
+                </div>
+                <img src="./img/ui/HUD/ManaBar.png" alt="" class="hud-meter-frame">
+                <span class="value hud-meter-value" id="mana">0/0</span>
+              </div>
+            </div>
+            <div class="gold-display"><span class="coin-icon"></span><span id="playerGoldHUD">0</span></div>
           </div>
-          <div class="gold-display"><span class="coin-icon"></span><span id="playerGoldHUD">0</span></div>
         </div>
       </div>
-      <div class="hud-panel hud-panel-center center-hud">
-        <button class="btn-ghost" id="muteBtn" title="Som" aria-pressed="false">🔊 Som</button>
-        <button class="btn-ghost" id="openMenuBtn" title="Menu">☰ Menu</button>
+      <div class="hud-panel hud-panel-center">
+        <div class="center-hud-shell">
+          <div class="center-hud-top center-hud">
+            <button class="btn-ghost" id="muteBtn" title="Som" aria-pressed="false">🔊 Som</button>
+            <button class="btn-ghost" id="openMenuBtn" title="Menu">☰ Menu</button>
+          </div>
+          <div class="center-hud-bottom">
+            <div class="story-chip" id="storyRoundChip">Round 1</div>
+            <div class="story-chip" id="storyActChip">Ato 1</div>
+          </div>
+        </div>
       </div>
       <div class="hud-panel hud-panel-right enemy-hud">
-        <div class="enemy-img" id="aiAvatar">🧿</div>
-        <div class="hud-side-content hud-side-content-right">
-          <div class="meter enemy hud-meter life-meter">
-            <b>HP Inimigo</b>
-            <span class="opp-label" id="opponentLabel"></span>
-            <div class="hud-meter-track">
-              <div class="hud-meter-fill" id="barAiHP">
-                <img src="./img/ui/HUD/Life.png" alt="" class="hud-meter-fill-image">
+        <div class="hud-side-shell hud-side-shell-right">
+          <div class="hud-side-content hud-side-content-right">
+            <div class="meter mana enemy-mana hud-meter mana-meter meter-no-label">
+              <div class="hud-meter-track">
+                <div class="hud-meter-fill" id="barAiMana">
+                  <img src="./img/ui/HUD/Mana.png" alt="" class="hud-meter-fill-image">
+                </div>
+                <img src="./img/ui/HUD/ManaBar.png" alt="" class="hud-meter-frame">
+                <span class="value hud-meter-value" id="aiMana">0/0</span>
               </div>
-              <img src="./img/ui/HUD/LifeBar.png" alt="" class="hud-meter-frame">
-              <span class="value hud-meter-value" id="aiHP">30</span>
+            </div>
+            <div class="meter enemy hud-meter life-meter meter-no-label">
+              <span class="opp-label" id="opponentLabel"></span>
+              <div class="hud-meter-track">
+                <div class="hud-meter-fill" id="barAiHP">
+                  <img src="./img/ui/HUD/Life.png" alt="" class="hud-meter-fill-image">
+                </div>
+                <img src="./img/ui/HUD/LifeBar.png" alt="" class="hud-meter-frame">
+                <span class="value hud-meter-value" id="aiHP">30</span>
+              </div>
             </div>
           </div>
-          <div class="meter mana enemy-mana hud-meter mana-meter">
-            <b>Mana</b>
-            <div class="hud-meter-track">
-              <div class="hud-meter-fill" id="barAiMana">
-                <img src="./img/ui/HUD/Mana.png" alt="" class="hud-meter-fill-image">
-              </div>
-              <img src="./img/ui/HUD/ManaBar.png" alt="" class="hud-meter-frame">
-              <span class="value hud-meter-value" id="aiMana">0/0</span>
-            </div>
+          <div class="hud-side-avatar hud-side-avatar-right">
+            <div class="enemy-img" id="aiAvatar">🧿</div>
           </div>
         </div>
       </div>
@@ -304,28 +398,36 @@
     </div>
     <div class="game-section game-section-enemy-side">
     <div class="row enemy-row">
-  <div class="pile" id="aiDrawPile"><img src="img/decks/fJord-fishers/deck-backs/jf-db-default.png" alt="deck" loading="lazy" decoding="async"><div class="pile-label">DECK</div></div>
-      <div class="board" id="aiBoard"></div>
-  <div class="pile" id="aiDiscardPile"><img src="img/decks/fJord-fishers/deck-backs/jf-db-default.png" alt="discard" loading="lazy" decoding="async"><div class="pile-label">DESCARTE</div></div>
+  <div class="pile" id="aiDrawPile"><div class="pile-back-art"><img src="img/decks/fJord-fishers/deck-backs/jf-db-default.webp" alt="deck" loading="lazy" decoding="async"></div><div class="pile-back-frame" aria-hidden="true"></div><div class="pile-label">DECK</div></div>
+      <div class="board-stage board-stage-enemy">
+        <div class="board" id="aiBoard"></div>
+      </div>
+  <div class="pile" id="aiDiscardPile"><div class="pile-back-art"><img src="img/decks/fJord-fishers/deck-backs/jf-db-default.webp" alt="discard" loading="lazy" decoding="async"></div><div class="pile-back-frame" aria-hidden="true"></div><div class="pile-label">DESCARTE</div></div>
     </div>
-    </div>
-    <div class="game-section game-section-turn-bar">
-    <div class="turn-bar"><div class="turn-indicator" id="turnIndicator"></div><button class="btn" id="endTurnBtn">Encerrar turno</button><button class="btn" id="instantWinBtn" type="button" aria-label="Vitória instantânea (teste)">⚡ Vitória Instantânea</button></div>
     </div>
     <div class="game-section game-section-player-side">
     <div class="row">
       <div class="pile-wrap" id="drawWrap">
-        <div class="pile" id="drawPile"><img src="img/decks/fJord-fishers/deck-backs/jf-db-default.png" alt="deck" loading="lazy" decoding="async"><div class="count" id="drawCount">0</div><div class="pile-label">SEU DECK</div></div>
+        <div class="pile" id="drawPile"><div class="pile-back-art"><img src="img/decks/fJord-fishers/deck-backs/jf-db-default.webp" alt="deck" loading="lazy" decoding="async"></div><div class="pile-back-frame" aria-hidden="true"></div><div class="count" id="drawCount">0</div><div class="pile-label">SEU DECK</div></div>
         <div class="totem-bar" id="totemBar"></div>
       </div>
-      <div class="board" id="playerBoard"></div>
-  <div class="pile" id="discardPile"><img src="img/decks/fJord-fishers/deck-backs/jf-db-default.png" alt="discard" loading="lazy" decoding="async"><div class="count" id="discardCount">0</div><div class="pile-label">DESCARTE</div></div>
+      <div class="board-stage board-stage-player">
+        <div class="board" id="playerBoard"></div>
+      </div>
+  <div class="pile" id="discardPile"><div class="pile-back-art"><img src="img/decks/fJord-fishers/deck-backs/jf-db-default.webp" alt="discard" loading="lazy" decoding="async"></div><div class="pile-back-frame" aria-hidden="true"></div><div class="count" id="discardCount">0</div><div class="pile-label">DESCARTE</div></div>
       <div class="log-wrap"><div class="zone-title">Registro</div><div class="log" id="log"></div></div>
     </div>
+      <div class="turn-bar turn-bar-side turn-bar-floating">
+        <div class="turn-indicator" id="turnIndicator"></div>
+        <button class="btn" id="endTurnBtn">Encerrar turno</button>
+        <button class="btn" id="instantWinBtn" type="button" aria-label="Vitória instantânea (teste)">⚡ Vitória Instantânea</button>
+      </div>
     </div>
     <div class="effects-hud" id="effectsHud"></div>
     <div class="game-section game-section-player-hand">
-    <div class="hand" id="playerHand"></div>
+    <div class="player-hand-layout">
+      <div class="hand" id="playerHand"></div>
+    </div>
     </div>
     <div class="game-section game-section-emotes">
     <div class="emoji-bar" id="emojiBar">
@@ -362,6 +464,17 @@
         <button class="btn" id="playAgainBtn">Jogar de novo</button>
         <button class="btn" id="rematchBtn">Revanche</button>
         <button class="btn-ghost" id="menuBtn">Menu inicial</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal confirm-modal" id="confirmModal" role="dialog" aria-modal="true" aria-labelledby="confirmTitle" aria-describedby="confirmText" aria-hidden="true">
+    <div class="box">
+      <div class="confirm-title" id="confirmTitle">Confirmar</div>
+      <div class="confirm-text" id="confirmText">Tem certeza?</div>
+      <div class="confirm-actions">
+        <button class="btn-ghost" id="confirmCancelBtn" type="button">Cancelar</button>
+        <button class="btn" id="confirmOkBtn" type="button">Continuar</button>
       </div>
     </div>
   </div>
@@ -411,29 +524,6 @@
             <button id="closeShop" class="btn btn-ghost">Fechar</button>
           </div>
         </div>
-        <aside class="shop-preview-panel" id="shopPreviewPanel" aria-live="polite">
-          <div class="shop-preview-empty" id="shopPreviewEmpty">
-            <div class="shop-preview-empty-title">Selecione uma oferta</div>
-            <div class="shop-preview-empty-copy">Veja detalhes, sinergias e impacto no seu ouro antes de comprar.</div>
-          </div>
-          <div class="shop-preview-detail" id="shopPreviewDetail" hidden>
-            <div class="shop-preview-cardwrap" id="shopPreviewCardWrap"></div>
-            <div class="shop-preview-meta">
-              <div class="shop-preview-topline">
-                <span class="shop-preview-type" id="shopPreviewType">Carta</span>
-                <span class="shop-preview-rarity" id="shopPreviewRarity">Comum</span>
-              </div>
-              <h3 class="shop-preview-name" id="shopPreviewName">Oferta</h3>
-              <p class="shop-preview-desc" id="shopPreviewDesc">Descricao</p>
-              <div class="shop-preview-chips" id="shopPreviewChips"></div>
-              <div class="shop-preview-economy">
-                <div class="shop-preview-economy-item">Custo <b id="shopPreviewCost">0</b></div>
-                <div class="shop-preview-economy-item">Apos compra <b id="shopPreviewAfterGold">0</b></div>
-              </div>
-              <button class="btn shop-preview-buy" id="shopPreviewBuy" type="button">Comprar</button>
-            </div>
-          </div>
-        </aside>
       </div>
     </div>
   </div>
@@ -603,6 +693,34 @@
     </div>
   </div>
   <script src="js/particles.js" defer></script>
+  <script src="js/visual-events.js" defer></script>
+  <script>
+    (() => {
+      const isLiveServer = /:(5500|5501|5502)\b/.test(location.host);
+      if (isLiveServer) return;
+
+      const loadScript = (src, options = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = src;
+        if (options.type) script.type = options.type;
+        if (options.defer) script.defer = true;
+        script.onload = () => resolve();
+        script.onerror = () => reject(new Error(`Falha ao carregar ${src}`));
+        document.head.appendChild(script);
+      });
+
+      Promise.resolve()
+        .then(() => loadScript('js/visual-libs.js', { type: 'module' }))
+        .then(() => loadScript('js/visual-bootstrap.js', { defer: true }))
+        .then(() => Promise.all([
+          loadScript('js/visual-three.js', { type: 'module' }),
+          loadScript('js/visual-pixi.js', { type: 'module' })
+        ]))
+        .catch((err) => {
+          console.warn('[FFF] Visual modules disabled:', err);
+        });
+    })();
+  </script>
   <script src="js/player-id.js" defer></script>
   <script>
     // Conditionally load socket.io only when Node server is running (not Live Server)

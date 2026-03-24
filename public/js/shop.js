@@ -339,62 +339,7 @@ function isCampaignSpecialOffer(offer){
 }
 
 function updateShopPreviewPanel(offer){
-  const empty = document.getElementById('shopPreviewEmpty');
-  const detail = document.getElementById('shopPreviewDetail');
-  const cardWrap = document.getElementById('shopPreviewCardWrap');
-  const type = document.getElementById('shopPreviewType');
-  const rarity = document.getElementById('shopPreviewRarity');
-  const name = document.getElementById('shopPreviewName');
-  const desc = document.getElementById('shopPreviewDesc');
-  const chips = document.getElementById('shopPreviewChips');
-  const cost = document.getElementById('shopPreviewCost');
-  const after = document.getElementById('shopPreviewAfterGold');
-  const buy = document.getElementById('shopPreviewBuy');
-  if(!empty || !detail || !cardWrap || !type || !rarity || !name || !desc || !chips || !cost || !after || !buy) return;
-  updateBudgetPreview();
-  if(!offer){
-    empty.hidden = false;
-    detail.hidden = true;
-    return;
-  }
-  empty.hidden = true;
-  detail.hidden = false;
-  cardWrap.innerHTML = '';
-  let previewNode;
-  if(['unit','spell','totem'].includes(offer.type) && window.cardNode){
-    let nodeData = Object.assign({}, offer);
-    if(window.hydrateCardArt) nodeData = window.hydrateCardArt(nodeData);
-    previewNode = window.cardNode(nodeData, 'player');
-    previewNode.classList.add('shop-preview-feature-card');
-  } else {
-    previewNode = document.createElement('div');
-    previewNode.className = 'shop-preview-feature-fallback';
-    previewNode.textContent = offer.icon || SHOP_ICONS[offer.flair] || SHOP_ICONS[offer.type] || '🛒';
-  }
-  cardWrap.appendChild(previewNode);
-  type.textContent = getOfferKindLabel(offer);
-  rarity.textContent = getOfferRarityLabel(offer);
-  rarity.dataset.rarity = String((offer.rarity || 'common')).toLowerCase();
-  name.textContent = offer.name;
-  desc.textContent = offer.desc || offer.text || 'Oferta da loja.';
-  chips.innerHTML = '';
-  getOfferChips(offer).forEach(chip => {
-    const node = document.createElement('span');
-    node.className = 'shop-context-chip';
-    node.dataset.tone = chip.tone;
-    node.textContent = chip.label;
-    chips.appendChild(node);
-  });
-  cost.textContent = String(getOfferPrice(offer));
-  after.textContent = String(Math.max(0, shopState.gold - getOfferPrice(offer)));
-  const purchased = isOfferPurchased(offer);
-  const unaffordable = !shopState.unlimited && getOfferPrice(offer) > shopState.gold;
-  buy.disabled = purchased || unaffordable;
-  buy.textContent = purchased ? 'Comprado' : unaffordable ? 'Sem ouro suficiente' : `Comprar por ${getOfferPrice(offer)}`;
-  buy.onclick = () => {
-    const btn = document.querySelector(`.price-btn[data-offer-slug="${slug(offer.name)}"]`);
-    purchaseOffer(offer, btn);
-  };
+  return;
 }
 
 function refreshShopAffordability(){
@@ -685,6 +630,17 @@ function getRemovalCost(card){
 
 function openShop({ faction, gold, onClose, unlimited=false, story=false, resumeVisit=false }){
   const deckKey = normalizeDeckKey(faction);
+  try{
+    if(window.FFFEvents && typeof window.FFFEvents.emit === 'function'){
+      window.FFFEvents.emit('shop:open', {
+        deckKey,
+        gold,
+        story: !!story,
+        unlimited: !!unlimited,
+        resumeVisit: !!resumeVisit
+      });
+    }
+  }catch(_){ }
   shopState.faction = deckKey;
   shopState.deckKey = deckKey;
   shopState.gold = gold;
@@ -741,6 +697,16 @@ function hideShopModal(){
 }
 
 function closeShop(notify=true){
+  try{
+    if(window.FFFEvents && typeof window.FFFEvents.emit === 'function'){
+      window.FFFEvents.emit('shop:close', {
+        notify: notify !== false,
+        gold: shopState.gold,
+        story: !!shopState.story,
+        deckKey: shopState.deckKey
+      });
+    }
+  }catch(_){ }
   hideShopModal();
   // reset any in-flight purchase tracking on close
   shopState.pending = [];

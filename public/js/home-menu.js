@@ -13,8 +13,6 @@
     var deckScreen = document.getElementById('start');
     var multiMenu = document.getElementById('multiplayerMenu');
     var optionsMenu = document.getElementById('optionsMenu');
-    var playBtn = document.getElementById('menuPlay');
-    var playPopup = document.getElementById('playPopup');
     var playStoryBtn = document.getElementById('menuPlayStory');
     var playStory2Btn = document.getElementById('menuPlayStory2');
     var playQuickBtn = document.getElementById('menuPlayQuick');
@@ -35,6 +33,7 @@
     var testUpgradeBtn = document.getElementById('testUpgradeBtn');
     var testRewardCardBtn = document.getElementById('testRewardCardBtn');
     var testEncyBtn = document.getElementById('testEncyBtn');
+    var testVisualFxBtn = document.getElementById('testVisualFxBtn');
     var testTotemBtn = document.getElementById('testTotemBtn');
     var toggleInstantWin = document.getElementById('toggleInstantWin');
     var toggleSilentArt = document.getElementById('toggleSilentArt');
@@ -75,7 +74,23 @@
       el.setAttribute('aria-hidden', hidden ? 'true' : 'false');
     }
 
+    function closest(element, selector) {
+      if (!element) return null;
+      if (typeof element.closest === 'function') return element.closest(selector);
+      var current = element;
+      while (current) {
+        if (current.matches && current.matches(selector)) return current;
+        current = current.parentElement;
+      }
+      return null;
+    }
+
     function showAppScreen(screen) {
+      try {
+        if (window.FFFEvents && typeof window.FFFEvents.emit === 'function') {
+          window.FFFEvents.emit('screen:change', { screen: screen });
+        }
+      } catch (_) { }
       var screens = [
         { key: 'title', el: titleMenu, display: 'flex' },
         { key: 'deck', el: deckScreen, display: 'flex' },
@@ -127,6 +142,11 @@
       if (testModal.classList) testModal.classList.remove('show');
       testModal.style.display = 'none';
       setElementHidden(testModal, true);
+      try {
+        if (window.FFFEvents && typeof window.FFFEvents.emit === 'function') {
+          window.FFFEvents.emit('overlay:system:close', { id: 'testModal' });
+        }
+      } catch (_) {}
     }
     function runTest(kind) {
       if (!isDevMode) return;
@@ -159,111 +179,8 @@
     }
 
 
-    var playPopupOpen = false;
-    var playPopupReturnFocusEl = null;
-
-    function matchesSelector(element, selector) {
-      if (!element) return false;
-      var proto = Element.prototype;
-      var matcher = proto.matches || proto.msMatchesSelector || proto.webkitMatchesSelector;
-      return matcher ? matcher.call(element, selector) : false;
-    }
-
-    function closest(element, selector) {
-      if (!element) return null;
-      if (typeof element.closest === 'function') return element.closest(selector);
-      var current = element;
-      while (current) {
-        if (matchesSelector(current, selector)) return current;
-        current = current.parentElement;
-      }
-      return null;
-    }
-
-    function getPlayPopupItems() {
-      if (!playPopup) return [];
-      var items = playPopup.querySelectorAll('[role="menuitem"]');
-      var result = [];
-      for (var idx = 0; idx < items.length; idx += 1) {
-        var item = items[idx];
-        if (!item || item.hidden || item.disabled) continue;
-        if (item.getAttribute('aria-hidden') === 'true') continue;
-        result.push(item);
-      }
-      return result;
-    }
-
-    function focusPlayPopupItem(index) {
-      var items = getPlayPopupItems();
-      if (!items.length) return;
-      var safeIndex = index;
-      if (safeIndex < 0) safeIndex = items.length - 1;
-      if (safeIndex >= items.length) safeIndex = 0;
-      try {
-        items[safeIndex].focus();
-      } catch (_) { }
-    }
-
-    function positionPlayPopup() {
-      if (!playPopupOpen || !playPopup || !playBtn) return;
-      var layout = closest(playBtn, '.start-layout');
-      var panel = closest(playBtn, '.panel');
-      if (!layout || !panel) return;
-      var mediaQuery = window.matchMedia ? window.matchMedia('(max-width: 760px)') : null;
-      var stacked = mediaQuery ? mediaQuery.matches : false;
-      if (stacked) {
-        playPopup.style.left = '';
-        playPopup.style.top = '';
-        playPopup.style.transform = '';
-        return;
-      }
-      var panelRect = panel.getBoundingClientRect();
-      var layoutRect = layout.getBoundingClientRect();
-      var gap = 24;
-      playPopup.style.left = (panelRect.right - layoutRect.left + gap) + 'px';
-      playPopup.style.top = (panelRect.top - layoutRect.top + panelRect.height / 2) + 'px';
-      playPopup.style.transform = 'translateY(-50%)';
-    }
-
-    function openPlayPopup() {
-      if (!playPopup || playPopupOpen) return;
-      playPopupReturnFocusEl = document.activeElement;
-      playPopup.hidden = false;
-      playPopup.removeAttribute('aria-hidden');
-      if (playPopup.classList) playPopup.classList.add('show');
-      if (playBtn) playBtn.setAttribute('aria-expanded', 'true');
-      playPopupOpen = true;
-      positionPlayPopup();
-      window.setTimeout(function () {
-        focusPlayPopupItem(0);
-      }, 0);
-    }
-
-    function closePlayPopup(options) {
-      var restoreFocus = !options || options.restoreFocus !== false;
-      if (!playPopup) return;
-      if (playPopup.classList) playPopup.classList.remove('show');
-      playPopup.hidden = true;
-      playPopup.setAttribute('aria-hidden', 'true');
-      if (playBtn) playBtn.setAttribute('aria-expanded', 'false');
-      playPopupOpen = false;
-      playPopup.style.left = '';
-      playPopup.style.top = '';
-      playPopup.style.transform = '';
-      if (restoreFocus) {
-        var target = playPopupReturnFocusEl && typeof playPopupReturnFocusEl.focus === 'function'
-          ? playPopupReturnFocusEl
-          : playBtn;
-        if (target && typeof target.focus === 'function') {
-          try { target.focus(); } catch (_) { }
-        }
-      }
-      playPopupReturnFocusEl = null;
-    }
-
     function handlePlayChoice(mode) {
       if (!mode) return;
-      closePlayPopup();
       if (mode === 'story2' && !STORY2_ENABLED) {
         return;
       }
@@ -288,24 +205,13 @@
           window.currentGameMode = 'solo';
         }
       };
-      if (typeof window.preloadDeckCarouselAssets === 'function') {
+      if (typeof window.preloadDeckScreenAssets === 'function') {
+        window.preloadDeckScreenAssets().catch(function () { }).finally(openDeckScreen);
+      } else if (typeof window.preloadDeckCarouselAssets === 'function') {
         window.preloadDeckCarouselAssets().catch(function () { }).finally(openDeckScreen);
       } else {
         openDeckScreen();
       }
-    }
-
-
-    if (playBtn) {
-      playBtn.addEventListener('click', function () {
-        if (playPopupOpen) {
-          closePlayPopup();
-        } else if (playPopup) {
-          openPlayPopup();
-        } else {
-          handlePlayChoice('solo');
-        }
-      });
     }
 
     if (playStoryBtn) {
@@ -335,56 +241,8 @@
       });
     }
 
-    window.addEventListener('resize', function () {
-      if (playPopupOpen) positionPlayPopup();
-    });
-
-    document.addEventListener('keydown', function (event) {
-      if (!playPopupOpen) return;
-      var items = getPlayPopupItems();
-      var activeIndex = items.indexOf(document.activeElement);
-      if (event.key === 'Escape') {
-        event.preventDefault();
-        closePlayPopup();
-        return;
-      }
-      if (event.key === 'ArrowDown') {
-        event.preventDefault();
-        focusPlayPopupItem(activeIndex >= 0 ? activeIndex + 1 : 0);
-        return;
-      }
-      if (event.key === 'ArrowUp') {
-        event.preventDefault();
-        focusPlayPopupItem(activeIndex >= 0 ? activeIndex - 1 : items.length - 1);
-        return;
-      }
-      if (event.key === 'Home') {
-        event.preventDefault();
-        focusPlayPopupItem(0);
-        return;
-      }
-      if (event.key === 'End') {
-        event.preventDefault();
-        focusPlayPopupItem(items.length - 1);
-        return;
-      }
-      if (event.key === 'Tab') {
-        event.preventDefault();
-        if (!items.length) return;
-        focusPlayPopupItem(activeIndex + (event.shiftKey ? -1 : 1));
-      }
-    });
-
-    document.addEventListener('click', function (event) {
-      if (!playPopupOpen) return;
-      if (playBtn && (event.target === playBtn || playBtn.contains(event.target))) return;
-      if (playPopup && (event.target === playPopup || playPopup.contains(event.target))) return;
-      closePlayPopup({ restoreFocus: false });
-    });
-
     if (encyBtn) {
       encyBtn.addEventListener('click', function () {
-        closePlayPopup();
         try {
           if (window.renderEncy) {
             window.renderEncy('all', false);
@@ -397,10 +255,14 @@
 
     if (optBtn) {
       optBtn.addEventListener('click', function () {
-        closePlayPopup();
         if (optionsMenu && optionsMenu.classList) {
           optionsMenu.classList.add('show');
           setElementHidden(optionsMenu, false);
+          try {
+            if (window.FFFEvents && typeof window.FFFEvents.emit === 'function') {
+              window.FFFEvents.emit('overlay:system:open', { id: 'optionsMenu' });
+            }
+          } catch (_) {}
         }
       });
     }
@@ -408,10 +270,14 @@
     if (testBtn) {
       testBtn.addEventListener('click', function () {
         if (!isDevMode) return;
-        closePlayPopup();
         if (testModal && testModal.classList) {
           testModal.classList.add('show');
           setElementHidden(testModal, false);
+          try {
+            if (window.FFFEvents && typeof window.FFFEvents.emit === 'function') {
+              window.FFFEvents.emit('overlay:system:open', { id: 'testModal' });
+            }
+          } catch (_) {}
           // Initialize toggles with current values
           if (toggleInstantWin) toggleInstantWin.checked = !!window.storyTestMode;
           if (toggleSilentArt) toggleSilentArt.checked = (window.silentArtPlaceholders !== false);
@@ -431,7 +297,6 @@
           startBtn.disabled = true;
         }
         window.currentGameMode = null;
-        closePlayPopup();
       });
     }
 
@@ -440,6 +305,11 @@
         if (optionsMenu && optionsMenu.classList) {
           optionsMenu.classList.remove('show');
           setElementHidden(optionsMenu, true);
+          try {
+            if (window.FFFEvents && typeof window.FFFEvents.emit === 'function') {
+              window.FFFEvents.emit('overlay:system:close', { id: 'optionsMenu' });
+            }
+          } catch (_) {}
         }
       });
     }
@@ -508,6 +378,12 @@
       testEncyBtn.addEventListener('click', function () {
         closeTestModal();
         runTest('ency');
+      });
+    }
+    if (testVisualFxBtn) {
+      testVisualFxBtn.addEventListener('click', function () {
+        closeTestModal();
+        runTest('visual-fx');
       });
     }
 

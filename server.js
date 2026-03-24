@@ -53,6 +53,8 @@ app.get('/favicon.ico', (req, res) => {
   res.sendFile(path.join(__dirname, 'favicon.ico'));
 });
 
+app.use('/vendor/three', express.static(path.join(__dirname, 'node_modules', 'three', 'build')));
+app.use('/vendor/pixi', express.static(path.join(__dirname, 'node_modules', 'pixi.js', 'dist')));
 app.use(express.static(path.join(__dirname, 'public')));
 
 try {
